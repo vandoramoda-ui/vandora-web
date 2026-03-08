@@ -73,7 +73,7 @@ const ChatWidget = () => {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': \`Bearer \${apiKey}\`
+          'Authorization': `Bearer ${apiKey}`
         },
         body: JSON.stringify({
           model: 'gpt-4o-mini',
@@ -135,11 +135,11 @@ const ChatWidget = () => {
               {messages.map((msg, idx) => (
                 <div
                   key={idx}
-                  className={`flex ${ msg.role === 'user' ? 'justify-end' : 'justify-start' }`}
+                  className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}
                 >
                   <div
                     className={
-                      "max-w-[80%] rounded-2xl px-4 py-2 text-sm " + 
+                      "max-w-[80%] rounded-2xl px-4 py-2 text-sm " +
                       (msg.role === 'user'
                         ? 'bg-vandora-emerald text-white rounded-br-none'
                         : 'bg-white text-gray-800 shadow-sm border border-gray-100 rounded-bl-none')
