@@ -5,7 +5,8 @@ import { Save, Loader2, BarChart } from 'lucide-react';
 const SettingsEditor = () => {
   const [settings, setSettings] = useState({
     ga4_id: '',
-    meta_pixel_id: ''
+    meta_pixel_id: '',
+    openai_api_key: ''
   });
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -22,6 +23,7 @@ const SettingsEditor = () => {
       data.forEach(item => {
         if (item.key === 'ga4_id') newSettings.ga4_id = item.value;
         if (item.key === 'meta_pixel_id') newSettings.meta_pixel_id = item.value;
+        if (item.key === 'openai_api_key') newSettings.openai_api_key = item.value;
       });
       setSettings(newSettings);
     }
@@ -37,12 +39,13 @@ const SettingsEditor = () => {
     try {
       const updates = [
         { key: 'ga4_id', value: settings.ga4_id },
-        { key: 'meta_pixel_id', value: settings.meta_pixel_id }
+        { key: 'meta_pixel_id', value: settings.meta_pixel_id },
+        { key: 'openai_api_key', value: settings.openai_api_key }
       ];
 
       const { error } = await supabase.from('app_settings').upsert(updates);
       if (error) throw error;
-      
+
       alert('Configuración guardada correctamente. Los cambios pueden tardar unos minutos en reflejarse.');
     } catch (error: any) {
       console.error('Error saving settings:', error);
@@ -91,6 +94,19 @@ const SettingsEditor = () => {
             className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-vandora-emerald focus:border-vandora-emerald sm:text-sm"
           />
           <p className="mt-1 text-xs text-gray-500">El ID numérico de tu Pixel de Facebook.</p>
+        </div>
+
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">OpenAI API Key (Para IA y Asistente)</label>
+          <input
+            type="password"
+            name="openai_api_key"
+            value={settings.openai_api_key}
+            onChange={handleChange}
+            placeholder="sk-proj-..."
+            className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-vandora-emerald focus:border-vandora-emerald sm:text-sm"
+          />
+          <p className="mt-1 text-xs text-gray-500">Tu clave secreta de OpenAI para el Chatbot y el Quiz Builder.</p>
         </div>
 
         <div className="pt-4 border-t border-gray-200 flex justify-end">

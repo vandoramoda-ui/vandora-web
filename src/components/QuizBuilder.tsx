@@ -1,12 +1,7 @@
 import React, { useState } from 'react';
-import { GoogleGenAI } from '@google/genai';
 import { supabase } from '../lib/supabase';
 import { Sparkles, Save, Loader2, Play, Copy, ExternalLink, Plus, Trash2, Edit3 } from 'lucide-react';
 import { Link } from 'react-router-dom';
-
-// Initialize Gemini
-const apiKey = import.meta.env.VITE_GEMINI_API_KEY || 'dummy_api_key_to_prevent_crash';
-const genAI = new GoogleGenAI({ apiKey });
 
 const QuizBuilder = ({ onEdit }: { onEdit?: (id: string) => void }) => {
   const [prompt, setPrompt] = useState('');
@@ -41,6 +36,17 @@ const QuizBuilder = ({ onEdit }: { onEdit?: (id: string) => void }) => {
     setGenerating(true);
 
     try {
+      const { data: settingsData } = await supabase
+        .from('app_settings')
+        .select('value')
+        .eq('key', 'openai_api_key')
+        .single();
+
+      const apiKey = settingsData?.value;
+      if (!apiKey) {
+        throw new Error('El administrador aún no ha configurado la clave de OpenAI en Ajustes.');
+      }
+
       const systemPrompt = `
         Eres un experto en marketing de moda y embudos de conversión (funnels).
         Tu tarea es generar un Quiz interactivo basado en la descripción del usuario.
@@ -70,26 +76,40 @@ const QuizBuilder = ({ onEdit }: { onEdit?: (id: string) => void }) => {
              }
           ]
         }
-        IMPORTANTE: Devuelve SOLO el JSON, sin markdown ni explicaciones adicionales.
+        IMPORTANTE: Devuelve SOLO el JSON en formato de string directo plano, SIN markdown de \`\`\`json ni otras explicaciones.
       `;
 
-      const result = await genAI.models.generateContent({
-        model: "gemini-2.5-flash-lite-latest",
-        contents: [
-          { role: 'user', parts: [{ text: systemPrompt }] },
-          { role: 'user', parts: [{ text: `Descripción del Quiz: ${prompt}` }] }
-        ]
+      const response = await fetch('https://api.openai.com/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${apiKey}`
+        },
+        body: JSON.stringify({
+          model: 'gpt-4o-mini',
+          messages: [
+            { role: 'system', content: systemPrompt },
+            { role: 'user', content: `Descripción del Quiz: ${prompt}` }
+          ],
+          temperature: 0.7,
+        })
       });
 
-      const responseText = result.text;
+      if (!response.ok) {
+        throw new Error('Error en la API de OpenAI');
+      }
+
+      const result = await response.json();
+      const responseText = result.choices[0]?.message?.content;
+
       const jsonString = responseText?.replace(/```json/g, '').replace(/```/g, '').trim();
       if (!jsonString) throw new Error("No se pudo generar el JSON");
       const quizData = JSON.parse(jsonString);
 
       setGeneratedQuiz(quizData);
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error generating quiz:', error);
-      alert('Error al generar el quiz. Por favor intenta con otra descripción.');
+      alert('Error: ' + error.message);
     } finally {
       setGenerating(false);
     }

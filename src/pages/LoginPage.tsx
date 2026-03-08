@@ -121,37 +121,6 @@ const LoginPage = () => {
           >
             {loading ? <Loader2 className="animate-spin h-5 w-5" /> : (isLogin ? 'Ingresar' : 'Registrarse')}
           </button>
-
-          <button
-            type="button"
-            onClick={() => navigate('/admin')}
-            className="w-full flex justify-center py-2 px-4 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-vandora-emerald transition-colors"
-          >
-            Ver Demo Superadmin
-          </button>
-          <div className="grid grid-cols-3 gap-2">
-            <button
-              type="button"
-              onClick={() => navigate('/admin')}
-              className="py-2 px-2 border border-gray-300 rounded-md shadow-sm text-xs font-medium text-gray-700 bg-white hover:bg-gray-50"
-            >
-              Demo Cliente
-            </button>
-            <button
-              type="button"
-              onClick={() => navigate('/admin')}
-              className="py-2 px-2 border border-gray-300 rounded-md shadow-sm text-xs font-medium text-gray-700 bg-white hover:bg-gray-50"
-            >
-              Demo Editor
-            </button>
-            <button
-              type="button"
-              onClick={() => navigate('/admin')}
-              className="py-2 px-2 border border-gray-300 rounded-md shadow-sm text-xs font-medium text-gray-700 bg-white hover:bg-gray-50"
-            >
-              Demo Soporte
-            </button>
-          </div>
         </form>
 
         <div className="mt-6 text-center">

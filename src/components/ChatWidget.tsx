@@ -1,14 +1,8 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { MessageCircle, X, Send, Loader2, Sparkles } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
-import { GoogleGenAI } from '@google/genai';
 import ReactMarkdown from 'react-markdown';
-
-// Initialize Gemini
-// Note: In a production app, you should proxy this through your backend to protect the API key
-// and manage rate limits. For this preview, we'll use it directly.
-const apiKey = import.meta.env.VITE_GEMINI_API_KEY || 'dummy_api_key_to_prevent_crash';
-const genAI = new GoogleGenAI({ apiKey });
+import { supabase } from '../lib/supabase';
 
 const VANDORA_CONTEXT = `
 Eres "Vandora AI", la asistente virtual experta en moda de la tienda exclusiva "Vandora" en Ecuador.
@@ -25,14 +19,14 @@ Responde de manera concisa (máximo 3 oraciones por turno a menos que sea necesa
 `;
 
 type Message = {
-  role: 'user' | 'model';
-  text: string;
+  role: 'user' | 'assistant';
+  content: string;
 };
 
 const ChatWidget = () => {
   const [isOpen, setIsOpen] = useState(false);
   const [messages, setMessages] = useState<Message[]>([
-    { role: 'model', text: '¡Hola! Bienvenida a Vandora. Soy tu asesora de moda personal. ¿En qué puedo ayudarte hoy para que luzcas espectacular?' }
+    { role: 'assistant', content: '¡Hola! Bienvenida a Vandora. Soy tu asesora de moda personal. ¿En qué puedo ayudarte hoy para que luzcas espectacular?' }
   ]);
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
@@ -51,31 +45,54 @@ const ChatWidget = () => {
 
     const userMessage = input;
     setInput('');
-    setMessages(prev => [...prev, { role: 'user', text: userMessage }]);
+    setMessages(prev => [...prev, { role: 'user', content: userMessage }]);
     setLoading(true);
 
     try {
-      // Construct history for context
-      const history = messages.map(m => ({
-        role: m.role,
-        parts: [{ text: m.text }]
+      // 1. Fetch OpenAI key from settings
+      const { data: settingsData } = await supabase
+        .from('app_settings')
+        .select('value')
+        .eq('key', 'openai_api_key')
+        .single();
+
+      const apiKey = settingsData?.value;
+      if (!apiKey) {
+        throw new Error('El administrador aún no ha configurado la clave de conexión. Por favor usa WhatsApp.');
+      }
+
+      // 2. Format history for OpenAI
+      const systemMessage = { role: 'system', content: VANDORA_CONTEXT };
+      const apiMessages = [systemMessage, ...messages, { role: 'user', content: userMessage }].map(m => ({
+        role: m.role === 'assistant' ? 'assistant' : m.role === 'system' ? 'system' : 'user',
+        content: m.content
       }));
 
-      const chat = genAI.chats.create({
-        model: "gemini-2.5-flash-lite-latest",
-        config: {
-          systemInstruction: VANDORA_CONTEXT,
+      // 3. Call OpenAI using fetch
+      const response = await fetch('https://api.openai.com/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': \`Bearer \${apiKey}\`
         },
-        history: history,
+        body: JSON.stringify({
+          model: 'gpt-4o-mini',
+          messages: apiMessages,
+          temperature: 0.7,
+        })
       });
 
-      const result = await chat.sendMessage({ message: userMessage });
-      const response = result.text;
+      if (!response.ok) {
+        throw new Error('Error en la comunicación con la inteligencia artificial.');
+      }
 
-      setMessages(prev => [...prev, { role: 'model', text: response || 'Lo siento, no pude generar una respuesta.' }]);
-    } catch (error) {
-      console.error('Error chatting with Gemini:', error);
-      setMessages(prev => [...prev, { role: 'model', text: 'Lo siento, tuve un pequeño problema de conexión. ¿Podrías repetirme tu pregunta o contactarnos por WhatsApp?' }]);
+      const data = await response.json();
+      const reply = data.choices[0]?.message?.content || 'Revisaré esto de inmediato...';
+
+      setMessages(prev => [...prev, { role: 'assistant', content: reply }]);
+    } catch (error: any) {
+      console.error('Chat error:', error);
+      setMessages(prev => [...prev, { role: 'assistant', content: error.message || 'Lo siento, tuve un pequeño problema de conexión. ¿Podrías contactarnos por WhatsApp?' }]);
     } finally {
       setLoading(false);
     }
@@ -118,15 +135,17 @@ const ChatWidget = () => {
               {messages.map((msg, idx) => (
                 <div
                   key={idx}
-                  className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}
+                  className={`flex ${ msg.role === 'user' ? 'justify-end' : 'justify-start' }`}
                 >
                   <div
-                    className={`max-w-[80%] rounded-2xl px-4 py-2 text-sm ${msg.role === 'user'
+                    className={
+                      "max-w-[80%] rounded-2xl px-4 py-2 text-sm " + 
+                      (msg.role === 'user'
                         ? 'bg-vandora-emerald text-white rounded-br-none'
-                        : 'bg-white text-gray-800 shadow-sm border border-gray-100 rounded-bl-none'
-                      }`}
+                        : 'bg-white text-gray-800 shadow-sm border border-gray-100 rounded-bl-none')
+                    }
                   >
-                    <ReactMarkdown>{msg.text}</ReactMarkdown>
+                    <ReactMarkdown>{msg.content}</ReactMarkdown>
                   </div>
                 </div>
               ))}
