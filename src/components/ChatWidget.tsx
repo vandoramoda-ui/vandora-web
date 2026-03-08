@@ -7,7 +7,8 @@ import ReactMarkdown from 'react-markdown';
 // Initialize Gemini
 // Note: In a production app, you should proxy this through your backend to protect the API key
 // and manage rate limits. For this preview, we'll use it directly.
-const genAI = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
+const apiKey = import.meta.env.VITE_GEMINI_API_KEY || 'dummy_api_key_to_prevent_crash';
+const genAI = new GoogleGenAI({ apiKey });
 
 const VANDORA_CONTEXT = `
 Eres "Vandora AI", la asistente virtual experta en moda de la tienda exclusiva "Vandora" en Ecuador.
@@ -104,7 +105,7 @@ const ChatWidget = () => {
                   </p>
                 </div>
               </div>
-              <button 
+              <button
                 onClick={() => setIsOpen(false)}
                 className="text-white/80 hover:text-white transition-colors"
               >
@@ -120,11 +121,10 @@ const ChatWidget = () => {
                   className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}
                 >
                   <div
-                    className={`max-w-[80%] rounded-2xl px-4 py-2 text-sm ${
-                      msg.role === 'user'
+                    className={`max-w-[80%] rounded-2xl px-4 py-2 text-sm ${msg.role === 'user'
                         ? 'bg-vandora-emerald text-white rounded-br-none'
                         : 'bg-white text-gray-800 shadow-sm border border-gray-100 rounded-bl-none'
-                    }`}
+                      }`}
                   >
                     <ReactMarkdown>{msg.text}</ReactMarkdown>
                   </div>
@@ -160,14 +160,14 @@ const ChatWidget = () => {
                 </button>
               </div>
               <div className="mt-2 text-center">
-                 <a 
-                   href="https://wa.me/593999999999" 
-                   target="_blank" 
-                   rel="noopener noreferrer"
-                   className="text-xs text-gray-400 hover:text-vandora-emerald transition-colors"
-                 >
-                   ¿Prefieres WhatsApp? Haz clic aquí
-                 </a>
+                <a
+                  href="https://wa.me/593999999999"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-xs text-gray-400 hover:text-vandora-emerald transition-colors"
+                >
+                  ¿Prefieres WhatsApp? Haz clic aquí
+                </a>
               </div>
             </div>
           </motion.div>

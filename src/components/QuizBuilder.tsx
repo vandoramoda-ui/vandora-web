@@ -5,7 +5,8 @@ import { Sparkles, Save, Loader2, Play, Copy, ExternalLink, Plus, Trash2, Edit3 
 import { Link } from 'react-router-dom';
 
 // Initialize Gemini
-const genAI = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
+const apiKey = import.meta.env.VITE_GEMINI_API_KEY || 'dummy_api_key_to_prevent_crash';
+const genAI = new GoogleGenAI({ apiKey });
 
 const QuizBuilder = ({ onEdit }: { onEdit?: (id: string) => void }) => {
   const [prompt, setPrompt] = useState('');
@@ -84,7 +85,7 @@ const QuizBuilder = ({ onEdit }: { onEdit?: (id: string) => void }) => {
       const jsonString = responseText?.replace(/```json/g, '').replace(/```/g, '').trim();
       if (!jsonString) throw new Error("No se pudo generar el JSON");
       const quizData = JSON.parse(jsonString);
-      
+
       setGeneratedQuiz(quizData);
     } catch (error) {
       console.error('Error generating quiz:', error);
@@ -99,14 +100,14 @@ const QuizBuilder = ({ onEdit }: { onEdit?: (id: string) => void }) => {
 
     try {
       const slug = `${quizData.slug}-${Date.now().toString().slice(-4)}`;
-      
+
       const { data, error } = await supabase.from('quizzes').insert([{
         title: quizData.title,
         description: quizData.description,
         slug: slug,
         seo_title: quizData.seo_title || quizData.title,
         seo_description: quizData.seo_description || quizData.description,
-        questions: { 
+        questions: {
           steps: quizData.questions,
           outcomes: quizData.results
         },
@@ -115,7 +116,7 @@ const QuizBuilder = ({ onEdit }: { onEdit?: (id: string) => void }) => {
       }]).select();
 
       if (error) throw error;
-      
+
       alert('Quiz guardado exitosamente');
       setView('list');
       fetchQuizzes();
@@ -232,22 +233,22 @@ const QuizBuilder = ({ onEdit }: { onEdit?: (id: string) => void }) => {
                     </div>
                   </div>
                   <div className="flex space-x-2">
-                    <button 
+                    <button
                       onClick={() => onEdit && onEdit(quiz.id)}
                       className="p-2 text-gray-500 hover:text-vandora-emerald"
                       title="Editar Visualmente"
                     >
                       <Edit3 className="h-5 w-5" />
                     </button>
-                    <Link 
-                      to={`/quiz/${quiz.slug}`} 
+                    <Link
+                      to={`/quiz/${quiz.slug}`}
                       target="_blank"
                       className="p-2 text-gray-500 hover:text-vandora-emerald"
                       title="Ver Quiz"
                     >
                       <ExternalLink className="h-5 w-5" />
                     </Link>
-                    <button 
+                    <button
                       className="p-2 text-gray-500 hover:text-blue-600"
                       onClick={() => navigator.clipboard.writeText(`${window.location.origin}/quiz/${quiz.slug}`)}
                       title="Copiar URL"
@@ -371,7 +372,7 @@ const QuizBuilder = ({ onEdit }: { onEdit?: (id: string) => void }) => {
                   <input
                     type="text"
                     value={manualQuiz.title}
-                    onChange={(e) => setManualQuiz({...manualQuiz, title: e.target.value})}
+                    onChange={(e) => setManualQuiz({ ...manualQuiz, title: e.target.value })}
                     className="mt-1 block w-full rounded-md border-gray-300 shadow-sm border p-2"
                   />
                 </div>
@@ -380,7 +381,7 @@ const QuizBuilder = ({ onEdit }: { onEdit?: (id: string) => void }) => {
                   <input
                     type="text"
                     value={manualQuiz.slug}
-                    onChange={(e) => setManualQuiz({...manualQuiz, slug: e.target.value})}
+                    onChange={(e) => setManualQuiz({ ...manualQuiz, slug: e.target.value })}
                     placeholder="mi-quiz-verano"
                     className="mt-1 block w-full rounded-md border-gray-300 shadow-sm border p-2"
                   />
@@ -389,7 +390,7 @@ const QuizBuilder = ({ onEdit }: { onEdit?: (id: string) => void }) => {
                   <label className="block text-sm font-medium text-gray-700">Descripción</label>
                   <textarea
                     value={manualQuiz.description}
-                    onChange={(e) => setManualQuiz({...manualQuiz, description: e.target.value})}
+                    onChange={(e) => setManualQuiz({ ...manualQuiz, description: e.target.value })}
                     rows={2}
                     className="mt-1 block w-full rounded-md border-gray-300 shadow-sm border p-2"
                   />
@@ -405,7 +406,7 @@ const QuizBuilder = ({ onEdit }: { onEdit?: (id: string) => void }) => {
                   <Plus className="h-4 w-4 mr-1" /> Agregar Pregunta
                 </button>
               </div>
-              
+
               {manualQuiz.questions.map((q, qIdx) => (
                 <div key={qIdx} className="border border-gray-200 rounded-lg p-4 bg-white">
                   <div className="mb-3">
@@ -418,7 +419,7 @@ const QuizBuilder = ({ onEdit }: { onEdit?: (id: string) => void }) => {
                       placeholder="¿Qué buscas hoy?"
                     />
                   </div>
-                  
+
                   <div className="space-y-2 pl-4 border-l-2 border-gray-100">
                     <label className="block text-xs font-medium text-gray-500">Opciones</label>
                     {q.options.map((opt: any, oIdx: number) => (
@@ -462,7 +463,7 @@ const QuizBuilder = ({ onEdit }: { onEdit?: (id: string) => void }) => {
                   <Plus className="h-4 w-4 mr-1" /> Agregar Resultado
                 </button>
               </div>
-              
+
               {manualQuiz.results.map((r, rIdx) => (
                 <div key={rIdx} className="border border-gray-200 rounded-lg p-4 bg-white">
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
