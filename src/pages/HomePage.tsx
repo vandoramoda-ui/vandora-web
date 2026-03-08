@@ -1,0 +1,330 @@
+import React, { useState, useEffect } from 'react';
+import { motion, AnimatePresence } from 'motion/react';
+import { Link } from 'react-router-dom';
+import { ChevronLeft, ChevronRight, ArrowRight } from 'lucide-react';
+import ProductCard from '../components/ProductCard';
+import SEO from '../components/SEO';
+
+const HomePage = () => {
+  // Mock Hero Slides (In real app, fetch from DB)
+  const heroSlides = [
+    {
+      id: 1,
+      imageDesktop: 'https://images.unsplash.com/photo-1490481651871-ab68de25d43d?q=80&w=2000&auto=format&fit=crop',
+      imageMobile: 'https://images.unsplash.com/photo-1490481651871-ab68de25d43d?q=80&w=800&auto=format&fit=crop',
+      title: 'El Legado del Florecimiento',
+      subtitle: 'Para la mujer que empezó desde cero y hoy conquista sus metas.',
+      buttonText: 'Explorar Colección',
+      buttonLink: '/shop',
+      buttonColor: '#D4AF37', // Gold
+      textColor: '#FFFFFF'
+    },
+    {
+      id: 2,
+      imageDesktop: 'https://images.unsplash.com/photo-1595777457583-95e059d581b8?q=80&w=2000&auto=format&fit=crop',
+      imageMobile: 'https://images.unsplash.com/photo-1595777457583-95e059d581b8?q=80&w=800&auto=format&fit=crop',
+      title: 'Elegancia Natural',
+      subtitle: 'Descubre nuestra nueva colección de vestidos Esmeralda.',
+      buttonText: 'Ver Vestidos',
+      buttonLink: '/shop?category=Vestidos',
+      buttonColor: '#50C878', // Emerald
+      textColor: '#FFFFFF'
+    }
+  ];
+
+  const [currentSlide, setCurrentSlide] = useState(0);
+
+  // Auto-slide
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setCurrentSlide((prev) => (prev + 1) % heroSlides.length);
+    }, 6000);
+    return () => clearInterval(timer);
+  }, [heroSlides.length]);
+
+  const nextSlide = () => setCurrentSlide((prev) => (prev + 1) % heroSlides.length);
+  const prevSlide = () => setCurrentSlide((prev) => (prev - 1 + heroSlides.length) % heroSlides.length);
+
+  const categoryScrollRef = React.useRef<HTMLDivElement>(null);
+
+  const scrollCategories = (direction: 'left' | 'right') => {
+    if (categoryScrollRef.current) {
+      const scrollAmount = 300;
+      categoryScrollRef.current.scrollBy({
+        left: direction === 'left' ? -scrollAmount : scrollAmount,
+        behavior: 'smooth'
+      });
+    }
+  };
+
+  // Mock Categories
+  const categories = [
+    { name: 'Vestidos', image: 'https://images.unsplash.com/photo-1595777457583-95e059d581b8?q=80&w=500&auto=format&fit=crop', link: '/shop?category=Vestidos' },
+    { name: 'Blusas', image: 'https://images.unsplash.com/photo-1564257631407-4deb1f99d992?q=80&w=500&auto=format&fit=crop', link: '/shop?category=Blusas' },
+    { name: 'Pantalones', image: 'https://images.unsplash.com/photo-1584273143981-41c073dfe8f8?q=80&w=500&auto=format&fit=crop', link: '/shop?category=Pantalones' },
+    { name: 'Accesorios', image: 'https://images.unsplash.com/photo-1576053139778-7e32f2ae3cfd?q=80&w=500&auto=format&fit=crop', link: '/shop?category=Accesorios' }
+  ];
+
+  // Mock featured products
+  const featuredProducts = [
+    {
+      id: '1',
+      name: 'Vestido Esmeralda Real',
+      price: 85.00,
+      image: 'https://images.unsplash.com/photo-1595777457583-95e059d581b8?q=80&w=1000&auto=format&fit=crop',
+      category: 'Vestidos',
+      colors: [{ name: 'Esmeralda', code: '#50C878' }, { name: 'Negro', code: '#000000' }]
+    },
+    {
+      id: '2',
+      name: 'Blusa Seda Champagne',
+      price: 45.00,
+      image: 'https://images.unsplash.com/photo-1564257631407-4deb1f99d992?q=80&w=1000&auto=format&fit=crop',
+      category: 'Blusas',
+      colors: [{ name: 'Champagne', code: '#F7E7CE' }, { name: 'Blanco', code: '#FFFFFF' }]
+    },
+    {
+      id: '3',
+      name: 'Pantalón Palazzo Crema',
+      price: 60.00,
+      image: 'https://images.unsplash.com/photo-1584273143981-41c073dfe8f8?q=80&w=1000&auto=format&fit=crop',
+      category: 'Pantalones',
+      colors: [{ name: 'Crema', code: '#FFFDD0' }, { name: 'Negro', code: '#000000' }, { name: 'Azul Marino', code: '#000080' }]
+    }
+  ];
+
+  return (
+    <div className="bg-vandora-cream">
+      <SEO 
+        title="Inicio" 
+        description="Vandora - Moda ecuatoriana que empodera. Descubre nuestra colección de vestidos, blusas y pantalones diseñados para la mujer moderna." 
+      />
+      
+      {/* Hero Slider */}
+      <section className="relative h-[80vh] w-full overflow-hidden bg-gray-900">
+        <AnimatePresence mode="wait">
+          <motion.div
+            key={currentSlide}
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.8 }}
+            className="absolute inset-0"
+          >
+            {/* Desktop Image */}
+            <img 
+              src={heroSlides[currentSlide].imageDesktop} 
+              alt={heroSlides[currentSlide].title}
+              className="hidden md:block w-full h-full object-cover opacity-80"
+            />
+            {/* Mobile Image */}
+            <img 
+              src={heroSlides[currentSlide].imageMobile} 
+              alt={heroSlides[currentSlide].title}
+              className="block md:hidden w-full h-full object-cover opacity-80"
+            />
+            <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/30 to-transparent" />
+          </motion.div>
+        </AnimatePresence>
+
+        <div className="absolute inset-0 flex items-center justify-center z-10 px-4">
+          <div className="text-center max-w-4xl mx-auto">
+            <AnimatePresence mode="wait">
+              <motion.div
+                key={currentSlide}
+                initial={{ opacity: 0, y: 30 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -30 }}
+                transition={{ duration: 0.6, delay: 0.2 }}
+              >
+                <h1 
+                  className="font-serif text-4xl md:text-7xl mb-6 tracking-tight drop-shadow-lg"
+                  style={{ color: heroSlides[currentSlide].textColor }}
+                >
+                  {heroSlides[currentSlide].title}
+                </h1>
+                <p 
+                  className="text-lg md:text-xl font-light mb-8 max-w-2xl mx-auto drop-shadow-md"
+                  style={{ color: heroSlides[currentSlide].textColor }}
+                >
+                  {heroSlides[currentSlide].subtitle}
+                </p>
+                <Link 
+                  to={heroSlides[currentSlide].buttonLink}
+                  className="inline-block px-8 py-4 rounded-sm font-semibold uppercase tracking-widest text-sm transition-transform hover:scale-105 shadow-lg"
+                  style={{ 
+                    backgroundColor: heroSlides[currentSlide].buttonColor,
+                    color: '#FFFFFF' // Assuming white text on colored buttons for contrast
+                  }}
+                >
+                  {heroSlides[currentSlide].buttonText}
+                </Link>
+              </motion.div>
+            </AnimatePresence>
+          </div>
+        </div>
+
+        {/* Slider Controls */}
+        {heroSlides.length > 1 && (
+          <>
+            <button 
+              onClick={prevSlide}
+              className="absolute left-4 top-1/2 -translate-y-1/2 bg-white/10 hover:bg-white/20 p-2 rounded-full backdrop-blur-sm text-white transition-colors z-20"
+            >
+              <ChevronLeft className="h-8 w-8" />
+            </button>
+            <button 
+              onClick={nextSlide}
+              className="absolute right-4 top-1/2 -translate-y-1/2 bg-white/10 hover:bg-white/20 p-2 rounded-full backdrop-blur-sm text-white transition-colors z-20"
+            >
+              <ChevronRight className="h-8 w-8" />
+            </button>
+            <div className="absolute bottom-8 left-0 right-0 flex justify-center space-x-2 z-20">
+              {heroSlides.map((_, idx) => (
+                <button
+                  key={idx}
+                  onClick={() => setCurrentSlide(idx)}
+                  className={`w-3 h-3 rounded-full transition-all ${
+                    currentSlide === idx ? 'bg-white scale-125' : 'bg-white/50'
+                  }`}
+                />
+              ))}
+            </div>
+          </>
+        )}
+      </section>
+
+      {/* Category Slider (CRO) */}
+      <section className="py-12 px-4 bg-white border-b border-gray-100 relative group">
+        <div className="max-w-7xl mx-auto">
+          <div className="flex justify-between items-center mb-6 px-2">
+            <h2 className="text-2xl font-serif text-gray-900 text-center md:text-left">Explora por Categoría</h2>
+            <div className="hidden md:flex space-x-2">
+              <button 
+                onClick={() => scrollCategories('left')}
+                className="p-2 rounded-full bg-gray-100 hover:bg-gray-200 text-gray-600 transition-colors"
+                aria-label="Anterior"
+              >
+                <ChevronLeft className="h-5 w-5" />
+              </button>
+              <button 
+                onClick={() => scrollCategories('right')}
+                className="p-2 rounded-full bg-gray-100 hover:bg-gray-200 text-gray-600 transition-colors"
+                aria-label="Siguiente"
+              >
+                <ChevronRight className="h-5 w-5" />
+              </button>
+            </div>
+          </div>
+          
+          <div 
+            ref={categoryScrollRef}
+            className="flex overflow-x-auto pb-4 gap-4 snap-x hide-scrollbar scroll-smooth"
+          >
+            {categories.map((cat) => (
+              <Link 
+                key={cat.name} 
+                to={cat.link}
+                className="flex-shrink-0 w-40 md:w-56 snap-start group/card relative"
+              >
+                <div className="aspect-[3/4] rounded-lg overflow-hidden mb-3 relative shadow-md">
+                  <img 
+                    src={cat.image} 
+                    alt={cat.name} 
+                    className="w-full h-full object-cover transition-transform duration-700 group-hover/card:scale-110"
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-80 group-hover/card:opacity-90 transition-opacity" />
+                  <div className="absolute bottom-4 left-0 right-0 text-center">
+                    <h3 className="text-white font-medium text-lg tracking-wide flex items-center justify-center">
+                      {cat.name} 
+                      <ArrowRight className="h-4 w-4 ml-1 opacity-0 -translate-x-2 group-hover/card:opacity-100 group-hover/card:translate-x-0 transition-all duration-300" />
+                    </h3>
+                  </div>
+                </div>
+              </Link>
+            ))}
+          </div>
+          
+          {/* Mobile Arrows Overlay */}
+          <div className="md:hidden absolute top-1/2 -translate-y-1/2 left-2 right-2 flex justify-between pointer-events-none">
+             <button 
+                onClick={() => scrollCategories('left')}
+                className="p-2 rounded-full bg-white/80 shadow-md text-gray-800 pointer-events-auto opacity-0 group-hover:opacity-100 transition-opacity"
+              >
+                <ChevronLeft className="h-5 w-5" />
+              </button>
+              <button 
+                onClick={() => scrollCategories('right')}
+                className="p-2 rounded-full bg-white/80 shadow-md text-gray-800 pointer-events-auto opacity-0 group-hover:opacity-100 transition-opacity"
+              >
+                <ChevronRight className="h-5 w-5" />
+              </button>
+          </div>
+        </div>
+      </section>
+
+      {/* Manifesto Section */}
+      <section className="py-20 px-4 bg-white">
+        <div className="max-w-3xl mx-auto text-center">
+          <h2 className="font-serif text-3xl md:text-4xl text-vandora-emerald mb-8">Nuestra Ideología</h2>
+          <p className="text-gray-600 text-lg leading-relaxed mb-8 italic font-serif">
+            "Vandora es el reflejo de tu esfuerzo. No solo vestimos cuerpos, vestimos historias de resiliencia. 
+            La elegancia no es un privilegio de nacimiento, sino un estado de superación."
+          </p>
+          <div className="w-24 h-1 bg-vandora-gold mx-auto" />
+        </div>
+      </section>
+
+      {/* Featured Products */}
+      <section className="py-20 px-4 max-w-7xl mx-auto">
+        <div className="flex justify-between items-end mb-12">
+          <div>
+            <h2 className="font-serif text-3xl text-vandora-black mb-2">Favoritos de la Temporada</h2>
+            <p className="text-gray-500">Piezas seleccionadas para tu éxito diario.</p>
+          </div>
+          <Link to="/shop" className="text-vandora-emerald font-medium hover:text-vandora-gold transition-colors border-b border-vandora-emerald hover:border-vandora-gold pb-1">
+            Ver todo
+          </Link>
+        </div>
+        
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+          {featuredProducts.map((product) => (
+            <ProductCard key={product.id} {...product} />
+          ))}
+        </div>
+      </section>
+
+      {/* Story / Founder Section */}
+      <section className="py-20 bg-vandora-emerald text-white">
+        <div className="max-w-7xl mx-auto px-4 grid grid-cols-1 md:grid-cols-2 gap-12 items-center">
+          <div className="relative">
+            <div className="absolute -top-4 -left-4 w-full h-full border-2 border-vandora-gold rounded-lg z-0" />
+            <img 
+              src="https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?q=80&w=1000&auto=format&fit=crop" 
+              alt="Fundadora Vandora" 
+              className="relative z-10 rounded-lg shadow-2xl w-full h-[500px] object-cover grayscale hover:grayscale-0 transition-all duration-500"
+            />
+          </div>
+          <div>
+            <h2 className="font-serif text-4xl mb-6 text-vandora-gold">De la Calle a la Vitrina</h2>
+            <p className="text-gray-200 mb-6 leading-relaxed">
+              Vandora nació del sueño de una mujer que entendió que el verdadero lujo es la libertad de ser una misma. 
+              Cada prenda está diseñada pensando en la mujer ecuatoriana: fuerte, diversa y llena de ambición.
+            </p>
+            <p className="text-gray-200 mb-8 leading-relaxed">
+              Únete a nuestra comunidad de "Mujeres que Florecen". Comparte tu historia y viste con el orgullo de quien ha luchado por cada logro.
+            </p>
+            <Link 
+              to="/story" 
+              className="inline-block border border-vandora-gold text-vandora-gold px-6 py-3 rounded hover:bg-vandora-gold hover:text-vandora-emerald transition-colors uppercase tracking-wider text-sm"
+            >
+              Leer Nuestra Historia
+            </Link>
+          </div>
+        </div>
+      </section>
+    </div>
+  );
+};
+
+export default HomePage;

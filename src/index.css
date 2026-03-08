@@ -1,0 +1,41 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400&display=swap');
+@import "tailwindcss";
+
+@theme {
+  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
+  --font-serif: "Playfair Display", ui-serif, Georgia, serif;
+
+  --color-vandora-emerald: #064e3b;
+  --color-vandora-gold: #d4af37;
+  --color-vandora-cream: #fdfbf7;
+  --color-vandora-rose: #dcae96;
+  --color-vandora-black: #1a1a1a;
+}
+
+:root {
+  --vandora-emerald: #064e3b;
+  --vandora-gold: #d4af37;
+  --vandora-cream: #fdfbf7;
+  --vandora-rose: #dcae96;
+}
+
+body {
+  background-color: var(--vandora-cream);
+  color: var(--vandora-black);
+  font-family: var(--font-sans);
+}
+
+h1, h2, h3, h4, h5, h6 {
+  font-family: var(--font-serif);
+}
+
+/* Hide scrollbar for Chrome, Safari and Opera */
+.hide-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
+/* Hide scrollbar for IE, Edge and Firefox */
+.hide-scrollbar {
+  -ms-overflow-style: none;  /* IE and Edge */
+  scrollbar-width: none;  /* Firefox */
+}
