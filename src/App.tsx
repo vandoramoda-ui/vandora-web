@@ -42,22 +42,22 @@ function App() {
           <Routes>
             {/* Public Routes with Layout */}
             <Route path="/" element={<Layout><HomePage /></Layout>} />
-            <Route path="/shop" element={<Layout><ShopPage /></Layout>} />
-            <Route path="/product/:id" element={<Layout><ProductDetailPage /></Layout>} />
-            <Route path="/checkout" element={<Layout><CheckoutPage /></Layout>} />
-            <Route path="/thank-you" element={<Layout><ThankYouPage /></Layout>} />
-            <Route path="/story" element={<Layout><StoryPage /></Layout>} />
-            <Route path="/contact" element={<Layout><ContactPage /></Layout>} />
-            <Route path="/faq" element={<Layout><FAQPage /></Layout>} />
-            <Route path="/shipping" element={<Layout><ShippingPage /></Layout>} />
-            <Route path="/track-order" element={<Layout><OrderTrackingPage /></Layout>} />
+            <Route path="/tienda" element={<Layout><ShopPage /></Layout>} />
+            <Route path="/producto/:categoria/:slug" element={<Layout><ProductDetailPage /></Layout>} />
+            <Route path="/pagar" element={<Layout><CheckoutPage /></Layout>} />
+            <Route path="/gracias" element={<Layout><ThankYouPage /></Layout>} />
+            <Route path="/nuestra-historia" element={<Layout><StoryPage /></Layout>} />
+            <Route path="/contacto" element={<Layout><ContactPage /></Layout>} />
+            <Route path="/preguntas-frecuentes" element={<Layout><FAQPage /></Layout>} />
+            <Route path="/envio" element={<Layout><ShippingPage /></Layout>} />
+            <Route path="/rastrear-pedido" element={<Layout><OrderTrackingPage /></Layout>} />
             <Route path="/mi-cuenta" element={<Layout><MyAccountPage /></Layout>} />
             <Route path="/upsell" element={<UpsellPage />} />
             <Route path="/downsell" element={<DownsellPage />} />
 
             {/* Standalone Routes */}
-            <Route path="/login" element={<LoginPage />} />
-            <Route path="/admin" element={<AdminPage />} />
+            <Route path="/iniciar-sesion" element={<LoginPage />} />
+            <Route path="/administracion" element={<AdminPage />} />
           </Routes>
         </Router>
       </CartProvider>

@@ -14,7 +14,7 @@ interface ProductCardProps {
 
 const ProductCard: React.FC<ProductCardProps> = ({ id, name, price, image, category, colors }) => {
   return (
-    <motion.div 
+    <motion.div
       whileHover={{ y: -5 }}
       className="group relative"
     >
@@ -29,7 +29,7 @@ const ProductCard: React.FC<ProductCardProps> = ({ id, name, price, image, categ
       <div className="mt-4 flex justify-between">
         <div>
           <h3 className="text-sm text-gray-700 font-medium">
-            <Link to={`/product/${id}`}>
+            <Link to={`/producto/${category.toLowerCase()}/${name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '')}`}>
               <span aria-hidden="true" className="absolute inset-0" />
               {name}
             </Link>
@@ -38,7 +38,7 @@ const ProductCard: React.FC<ProductCardProps> = ({ id, name, price, image, categ
           {colors && colors.length > 0 && (
             <div className="flex gap-1 mt-2">
               {colors.map((color, idx) => (
-                <div 
+                <div
                   key={idx}
                   className="w-4 h-4 rounded-full border border-gray-200 shadow-sm"
                   style={{ backgroundColor: color.code }}

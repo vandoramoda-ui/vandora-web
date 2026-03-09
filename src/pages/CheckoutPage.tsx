@@ -65,7 +65,7 @@ const CheckoutPage = () => {
   const navigate = useNavigate();
   const [settings, setSettings] = useState<CheckoutSettings>(DEFAULT_SETTINGS);
   const [loadingSettings, setLoadingSettings] = useState(true);
-  
+
   const [formData, setFormData] = useState({
     email: '',
     firstName: '',
@@ -79,16 +79,15 @@ const CheckoutPage = () => {
     reference: '',
     postalCode: '',
     phone: '',
-    paymentMethod: '', // Start empty to force selection after location
-    selectedBank: '' // For bank transfer
+    paymentMethod: '',
+    selectedBank: ''
   });
 
   const [cities, setCities] = useState<string[]>([]);
   const [shippingCost, setShippingCost] = useState(5.00);
   const [isCodAvailable, setIsCodAvailable] = useState(false);
   const [showPaymentMethods, setShowPaymentMethods] = useState(false);
-  
-  // Order Bump State
+
   const [bumpProduct, setBumpProduct] = useState<any>(null);
   const [isBumpAccepted, setIsBumpAccepted] = useState(false);
 
@@ -100,7 +99,7 @@ const CheckoutPage = () => {
           .select('value')
           .eq('key', 'checkout_config')
           .single();
-        
+
         if (data) {
           setSettings({ ...DEFAULT_SETTINGS, ...data.value });
         }
@@ -113,11 +112,9 @@ const CheckoutPage = () => {
     fetchSettings();
   }, []);
 
-  // Fetch Order Bump Product (with Mock Fallback)
   useEffect(() => {
     const fetchBumpProduct = async () => {
       if (items.length > 0) {
-        // Mock Bump Product for Demo
         const mockBump = {
           id: 'bump-1',
           name: 'Cinturón de Cuero Edición Limitada',
@@ -127,7 +124,6 @@ const CheckoutPage = () => {
           images: [{ url: 'https://images.unsplash.com/photo-1553062407-98eeb64c6a62?q=80&w=200', color: 'Único' }]
         };
 
-        // Try to fetch real bump product if configured
         try {
           const { data: mainProduct } = await supabase
             .from('products')
@@ -141,7 +137,7 @@ const CheckoutPage = () => {
               .select('*')
               .eq('id', mainProduct.order_bump_product_id)
               .single();
-            
+
             if (bump && !items.find(i => i.id === bump.id)) {
               setBumpProduct(bump);
               return;
@@ -151,7 +147,6 @@ const CheckoutPage = () => {
           console.error("Error fetching real bump product", e);
         }
 
-        // Fallback to mock if no real bump found and not in cart
         if (!items.find(i => i.id === mockBump.id)) {
           setBumpProduct(mockBump);
         }
@@ -160,13 +155,11 @@ const CheckoutPage = () => {
     fetchBumpProduct();
   }, [items]);
 
-  // Update shipping cost and COD availability when city/total changes
   useEffect(() => {
     if (!loadingSettings) {
-      // Free shipping logic
       let cost = 5.00;
       const currentTotal = total + (isBumpAccepted && bumpProduct ? bumpProduct.price : 0);
-      
+
       if (currentTotal >= settings.shippingRules.freeShippingThreshold) {
         cost = 0;
       } else if (settings.shippingRules.freeShippingCities.includes(formData.city)) {
@@ -174,23 +167,18 @@ const CheckoutPage = () => {
       }
       setShippingCost(cost);
 
-      // COD Availability Logic
       const canCod = settings.shippingRules.codCities.length === 0 || settings.shippingRules.codCities.includes(formData.city);
       setIsCodAvailable(canCod);
-      
-      // Show payment methods only if city is selected
       setShowPaymentMethods(!!formData.city);
 
-      // Auto-select payment method if only one is available
       const availableMethods = [];
       if (settings.paymentMethods.transfer) availableMethods.push('transfer');
       if (settings.paymentMethods.cash && canCod) availableMethods.push('cash');
-      
+
       if (availableMethods.length === 1 && !formData.paymentMethod) {
         setFormData(prev => ({ ...prev, paymentMethod: availableMethods[0] }));
       }
 
-      // Reset payment method if COD is selected but no longer available
       if (formData.paymentMethod === 'cash' && !canCod) {
         setFormData(prev => ({ ...prev, paymentMethod: '' }));
       }
@@ -201,7 +189,7 @@ const CheckoutPage = () => {
     const province = e.target.value;
     const location = ecuadorLocations.find(loc => loc.province === province);
     setCities(location ? location.cities : []);
-    setFormData({ ...formData, province, city: '', paymentMethod: '' }); // Reset city and payment
+    setFormData({ ...formData, province, city: '', paymentMethod: '' });
   };
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
@@ -209,9 +197,9 @@ const CheckoutPage = () => {
     setFormData({ ...formData, [name]: value });
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!formData.paymentMethod) {
       alert('Por favor selecciona un método de pago.');
       return;
@@ -221,48 +209,71 @@ const CheckoutPage = () => {
       alert('Por favor selecciona un banco para realizar la transferencia.');
       return;
     }
-    
+
     const finalItems = [...items];
     if (isBumpAccepted && bumpProduct) {
       finalItems.push({
         id: bumpProduct.id,
         name: bumpProduct.name,
         price: bumpProduct.price,
-        image: bumpProduct.images?.[0]?.url || bumpProduct.image, // Handle new image structure
+        image: bumpProduct.images?.[0]?.url || bumpProduct.image,
         quantity: 1,
         size: 'Única',
         color: 'Único'
       });
     }
 
-    const finalTotal = total + (isBumpAccepted && bumpProduct ? bumpProduct.price : 0);
+    const currentTotal = total + (isBumpAccepted && bumpProduct ? bumpProduct.price : 0);
 
-    const order = {
+    const orderData = {
       items: finalItems,
-      total: finalTotal + shippingCost,
-      shippingCost,
-      customer: formData,
-      paymentMethod: formData.paymentMethod,
-      bank: formData.selectedBank, // Include selected bank
-      date: new Date().toISOString()
+      total: currentTotal + shippingCost,
+      shipping_cost: shippingCost,
+      payment_method: formData.paymentMethod,
+      bank: formData.selectedBank,
+      customer_name: `${formData.firstName} ${formData.lastName}`,
+      customer_email: formData.email,
+      customer_phone: formData.phone,
+      address: `${formData.address}${formData.apartment ? ', ' + formData.apartment : ''}, ${formData.sector}, ${formData.city}, ${formData.province}`,
+      province: formData.province,
+      city: formData.city,
+      status: 'Pendiente',
+      created_at: new Date().toISOString()
     };
 
-    // Here you would send the order to Supabase
-    console.log('Order submitted:', order);
-    
-    clearCart();
-    // Navigate to Upsell instead of Thank You
-    navigate('/upsell', { state: { order } });
-  };
+    try {
+      const { data: orderResult, error: orderError } = await supabase
+        .from('orders')
+        .insert([orderData])
+        .select()
+        .single();
 
-  const finalTotal = total + (isBumpAccepted && bumpProduct ? bumpProduct.price : 0);
+      if (orderError) throw orderError;
+
+      const { data: existingProfile } = await supabase
+        .from('profiles')
+        .select('id')
+        .eq('email_notifications', formData.email)
+        .single();
+
+      if (!existingProfile) {
+        // Optional: create guest profile or user record
+      }
+
+      clearCart();
+      navigate('/upsell', { state: { order: orderResult } });
+    } catch (err: any) {
+      console.error('Error saving order:', err);
+      alert('Hubo un problema al procesar tu pedido. Por favor intenta de nuevo.');
+    }
+  };
 
   if (items.length === 0) {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center bg-gray-50">
         <h2 className="text-2xl font-serif text-gray-900 mb-4">Tu carrito está vacío</h2>
-        <button 
-          onClick={() => navigate('/shop')}
+        <button
+          onClick={() => navigate('/tienda')}
           className="text-vandora-emerald hover:underline"
         >
           Volver a la tienda
@@ -278,9 +289,8 @@ const CheckoutPage = () => {
   return (
     <div className="bg-gray-50 min-h-screen py-8 px-4 sm:px-6 lg:px-8">
       <SEO title="Finalizar Compra" description="Completa tu pedido de forma segura." />
-      
+
       <div className="max-w-7xl mx-auto">
-        {/* Trust Header */}
         <div className="flex justify-center mb-8 space-x-8 text-sm text-gray-500">
           <div className="flex items-center"><Lock className="w-4 h-4 mr-1 text-green-600" /> Pago Seguro</div>
           <div className="flex items-center"><Truck className="w-4 h-4 mr-1 text-green-600" /> Envío Garantizado</div>
@@ -288,7 +298,6 @@ const CheckoutPage = () => {
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-5 gap-12">
-          {/* Order Summary (Right on Desktop) */}
           <div className="lg:col-span-2">
             <div className="bg-white rounded-lg shadow-sm p-6 sticky top-24 border border-gray-100">
               <h2 className="text-lg font-medium text-gray-900 mb-4">Resumen del Pedido</h2>
@@ -319,7 +328,7 @@ const CheckoutPage = () => {
                   ))}
                 </ul>
               </div>
-              
+
               <div className="border-t border-gray-200 mt-6 pt-6 space-y-4">
                 <div className="flex items-center justify-between">
                   <p className="text-sm text-gray-600">Subtotal</p>
@@ -331,8 +340,7 @@ const CheckoutPage = () => {
                     {shippingCost === 0 ? <span className="text-green-600">GRATIS</span> : formatPrice(shippingCost)}
                   </p>
                 </div>
-                
-                {/* Free Shipping Progress Bar */}
+
                 {shippingCost > 0 && (
                   <div className="bg-blue-50 p-3 rounded-md text-xs text-blue-700 flex items-center">
                     <AlertCircle className="w-4 h-4 mr-2" />
@@ -342,16 +350,14 @@ const CheckoutPage = () => {
 
                 <div className="flex items-center justify-between border-t border-gray-200 pt-4">
                   <p className="text-xl font-bold text-gray-900">Total</p>
-                  <p className="text-xl font-bold text-vandora-emerald">{formatPrice(total + shippingCost)}</p>
+                  <p className="text-xl font-bold text-vandora-emerald">{formatPrice(total + (isBumpAccepted && bumpProduct ? bumpProduct.price : 0) + shippingCost)}</p>
                 </div>
               </div>
             </div>
           </div>
 
-          {/* Checkout Form */}
           <div className="lg:col-span-3">
             <form onSubmit={handleSubmit} className="space-y-8">
-              {/* Contact */}
               <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-100">
                 <div className="flex items-center justify-between mb-4">
                   <h2 className="text-lg font-medium text-gray-900">Contacto</h2>
@@ -395,7 +401,6 @@ const CheckoutPage = () => {
                 </div>
               </div>
 
-              {/* Shipping */}
               <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-100">
                 <div className="flex items-center justify-between mb-4">
                   <h2 className="text-lg font-medium text-gray-900">Dirección de Envío</h2>
@@ -429,23 +434,6 @@ const CheckoutPage = () => {
                         id="lastName"
                         required={settings.fields.lastName.required}
                         value={formData.lastName}
-                        onChange={handleInputChange}
-                        className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-vandora-emerald focus:ring-vandora-emerald sm:text-sm p-3 border"
-                      />
-                    </div>
-                  )}
-
-                  {settings.fields.company.enabled && (
-                    <div className="sm:col-span-2">
-                      <label htmlFor="company" className="block text-sm font-medium text-gray-700">
-                        {settings.fields.company.label} {settings.fields.company.required && '*'}
-                      </label>
-                      <input
-                        type="text"
-                        name="company"
-                        id="company"
-                        required={settings.fields.company.required}
-                        value={formData.company}
                         onChange={handleInputChange}
                         className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-vandora-emerald focus:ring-vandora-emerald sm:text-sm p-3 border"
                       />
@@ -531,23 +519,6 @@ const CheckoutPage = () => {
                     </div>
                   )}
 
-                  {settings.fields.address2.enabled && (
-                    <div className="sm:col-span-2">
-                      <label htmlFor="apartment" className="block text-sm font-medium text-gray-700">
-                        {settings.fields.address2.label} {settings.fields.address2.required && '*'}
-                      </label>
-                      <input
-                        type="text"
-                        name="apartment"
-                        id="apartment"
-                        required={settings.fields.address2.required}
-                        value={formData.apartment}
-                        onChange={handleInputChange}
-                        className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-vandora-emerald focus:ring-vandora-emerald sm:text-sm p-3 border"
-                      />
-                    </div>
-                  )}
-
                   {settings.fields.reference.enabled && (
                     <div className="sm:col-span-2">
                       <label htmlFor="reference" className="block text-sm font-medium text-gray-700">
@@ -565,27 +536,9 @@ const CheckoutPage = () => {
                       />
                     </div>
                   )}
-
-                  {settings.fields.postalCode.enabled && (
-                    <div>
-                      <label htmlFor="postalCode" className="block text-sm font-medium text-gray-700">
-                        {settings.fields.postalCode.label} {settings.fields.postalCode.required && '*'}
-                      </label>
-                      <input
-                        type="text"
-                        name="postalCode"
-                        id="postalCode"
-                        required={settings.fields.postalCode.required}
-                        value={formData.postalCode}
-                        onChange={handleInputChange}
-                        className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-vandora-emerald focus:ring-vandora-emerald sm:text-sm p-3 border"
-                      />
-                    </div>
-                  )}
                 </div>
               </div>
 
-              {/* Payment */}
               {showPaymentMethods ? (
                 <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-100 animate-fade-in">
                   <div className="flex items-center justify-between mb-4">
@@ -594,8 +547,8 @@ const CheckoutPage = () => {
                   </div>
                   <div className="space-y-4">
                     {settings.paymentMethods.transfer && (
-                      <div 
-                        className={`border rounded-lg p-4 cursor-pointer transition-all ${formData.paymentMethod === 'transfer' ? 'border-vandora-emerald bg-emerald-50 ring-1 ring-vandora-emerald' : 'border-gray-200 hover:border-gray-300'}`} 
+                      <div
+                        className={`border rounded-lg p-4 cursor-pointer transition-all ${formData.paymentMethod === 'transfer' ? 'border-vandora-emerald bg-emerald-50 ring-1 ring-vandora-emerald' : 'border-gray-200 hover:border-gray-300'}`}
                         onClick={() => setFormData({ ...formData, paymentMethod: 'transfer' })}
                       >
                         <div className="flex items-center">
@@ -614,7 +567,7 @@ const CheckoutPage = () => {
                         </div>
                         {formData.paymentMethod === 'transfer' && (
                           <div className="mt-3 ml-7">
-                            <p className="text-sm text-gray-600 mb-2">Selecciona un banco para ver los datos:</p>
+                            <p className="text-sm text-gray-600 mb-2">Selecciona un banco:</p>
                             <select
                               name="selectedBank"
                               value={formData.selectedBank}
@@ -627,7 +580,6 @@ const CheckoutPage = () => {
                                 <option key={idx} value={bank.name}>{bank.name}</option>
                               ))}
                             </select>
-                            {/* Bank details hidden as per request */}
                             {formData.selectedBank && (
                               <p className="mt-2 text-xs text-gray-500 italic">
                                 Los datos de la cuenta se enviarán a tu correo y WhatsApp al confirmar el pedido.
@@ -637,10 +589,10 @@ const CheckoutPage = () => {
                         )}
                       </div>
                     )}
-                    
+
                     {settings.paymentMethods.cash && isCodAvailable && (
-                      <div 
-                        className={`border rounded-lg p-4 cursor-pointer transition-all ${formData.paymentMethod === 'cash' ? 'border-vandora-emerald bg-emerald-50 ring-1 ring-vandora-emerald' : 'border-gray-200 hover:border-gray-300'}`} 
+                      <div
+                        className={`border rounded-lg p-4 cursor-pointer transition-all ${formData.paymentMethod === 'cash' ? 'border-vandora-emerald bg-emerald-50 ring-1 ring-vandora-emerald' : 'border-gray-200 hover:border-gray-300'}`}
                         onClick={() => setFormData({ ...formData, paymentMethod: 'cash' })}
                       >
                         <div className="flex items-center justify-between">
@@ -661,15 +613,6 @@ const CheckoutPage = () => {
                         </div>
                       </div>
                     )}
-
-                    {settings.paymentMethods.card && (
-                       <div className="border rounded-lg p-4 border-gray-200 opacity-60">
-                          <div className="flex items-center">
-                            <input disabled type="radio" className="h-4 w-4 text-gray-300" />
-                            <label className="ml-3 block text-sm font-medium text-gray-400">Tarjeta de Crédito (Próximamente)</label>
-                          </div>
-                       </div>
-                    )}
                   </div>
                 </div>
               ) : (
@@ -678,7 +621,6 @@ const CheckoutPage = () => {
                 </div>
               )}
 
-              {/* Order Bump */}
               {bumpProduct && (
                 <div className="bg-yellow-50 border-2 border-yellow-400 border-dashed rounded-lg p-4 animate-pulse">
                   <div className="flex items-start">
@@ -689,22 +631,10 @@ const CheckoutPage = () => {
                       className="h-5 w-5 text-vandora-emerald border-gray-300 rounded mt-1 focus:ring-vandora-emerald"
                     />
                     <div className="ml-3">
-                      <h3 className="text-sm font-bold text-gray-900 uppercase text-red-600">
-                        ¡OFERTA ÚNICA! 🔥
-                      </h3>
+                      <h3 className="text-sm font-bold text-gray-900 uppercase text-red-600">¡OFERTA ÚNICA! 🔥</h3>
                       <p className="text-sm font-medium text-gray-900">
-                        Agrega <span className="font-bold">{bumpProduct.name}</span> a tu orden por solo <span className="text-green-600 font-bold">{formatPrice(bumpProduct.price)}</span>
+                        Agrega <span className="font-bold">{bumpProduct.name}</span> por <span className="text-green-600 font-bold">{formatPrice(bumpProduct.price)}</span>
                       </p>
-                      <div className="flex gap-4 mt-2">
-                        <img 
-                          src={bumpProduct.images?.[0]?.url || bumpProduct.image} 
-                          alt={bumpProduct.name} 
-                          className="w-16 h-16 object-cover rounded border border-gray-200"
-                        />
-                        <p className="text-xs text-gray-600 flex-1">
-                          {bumpProduct.description?.substring(0, 80)}... <span className="underline">Añadir a mi pedido</span>
-                        </p>
-                      </div>
                     </div>
                   </div>
                 </div>
@@ -715,12 +645,8 @@ const CheckoutPage = () => {
                 className="w-full bg-vandora-emerald text-white py-4 px-8 rounded-md hover:bg-emerald-800 transition-colors font-medium text-lg shadow-lg flex items-center justify-center"
               >
                 <CheckCircle className="w-5 h-5 mr-2" />
-                Confirmar Pedido - {formatPrice(finalTotal + shippingCost)}
+                Confirmar Pedido - {formatPrice(total + (isBumpAccepted && bumpProduct ? bumpProduct.price : 0) + shippingCost)}
               </button>
-              
-              <p className="text-center text-xs text-gray-500 mt-4">
-                Al confirmar tu pedido, aceptas nuestros términos y condiciones.
-              </p>
             </form>
           </div>
         </div>

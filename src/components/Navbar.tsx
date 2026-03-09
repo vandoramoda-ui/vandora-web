@@ -69,19 +69,19 @@ const Navbar = () => {
           >
             <div className="px-4 pt-4 pb-6 space-y-2">
               <Link to="/" onClick={toggleMenu} className="block px-3 py-3 rounded-md text-base font-medium text-gray-800 hover:text-vandora-emerald hover:bg-gray-50 transition-colors">INICIO</Link>
-              <Link to="/shop" onClick={toggleMenu} className="block px-3 py-3 rounded-md text-base font-medium text-gray-800 hover:text-vandora-emerald hover:bg-gray-50 transition-colors">TIENDA</Link>
-              <Link to="/story" onClick={toggleMenu} className="block px-3 py-3 rounded-md text-base font-medium text-gray-800 hover:text-vandora-emerald hover:bg-gray-50 transition-colors">HISTORIA</Link>
-              <Link to="/contact" onClick={toggleMenu} className="block px-3 py-3 rounded-md text-base font-medium text-gray-800 hover:text-vandora-emerald hover:bg-gray-50 transition-colors">CONTACTO</Link>
-              <Link to="/track-order" onClick={toggleMenu} className="block px-3 py-3 rounded-md text-base font-medium text-gray-800 hover:text-vandora-emerald hover:bg-gray-50 transition-colors">RASTREAR PEDIDO</Link>
+              <Link to="/tienda" onClick={toggleMenu} className="block px-3 py-3 rounded-md text-base font-medium text-gray-800 hover:text-vandora-emerald hover:bg-gray-50 transition-colors">TIENDA</Link>
+              <Link to="/nuestra-historia" onClick={toggleMenu} className="block px-3 py-3 rounded-md text-base font-medium text-gray-800 hover:text-vandora-emerald hover:bg-gray-50 transition-colors">HISTORIA</Link>
+              <Link to="/contacto" onClick={toggleMenu} className="block px-3 py-3 rounded-md text-base font-medium text-gray-800 hover:text-vandora-emerald hover:bg-gray-50 transition-colors">CONTACTO</Link>
+              <Link to="/rastrear-pedido" onClick={toggleMenu} className="block px-3 py-3 rounded-md text-base font-medium text-gray-800 hover:text-vandora-emerald hover:bg-gray-50 transition-colors">RASTREAR PEDIDO</Link>
               <div className="border-t border-gray-100 my-2 pt-2">
                 {!user ? (
-                  <Link to="/login" onClick={toggleMenu} className="flex items-center px-3 py-3 rounded-md text-base font-medium text-gray-600 hover:text-vandora-emerald hover:bg-gray-50 transition-colors">
+                  <Link to="/iniciar-sesion" onClick={toggleMenu} className="flex items-center px-3 py-3 rounded-md text-base font-medium text-gray-600 hover:text-vandora-emerald hover:bg-gray-50 transition-colors">
                     <User className="h-5 w-5 mr-3" /> INICIAR SESIÓN
                   </Link>
                 ) : (
                   <>
                     {(profile?.role === 'admin' || profile?.role === 'Administrador' || profile?.role === 'Editor') ? (
-                      <Link to="/admin" onClick={toggleMenu} className="flex items-center px-3 py-3 rounded-md text-base font-medium text-vandora-emerald bg-emerald-50 hover:bg-emerald-100 transition-colors mb-2">
+                      <Link to="/administracion" onClick={toggleMenu} className="flex items-center px-3 py-3 rounded-md text-base font-medium text-vandora-emerald bg-emerald-50 hover:bg-emerald-100 transition-colors mb-2">
                         <Settings className="h-5 w-5 mr-3" /> PANEL ADMINISTRADOR
                       </Link>
                     ) : (
