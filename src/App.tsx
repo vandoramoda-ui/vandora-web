@@ -6,6 +6,7 @@
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route, useLocation } from 'react-router-dom';
 import { CartProvider } from './context/CartContext';
+import { AuthProvider } from './context/AuthContext';
 import Layout from './components/Layout';
 import HomePage from './pages/HomePage';
 import ShopPage from './pages/ShopPage';
@@ -13,6 +14,7 @@ import ProductDetailPage from './pages/ProductDetailPage';
 import CheckoutPage from './pages/CheckoutPage';
 import LoginPage from './pages/LoginPage';
 import AdminPage from './pages/AdminPage';
+import MyAccountPage from './pages/MyAccountPage';
 import StoryPage from './pages/StoryPage';
 import ContactPage from './pages/ContactPage';
 import FAQPage from './pages/FAQPage';
@@ -33,30 +35,33 @@ const ScrollToTop = () => {
 
 function App() {
   return (
-    <CartProvider>
-      <Router>
-        <ScrollToTop />
-        <Routes>
-          {/* Public Routes with Layout */}
-          <Route path="/" element={<Layout><HomePage /></Layout>} />
-          <Route path="/shop" element={<Layout><ShopPage /></Layout>} />
-          <Route path="/product/:id" element={<Layout><ProductDetailPage /></Layout>} />
-          <Route path="/checkout" element={<Layout><CheckoutPage /></Layout>} />
-          <Route path="/thank-you" element={<Layout><ThankYouPage /></Layout>} />
-          <Route path="/story" element={<Layout><StoryPage /></Layout>} />
-          <Route path="/contact" element={<Layout><ContactPage /></Layout>} />
-          <Route path="/faq" element={<Layout><FAQPage /></Layout>} />
-          <Route path="/shipping" element={<Layout><ShippingPage /></Layout>} />
-          <Route path="/track-order" element={<Layout><OrderTrackingPage /></Layout>} />
-          <Route path="/upsell" element={<UpsellPage />} />
-          <Route path="/downsell" element={<DownsellPage />} />
+    <AuthProvider>
+      <CartProvider>
+        <Router>
+          <ScrollToTop />
+          <Routes>
+            {/* Public Routes with Layout */}
+            <Route path="/" element={<Layout><HomePage /></Layout>} />
+            <Route path="/shop" element={<Layout><ShopPage /></Layout>} />
+            <Route path="/product/:id" element={<Layout><ProductDetailPage /></Layout>} />
+            <Route path="/checkout" element={<Layout><CheckoutPage /></Layout>} />
+            <Route path="/thank-you" element={<Layout><ThankYouPage /></Layout>} />
+            <Route path="/story" element={<Layout><StoryPage /></Layout>} />
+            <Route path="/contact" element={<Layout><ContactPage /></Layout>} />
+            <Route path="/faq" element={<Layout><FAQPage /></Layout>} />
+            <Route path="/shipping" element={<Layout><ShippingPage /></Layout>} />
+            <Route path="/track-order" element={<Layout><OrderTrackingPage /></Layout>} />
+            <Route path="/mi-cuenta" element={<Layout><MyAccountPage /></Layout>} />
+            <Route path="/upsell" element={<UpsellPage />} />
+            <Route path="/downsell" element={<DownsellPage />} />
 
-          {/* Standalone Routes */}
-          <Route path="/login" element={<LoginPage />} />
-          <Route path="/admin" element={<AdminPage />} />
-        </Routes>
-      </Router>
-    </CartProvider>
+            {/* Standalone Routes */}
+            <Route path="/login" element={<LoginPage />} />
+            <Route path="/admin" element={<AdminPage />} />
+          </Routes>
+        </Router>
+      </CartProvider>
+    </AuthProvider>
   );
 }
 

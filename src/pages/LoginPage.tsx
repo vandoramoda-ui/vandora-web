@@ -6,6 +6,7 @@ import SEO from '../components/SEO';
 
 const LoginPage = () => {
   const [isLogin, setIsLogin] = useState(true);
+  const [isForgotPassword, setIsForgotPassword] = useState(false);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [fullName, setFullName] = useState('');
@@ -21,7 +22,14 @@ const LoginPage = () => {
     setMessage(null);
 
     try {
-      if (isLogin) {
+      if (isForgotPassword) {
+        const { error } = await supabase.auth.resetPasswordForEmail(email, {
+          redirectTo: window.location.origin + '/login',
+        });
+        if (error) throw error;
+        setMessage('Te hemos enviado un enlace para restablecer tu contraseña. Por favor, revisa tu correo electrónico.');
+        setTimeout(() => setIsForgotPassword(false), 5000);
+      } else if (isLogin) {
         const { data, error } = await supabase.auth.signInWithPassword({
           email,
           password,
@@ -53,14 +61,16 @@ const LoginPage = () => {
 
   return (
     <div className="min-h-screen bg-vandora-cream flex items-center justify-center px-4 py-12">
-      <SEO title="Iniciar Sesión" description="Ingresa o regístrate en Vandora" />
+      <SEO title={isForgotPassword ? "Recuperar Contraseña" : "Iniciar Sesión"} description="Ingresa o regístrate en Vandora" />
       <div className="max-w-md w-full bg-white rounded-lg shadow-xl p-8">
         <div className="text-center mb-8">
           <h1 className="font-serif text-3xl text-vandora-emerald mb-2">
-            {isLogin ? 'Bienvenida a Vandora' : 'Únete a Vandora'}
+            {isForgotPassword ? 'Recuperar Contraseña' : (isLogin ? 'Bienvenida a Vandora' : 'Únete a Vandora')}
           </h1>
           <p className="text-gray-500">
-            {isLogin ? 'Ingresa a tu cuenta para continuar' : 'Crea una cuenta y forma parte de nuestra comunidad'}
+            {isForgotPassword
+              ? 'Ingresa tu correo para enviarte un enlace de recuperación'
+              : (isLogin ? 'Ingresa a tu cuenta para continuar' : 'Crea una cuenta y forma parte de nuestra comunidad')}
           </p>
         </div>
 
@@ -77,12 +87,12 @@ const LoginPage = () => {
         )}
 
         <form onSubmit={handleAuth} className="space-y-6">
-          {!isLogin && (
+          {!isLogin && !isForgotPassword && (
             <div>
               <label className="block text-sm font-medium text-gray-700">Nombre Completo</label>
               <input
                 type="text"
-                required={!isLogin}
+                required={!isLogin && !isForgotPassword}
                 value={fullName}
                 onChange={(e) => setFullName(e.target.value)}
                 className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-vandora-emerald focus:ring-vandora-emerald p-2 border"
@@ -101,42 +111,72 @@ const LoginPage = () => {
             />
           </div>
 
-          <div>
-            <label className="block text-sm font-medium text-gray-700">Contraseña</label>
-            <input
-              type="password"
-              required
-              minLength={6}
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-vandora-emerald focus:ring-vandora-emerald p-2 border"
-            />
-            {!isLogin && <p className="text-xs text-gray-500 mt-1">Mínimo 6 caracteres</p>}
-          </div>
+          {!isForgotPassword && (
+            <div>
+              <div className="flex justify-between items-center">
+                <label className="block text-sm font-medium text-gray-700">Contraseña</label>
+                {isLogin && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setIsForgotPassword(true);
+                      setError(null);
+                      setMessage(null);
+                    }}
+                    className="text-xs text-vandora-emerald hover:text-emerald-800 focus:outline-none underline"
+                  >
+                    ¿Olvidaste tu contraseña?
+                  </button>
+                )}
+              </div>
+              <input
+                type="password"
+                required={!isForgotPassword}
+                minLength={6}
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-vandora-emerald focus:ring-vandora-emerald p-2 border"
+              />
+              {!isLogin && <p className="text-xs text-gray-500 mt-1">Mínimo 6 caracteres</p>}
+            </div>
+          )}
 
           <button
             type="submit"
             disabled={loading}
             className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-vandora-emerald hover:bg-emerald-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-vandora-emerald disabled:opacity-50 transition-colors"
           >
-            {loading ? <Loader2 className="animate-spin h-5 w-5" /> : (isLogin ? 'Ingresar' : 'Registrarse')}
+            {loading ? <Loader2 className="animate-spin h-5 w-5" /> : (isForgotPassword ? 'Enviar Enlace' : (isLogin ? 'Ingresar' : 'Registrarse'))}
           </button>
         </form>
 
         <div className="mt-6 text-center">
-          <p className="text-sm text-gray-600">
-            {isLogin ? '¿No tienes cuenta?' : '¿Ya tienes cuenta?'}{' '}
+          {isForgotPassword ? (
             <button
               onClick={() => {
-                setIsLogin(!isLogin);
+                setIsForgotPassword(false);
                 setError(null);
                 setMessage(null);
               }}
-              className="font-medium text-vandora-emerald hover:text-emerald-800 underline focus:outline-none"
+              className="text-sm font-medium text-gray-600 flex items-center justify-center w-full hover:text-vandora-emerald focus:outline-none"
             >
-              {isLogin ? 'Regístrate aquí' : 'Inicia sesión'}
+              &larr; Volver a iniciar sesión
             </button>
-          </p>
+          ) : (
+            <p className="text-sm text-gray-600">
+              {isLogin ? '¿No tienes cuenta?' : '¿Ya tienes cuenta?'}{' '}
+              <button
+                onClick={() => {
+                  setIsLogin(!isLogin);
+                  setError(null);
+                  setMessage(null);
+                }}
+                className="font-medium text-vandora-emerald hover:text-emerald-800 underline focus:outline-none"
+              >
+                {isLogin ? 'Regístrate aquí' : 'Inicia sesión'}
+              </button>
+            </p>
+          )}
         </div>
       </div>
     </div>

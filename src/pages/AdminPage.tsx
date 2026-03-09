@@ -19,21 +19,9 @@ const AdminPage = () => {
   const [selectedQuizId, setSelectedQuizId] = useState<string | null>(null);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
-  // Mock Data State (moved from render to state for editing)
-  const [orders, setOrders] = useState([
-    { id: '#ORD-001', userId: 4, customer: 'Maria Lopez', date: '2023-10-25', status: 'Completado', total: 125.00, email: 'maria@example.com', phone: '0991234567', address: 'Av. Amazonas y Naciones Unidas', notes: 'Entregar en portería', utm_source: 'google', utm_medium: 'cpc', utm_campaign: 'verano_2023' },
-    { id: '#ORD-002', userId: 2, customer: 'Juan Perez', date: '2023-10-24', status: 'Pendiente', total: 45.50, email: 'juan@example.com', phone: '0987654321', address: 'Calle Larga 123', notes: '', utm_source: 'facebook', utm_medium: 'social', utm_campaign: 'retargeting' },
-    { id: '#ORD-003', userId: 4, customer: 'Ana Silva', date: '2023-10-24', status: 'Enviado', total: 89.99, email: 'ana@example.com', phone: '0955555555', address: 'Sector Cumbayá', notes: 'Llamar antes de llegar', utm_source: 'direct', utm_medium: 'none', utm_campaign: 'none' },
-    { id: '#ORD-004', userId: 1, customer: 'Carlos Ruiz', date: '2023-10-23', status: 'Cancelado', total: 22.00, email: 'carlos@example.com', phone: '0911111111', address: 'Centro Histórico', notes: 'Cliente no contesta', utm_source: 'instagram', utm_medium: 'social', utm_campaign: 'influencer_promo' },
-    { id: '#ORD-005', userId: 2, customer: 'Sofia Castro', date: '2023-10-23', status: 'Completado', total: 210.00, email: 'sofia@example.com', phone: '0922222222', address: 'Condado Shopping', notes: '', utm_source: 'google', utm_medium: 'organic', utm_campaign: 'none' },
-  ]);
-
-  const [users, setUsers] = useState([
-    { id: 1, name: 'Admin User', email: 'admin@vandora.com', role: 'Administrador', status: 'Activo', lastLogin: 'Hace 2 minutos', loyaltyPoints: 0, notes: 'Superadmin', purchaseHistory: [] },
-    { id: 2, name: 'Editor Content', email: 'editor@vandora.com', role: 'Editor', status: 'Activo', lastLogin: 'Hace 1 hora', loyaltyPoints: 0, notes: 'Gestor de contenido', purchaseHistory: [] },
-    { id: 3, name: 'Support Staff', email: 'support@vandora.com', role: 'Soporte', status: 'Inactivo', lastLogin: 'Hace 3 días', loyaltyPoints: 0, notes: 'Soporte técnico', purchaseHistory: [] },
-    { id: 4, name: 'Cliente Demo', email: 'cliente@example.com', role: 'Cliente', status: 'Activo', lastLogin: 'Hace 10 minutos', loyaltyPoints: 150, notes: 'Cliente frecuente', purchaseHistory: [{ orderId: '#ORD-001', date: '2023-10-25', total: 125.00, status: 'Completado' }] },
-  ]);
+  // Live Data State
+  const [orders, setOrders] = useState<any[]>([]);
+  const [users, setUsers] = useState<any[]>([]);
 
   // Edit State for Orders and Users
   const [editingOrder, setEditingOrder] = useState<any>(null);
@@ -71,10 +59,37 @@ const AdminPage = () => {
   useEffect(() => {
     if (activeTab === 'products') {
       fetchProducts();
+    } else if (activeTab === 'orders') {
+      fetchOrders();
+    } else if (activeTab === 'users') {
+      fetchUsers();
     }
   }, [activeTab]);
 
-  // ... (keep existing useEffects for variants) ...
+  const fetchOrders = async () => {
+    const { data, error } = await supabase.from('orders').select('*').order('created_at', { ascending: false });
+    if (!error && data) {
+      setOrders(data);
+    }
+  };
+
+  const fetchUsers = async () => {
+    const { data, error } = await supabase.from('profiles').select('*').order('created_at', { ascending: false });
+    if (!error && data) {
+      // Map to local mock-like structure if needed or keep raw
+      const mapped = data.map((profile: any) => ({
+        id: profile.id,
+        name: profile.full_name || 'Desconocido',
+        email: profile.id, // Supabase doesn't return email in profiles by default on client, just ID. Wait, sometimes it's mapped.
+        // Actually we might not have raw email unless we query an RPC or have an `email` column in `profiles` (which we might).
+        // For visual, we can use id if email isn't there, or if we have it in profile.
+        role: profile.role || 'Cliente',
+        status: 'Activo',
+        loyaltyPoints: profile.loyalty_points || 0
+      }));
+      setUsers(mapped);
+    }
+  };
 
   const fetchProducts = async () => {
     setLoading(true);
@@ -90,18 +105,7 @@ const AdminPage = () => {
       }));
       setProducts(normalizedData);
     } else {
-      // Fallback mock data
-      setProducts([
-        {
-          id: '1',
-          name: 'Vestido Esmeralda Real',
-          category: 'Vestidos',
-          price: 85.00,
-          stock: 10,
-          images: [{ url: 'https://images.unsplash.com/photo-1595777457583-95e059d581b8?q=80&w=1000&auto=format&fit=crop' }]
-        },
-        // ...
-      ]);
+      setProducts([]); // Avoid fallback
     }
     setLoading(false);
   };
