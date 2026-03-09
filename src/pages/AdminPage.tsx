@@ -324,7 +324,16 @@ const AdminPage = () => {
                       <td className="px-6 py-4 text-right text-sm font-medium">
                         <button className="text-vandora-emerald hover:text-emerald-800 mr-4" onClick={() => {
                           setEditingProduct(product);
-                          setFormData({ ...product, price: product.price.toString(), stock: product.stock.toString() });
+                          setFormData({
+                            ...product,
+                            price: product.price.toString(),
+                            stock: product.stock.toString(),
+                            images: Array.isArray(product.images) ? product.images : [],
+                            videos: Array.isArray(product.videos) ? product.videos : [],
+                            sizes: Array.isArray(product.sizes) ? product.sizes : [],
+                            colors: Array.isArray(product.colors) ? product.colors : [],
+                            variants: Array.isArray(product.variants) ? product.variants : []
+                          });
                           setIsModalOpen(true);
                         }}><Edit className="h-4 w-4" /></button>
                       </td>
@@ -358,7 +367,7 @@ const AdminPage = () => {
                       <td className="px-6 py-4 text-sm text-gray-500">{formatPrice(order.total_amount || order.total)}</td>
                       <td className="px-6 py-4 text-sm text-gray-500">
                         <span className={`px-3 py-1 text-xs font-semibold rounded-full ${order.status === 'completed' ? 'bg-green-100 text-green-800' :
-                            order.status === 'pending' ? 'bg-yellow-100 text-yellow-800' : 'bg-gray-100 text-gray-800'
+                          order.status === 'pending' ? 'bg-yellow-100 text-yellow-800' : 'bg-gray-100 text-gray-800'
                           }`}>
                           {order.status === 'pending' ? 'Pendiente' :
                             order.status === 'completed' ? 'Completado' : order.status}
@@ -384,6 +393,15 @@ const AdminPage = () => {
           <div>
             <div className="flex justify-between items-center mb-4">
               <h3 className="text-lg font-medium text-gray-900">Gestión de Usuarios</h3>
+              <button
+                className="bg-vandora-emerald text-white px-4 py-2 rounded-md flex items-center transition-colors hover:bg-emerald-800 text-sm"
+                onClick={() => {
+                  setEditingUser(null);
+                  setIsUserModalOpen(true);
+                }}
+              >
+                <Users className="h-4 w-4 mr-2" /> Invitar Usuario
+              </button>
             </div>
             <div className="bg-white rounded-lg shadow overflow-hidden border border-gray-200">
               <table className="min-w-full divide-y divide-gray-200">
@@ -402,8 +420,8 @@ const AdminPage = () => {
                       <td className="px-6 py-4 text-sm text-gray-500">{userItem.email || userItem.id.substring(0, 15) + '...'}</td>
                       <td className="px-6 py-4 text-sm text-gray-500">
                         <span className={`px-2 py-1 text-xs font-semibold rounded-full ${userItem.role === 'admin' ? 'bg-purple-100 text-purple-800' :
-                            userItem.role === 'editor' ? 'bg-blue-100 text-blue-800' :
-                              userItem.role === 'support' ? 'bg-orange-100 text-orange-800' : 'bg-gray-100 text-gray-800'
+                          userItem.role === 'editor' ? 'bg-blue-100 text-blue-800' :
+                            userItem.role === 'support' ? 'bg-orange-100 text-orange-800' : 'bg-gray-100 text-gray-800'
                           }`}>
                           {userItem.role}
                         </span>
@@ -422,46 +440,170 @@ const AdminPage = () => {
           </div>
         )}
 
-        {activeTab === 'media' && <MediaManager images={[]} videos={[]} colors={[]} onImagesChange={() => { }} onVideosChange={() => { }} />}
-        {activeTab === 'site' && <SiteEditor />}
-        {activeTab === 'quizzes' && <QuizBuilder />}
-        {activeTab === 'settings' && <SettingsEditor />}
+        {activeTab === 'media' && <div className="bg-white p-6 rounded-lg shadow-sm"><MediaManager images={[]} videos={[]} colors={[]} onImagesChange={() => { }} onVideosChange={() => { }} /></div>}
+        {activeTab === 'site' && <div className="bg-white p-6 rounded-lg shadow-sm"><SiteEditor /></div>}
+        {activeTab === 'quizzes' && <div className="bg-white p-6 rounded-lg shadow-sm space-y-8"><QuizBuilder /><VisualQuizBuilder onBack={() => setActiveTab('quizzes')} /></div>}
+        {activeTab === 'settings' && <div className="bg-white p-6 rounded-lg shadow-sm space-y-8"><SettingsEditor /><CheckoutSettingsEditor /></div>}
 
         {/* Modals remain same as before for products/orders/users edit */}
         {isModalOpen && (
           <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-[60]">
-            <div className="bg-white rounded-lg w-full max-w-4xl max-h-[90vh] overflow-y-auto p-6 shadow-2xl">
-              <div className="flex justify-between items-center mb-6">
-                <h2 className="text-xl font-serif text-gray-900">{editingProduct ? 'Editar Producto' : 'Nuevo Producto'}</h2>
-                <button onClick={closeModal} className="text-gray-400 hover:text-gray-600 transition-colors"><X className="h-6 w-6" /></button>
+            <div className="bg-white rounded-lg w-full max-w-5xl max-h-[90vh] overflow-y-auto p-8 shadow-2xl">
+              <div className="flex justify-between items-center mb-6 sticky top-0 bg-white z-10 pb-4 border-b">
+                <h2 className="text-2xl font-serif text-gray-900">{editingProduct ? 'Editar Producto' : 'Nuevo Producto'}</h2>
+                <button onClick={closeModal} className="text-gray-400 hover:text-gray-600 transition-colors"><X className="h-8 w-8" /></button>
               </div>
-              <form onSubmit={handleSubmit} className="space-y-6">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Nombre</label>
-                    <input type="text" name="name" value={formData.name} onChange={handleInputChange} required className="w-full rounded-md border-gray-300 shadow-sm border p-2 focus:ring-2 focus:ring-vandora-emerald outline-none" />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Precio</label>
-                    <input type="number" step="0.01" name="price" value={formData.price} onChange={handleInputChange} required className="w-full rounded-md border-gray-300 shadow-sm border p-2 focus:ring-2 focus:ring-vandora-emerald outline-none" />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Categoría</label>
-                    <input type="text" name="category" value={formData.category} onChange={handleInputChange} required className="w-full rounded-md border-gray-300 shadow-sm border p-2 focus:ring-2 focus:ring-vandora-emerald outline-none" />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Stock Inicial</label>
-                    <input type="number" name="stock" value={formData.stock} onChange={handleInputChange} required className="w-full rounded-md border-gray-300 shadow-sm border p-2 focus:ring-2 focus:ring-vandora-emerald outline-none" />
-                  </div>
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Descripción Corta</label>
-                  <textarea name="description" value={formData.description} onChange={handleInputChange} rows={3} className="w-full rounded-md border-gray-300 shadow-sm border p-2 focus:ring-2 focus:ring-vandora-emerald outline-none" />
+              <form onSubmit={handleSubmit} className="space-y-8">
+                {/* Media Section */}
+                <div className="bg-gray-50 p-6 rounded-xl border border-gray-100">
+                  <h3 className="text-lg font-medium text-gray-900 mb-4 flex items-center">
+                    <ImageIcon className="w-5 h-5 mr-2 text-vandora-emerald" /> Multimedia
+                  </h3>
+                  <MediaManager
+                    images={formData.images}
+                    videos={formData.videos}
+                    colors={formData.colors}
+                    onImagesChange={(images) => setFormData({ ...formData, images })}
+                    onVideosChange={(videos) => setFormData({ ...formData, videos })}
+                  />
                 </div>
 
-                <div className="flex justify-end space-x-3 pt-6 border-t">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                  <div className="space-y-6">
+                    <h3 className="text-lg font-medium text-gray-900 border-b pb-2">Información Básica</h3>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Nombre</label>
+                      <input type="text" name="name" value={formData.name} onChange={handleInputChange} required className="w-full rounded-md border-gray-300 shadow-sm border p-3 focus:ring-2 focus:ring-vandora-emerald outline-none" />
+                    </div>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">Precio</label>
+                        <input type="number" step="0.01" name="price" value={formData.price} onChange={handleInputChange} required className="w-full rounded-md border-gray-300 shadow-sm border p-3 focus:ring-2 focus:ring-vandora-emerald outline-none" />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">Stock Inicial</label>
+                        <input type="number" name="stock" value={formData.stock} onChange={handleInputChange} required className="w-full rounded-md border-gray-300 shadow-sm border p-3 focus:ring-2 focus:ring-vandora-emerald outline-none" />
+                      </div>
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Categoría</label>
+                      <input type="text" name="category" value={formData.category} onChange={handleInputChange} required className="w-full rounded-md border-gray-300 shadow-sm border p-3 focus:ring-2 focus:ring-vandora-emerald outline-none" />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Descripción Corta</label>
+                      <textarea name="description" value={formData.description} onChange={handleInputChange} rows={3} className="w-full rounded-md border-gray-300 shadow-sm border p-3 focus:ring-2 focus:ring-vandora-emerald outline-none" />
+                    </div>
+                  </div>
+
+                  <div className="space-y-6">
+                    <h3 className="text-lg font-medium text-gray-900 border-b pb-2">Atributos y Variantes</h3>
+
+                    {/* Sizes selection */}
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">Tallas Disponibles</label>
+                      <div className="flex flex-wrap gap-2">
+                        {STANDARD_SIZES.map(size => (
+                          <button
+                            key={size}
+                            type="button"
+                            onClick={() => {
+                              const sizes = formData.sizes.includes(size)
+                                ? formData.sizes.filter(s => s !== size)
+                                : [...formData.sizes, size];
+                              setFormData({ ...formData, sizes });
+                            }}
+                            className={`px-3 py-2 rounded-md border text-sm transition-colors ${formData.sizes.includes(size)
+                              ? 'bg-vandora-emerald text-white border-vandora-emerald'
+                              : 'bg-white text-gray-600 border-gray-200 hover:border-vandora-emerald'
+                              }`}
+                          >
+                            {size}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* Colors selection */}
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">Colores</label>
+                      <div className="flex items-center space-x-2 mb-4">
+                        <input
+                          type="text"
+                          placeholder="Nombre color"
+                          value={newColorName}
+                          onChange={(e) => setNewColorName(e.target.value)}
+                          className="flex-1 rounded-md border p-2 text-sm border-gray-300"
+                        />
+                        <input
+                          type="color"
+                          value={newColorCode}
+                          onChange={(e) => setNewColorCode(e.target.value)}
+                          className="w-10 h-10 border-0 p-0 rounded-md cursor-pointer"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => {
+                            if (newColorName) {
+                              setFormData({ ...formData, colors: [...formData.colors, { name: newColorName, code: newColorCode }] });
+                              setNewColorName('');
+                            }
+                          }}
+                          className="bg-gray-100 p-2 rounded-md hover:bg-gray-200"
+                        >
+                          <Plus className="w-5 h-5" />
+                        </button>
+                      </div>
+                      <div className="flex flex-wrap gap-2">
+                        {formData.colors.map((c, i) => (
+                          <div key={i} className="flex items-center bg-white border border-gray-200 rounded-full px-3 py-1 text-xs">
+                            <span className="w-3 h-3 rounded-full mr-2" style={{ backgroundColor: c.code }}></span>
+                            {c.name}
+                            <button
+                              type="button"
+                              onClick={() => setFormData({ ...formData, colors: formData.colors.filter((_, idx) => idx !== i) })}
+                              className="ml-2 text-gray-400 hover:text-red-500"
+                            >
+                              <X className="w-3 h-3" />
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* Upsell/Downsell */}
+                    <div className="space-y-4">
+                      <h4 className="text-sm font-medium text-gray-900">Estrategia de Ventas (Funnels)</h4>
+                      <div className="grid grid-cols-1 gap-4">
+                        <input type="text" name="upsell_product_id" value={formData.upsell_product_id} onChange={handleInputChange} className="w-full rounded-md border-gray-300 shadow-sm border p-2 text-sm outline-none" placeholder="Upsell Product ID" />
+                        <input type="text" name="downsell_product_id" value={formData.downsell_product_id} onChange={handleInputChange} className="w-full rounded-md border-gray-300 shadow-sm border p-2 text-sm outline-none" placeholder="Downsell Product ID" />
+                        <input type="text" name="order_bump_product_id" value={formData.order_bump_product_id} onChange={handleInputChange} className="w-full rounded-md border-gray-300 shadow-sm border p-2 text-sm outline-none" placeholder="Order Bump Product ID" />
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Extended Details */}
+                <div className="space-y-6 bg-gray-50 p-6 rounded-xl border border-gray-100">
+                  <h3 className="text-lg font-medium text-gray-900 border-b pb-2">Contenido Extendido</h3>
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Detalles</label>
+                      <textarea name="details" value={formData.details} onChange={handleInputChange} rows={4} className="w-full rounded-md border-gray-300 shadow-sm border p-3 focus:ring-2 focus:ring-vandora-emerald outline-none text-sm" />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Materiales</label>
+                      <textarea name="materials" value={formData.materials} onChange={handleInputChange} rows={4} className="w-full rounded-md border-gray-300 shadow-sm border p-3 focus:ring-2 focus:ring-vandora-emerald outline-none text-sm" />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Cuidado</label>
+                      <textarea name="care" value={formData.care} onChange={handleInputChange} rows={4} className="w-full rounded-md border-gray-300 shadow-sm border p-3 focus:ring-2 focus:ring-vandora-emerald outline-none text-sm" />
+                    </div>
+                  </div>
+                </div>
+
+                <div className="flex justify-end space-x-3 pt-6 border-t sticky bottom-0 bg-white z-10">
                   <button type="button" onClick={closeModal} className="px-6 py-2 border border-gray-300 rounded-md text-gray-600 hover:bg-gray-50 transition-colors">Cancelar</button>
-                  <button type="submit" className="px-6 py-2 bg-vandora-emerald text-white rounded-md hover:bg-emerald-800 transition-colors shadow-md">Guardar</button>
+                  <button type="submit" className="px-6 py-2 bg-vandora-emerald text-white rounded-md hover:bg-emerald-800 transition-colors shadow-md">Guardar Producto</button>
                 </div>
               </form>
             </div>
