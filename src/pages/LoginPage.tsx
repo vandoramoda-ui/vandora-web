@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { supabase } from '../lib/supabase';
 import { useNavigate } from 'react-router-dom';
-import { Loader2 } from 'lucide-react';
+import { Loader2, Eye, EyeOff } from 'lucide-react';
 import SEO from '../components/SEO';
 
 const LoginPage = () => {
@@ -9,6 +9,7 @@ const LoginPage = () => {
   const [isForgotPassword, setIsForgotPassword] = useState(false);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [fullName, setFullName] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -24,11 +25,10 @@ const LoginPage = () => {
     try {
       if (isForgotPassword) {
         const { error } = await supabase.auth.resetPasswordForEmail(email, {
-          redirectTo: window.location.origin + '/login',
+          redirectTo: window.location.origin + '/restablecer-contrasena',
         });
         if (error) throw error;
         setMessage('Te hemos enviado un enlace para restablecer tu contraseña. Por favor, revisa tu correo electrónico.');
-        setTimeout(() => setIsForgotPassword(false), 5000);
       } else if (isLogin) {
         const { data, error } = await supabase.auth.signInWithPassword({
           email,
@@ -43,6 +43,7 @@ const LoginPage = () => {
           options: {
             data: {
               full_name: fullName,
+              role: 'cliente'
             },
           },
         });
@@ -129,14 +130,23 @@ const LoginPage = () => {
                   </button>
                 )}
               </div>
-              <input
-                type="password"
-                required={!isForgotPassword}
-                minLength={6}
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-vandora-emerald focus:ring-vandora-emerald p-2 border"
-              />
+              <div className="mt-1 relative">
+                <input
+                  type={showPassword ? "text" : "password"}
+                  required={!isForgotPassword}
+                  minLength={6}
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  className="block w-full rounded-md border-gray-300 shadow-sm focus:border-vandora-emerald focus:ring-vandora-emerald p-2 border pr-10"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-600 focus:outline-none"
+                >
+                  {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
+                </button>
+              </div>
               {!isLogin && <p className="text-xs text-gray-500 mt-1">Mínimo 6 caracteres</p>}
             </div>
           )}

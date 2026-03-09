@@ -2,16 +2,22 @@ import React, { createContext, useContext, useEffect, useState } from 'react';
 import { supabase } from '../lib/supabase';
 import { User } from '@supabase/supabase-js';
 
+export type UserRole = 'admin' | 'editor' | 'support' | 'cliente';
+
 type Profile = {
     id: string;
-    role: string;
+    role: UserRole;
     loyalty_points?: number;
+    full_name?: string;
+    email_notifications?: string;
 };
 
 type AuthContextType = {
     user: User | null;
     profile: Profile | null;
     loading: boolean;
+    isAdmin: boolean;
+    isStaff: boolean;
     signOut: () => Promise<void>;
 };
 
@@ -59,7 +65,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
                 console.error('Error fetching profile:', error);
             }
 
-            setProfile(data);
+            setProfile(data as Profile);
         } catch (error) {
             console.error('Error in fetchProfile:', error);
         } finally {
@@ -71,8 +77,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         await supabase.auth.signOut();
     };
 
+    const isAdmin = profile?.role === 'admin';
+    const isStaff = ['admin', 'editor', 'support'].includes(profile?.role || '');
+
     return (
-        <AuthContext.Provider value={{ user, profile, loading, signOut }}>
+        <AuthContext.Provider value={{ user, profile, loading, isAdmin, isStaff, signOut }}>
             {children}
         </AuthContext.Provider>
     );

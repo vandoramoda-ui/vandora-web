@@ -8,7 +8,7 @@ import { motion, AnimatePresence } from 'motion/react';
 const Navbar = () => {
   const [isOpen, setIsOpen] = useState(false);
   const { items, setIsOpen: setIsCartOpen } = useCart();
-  const { user, profile, signOut } = useAuth();
+  const { user, profile, isStaff, signOut } = useAuth();
   const navigate = useNavigate();
 
   const toggleMenu = () => setIsOpen(!isOpen);
@@ -80,7 +80,7 @@ const Navbar = () => {
                   </Link>
                 ) : (
                   <>
-                    {(profile?.role === 'admin' || profile?.role === 'Administrador' || profile?.role === 'Editor') ? (
+                    {isStaff ? (
                       <Link to="/administracion" onClick={toggleMenu} className="flex items-center px-3 py-3 rounded-md text-base font-medium text-vandora-emerald bg-emerald-50 hover:bg-emerald-100 transition-colors mb-2">
                         <Settings className="h-5 w-5 mr-3" /> PANEL ADMINISTRADOR
                       </Link>

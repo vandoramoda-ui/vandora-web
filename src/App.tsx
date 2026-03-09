@@ -33,6 +33,10 @@ const ScrollToTop = () => {
   return null;
 };
 
+import ProtectedRoute from './components/ProtectedRoute';
+
+import ResetPasswordPage from './pages/ResetPasswordPage';
+
 function App() {
   return (
     <AuthProvider>
@@ -57,7 +61,12 @@ function App() {
 
             {/* Standalone Routes */}
             <Route path="/iniciar-sesion" element={<LoginPage />} />
-            <Route path="/administracion" element={<AdminPage />} />
+            <Route path="/restablecer-contrasena" element={<ResetPasswordPage />} />
+            <Route path="/administracion" element={
+              <ProtectedRoute requireStaff>
+                <AdminPage />
+              </ProtectedRoute>
+            } />
           </Routes>
         </Router>
       </CartProvider>
