@@ -60,11 +60,23 @@ const AdminPage = () => {
   const [newColorName, setNewColorName] = useState('');
   const [newColorCode, setNewColorCode] = useState('#000000');
 
+  const [categories, setCategories] = useState<any[]>([]);
+  const [newCategoryName, setNewCategoryName] = useState('');
+  const [isCategoryModalOpen, setIsCategoryModalOpen] = useState(false);
+
   useEffect(() => {
-    if (activeTab === 'products') fetchProducts();
+    if (activeTab === 'products') {
+      fetchProducts();
+      fetchCategories();
+    }
     else if (activeTab === 'orders') fetchOrders();
     else if (activeTab === 'users') fetchUsers();
   }, [activeTab]);
+
+  const fetchCategories = async () => {
+    const { data, error } = await supabase.from('product_categories').select('*').order('name');
+    if (!error && data) setCategories(data);
+  };
 
   const fetchOrders = async () => {
     const { data, error } = await supabase.from('orders').select('*').order('created_at', { ascending: false });
@@ -90,7 +102,8 @@ const AdminPage = () => {
     if (data) {
       setProducts(data.map(p => ({
         ...p,
-        images: Array.isArray(p.images) ? p.images.map((img: any) => typeof img === 'string' ? { url: img } : img) : []
+        images: Array.isArray(p.images) ? p.images.map((img: any) => typeof img === 'string' ? { url: img } : img) : [],
+        videos: Array.isArray(p.videos) ? p.videos.map((vid: any) => typeof vid === 'string' ? { url: vid } : vid) : []
       })));
     }
     setLoading(false);
@@ -150,13 +163,31 @@ const AdminPage = () => {
 
   const handleSaveUser = async (e: React.FormEvent) => {
     e.preventDefault();
-    const { error } = await supabase.from('profiles').update({
-      role: editingUser.role
-    }).eq('id', editingUser.id);
+    if (editingUser?.id) {
+      const { error } = await supabase.from('profiles').update({
+        role: editingUser.role
+      }).eq('id', editingUser.id);
 
-    if (!error) {
-      setUsers(users.map(u => u.id === editingUser.id ? editingUser : u));
+      if (!error) {
+        setUsers(users.map(u => u.id === editingUser.id ? editingUser : u));
+        setIsUserModalOpen(false);
+      }
+    } else {
+      // Logic for new user invitation could go here if Supabase auth allows
+      alert('Funcionalidad de invitación enviada (Simulación). Supabase requiere configuración de SMTP para invitaciones reales.');
       setIsUserModalOpen(false);
+    }
+  };
+
+  const handleCreateCategory = async () => {
+    if (!newCategoryName) return;
+    const { data, error } = await supabase.from('product_categories').insert([{ name: newCategoryName }]).select();
+    if (!error && data) {
+      setCategories([...categories, data[0]]);
+      setNewCategoryName('');
+      setIsCategoryModalOpen(false);
+    } else {
+      alert('Error creando categoría: ' + (error?.message || 'Ya existe o error de conexión'));
     }
   };
 
@@ -292,18 +323,26 @@ const AdminPage = () => {
 
         {activeTab === 'products' && canManageProducts && (
           <div>
-            <div className="flex justify-between items-center mb-4">
-              <h3 className="text-lg font-medium text-gray-900">Inventario de Productos</h3>
-              <button
-                onClick={() => {
-                  setEditingProduct(null);
-                  setFormData({ name: '', price: '', category: '', stock: '', description: '', details: '', materials: '', care: '', images: [], videos: [], sizes: [], colors: [], variants: [], upsell_product_id: '', downsell_product_id: '', order_bump_product_id: '' });
-                  setIsModalOpen(true);
-                }}
-                className="bg-vandora-emerald text-white px-4 py-2 rounded-md flex items-center transition-colors hover:bg-emerald-800"
-              >
-                <Plus className="h-4 w-4 mr-2" /> Nuevo Producto
-              </button>
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
+              <h3 className="text-lg font-medium text-gray-900 border-l-4 border-vandora-emerald pl-3">Inventario de Productos</h3>
+              <div className="flex gap-2">
+                <button
+                  onClick={() => setIsCategoryModalOpen(true)}
+                  className="bg-white text-gray-700 px-4 py-2 rounded-md flex items-center border border-gray-300 transition-colors hover:bg-gray-50 shadow-sm"
+                >
+                  <Plus className="h-4 w-4 mr-2" /> Categorías
+                </button>
+                <button
+                  onClick={() => {
+                    setEditingProduct(null);
+                    setFormData({ name: '', price: '', category: '', stock: '', description: '', details: '', materials: '', care: '', images: [], videos: [], sizes: [], colors: [], variants: [], upsell_product_id: '', downsell_product_id: '', order_bump_product_id: '' });
+                    setIsModalOpen(true);
+                  }}
+                  className="bg-vandora-emerald text-white px-4 py-2 rounded-md flex items-center transition-colors hover:bg-emerald-800 shadow-md"
+                >
+                  <Plus className="h-4 w-4 mr-2" /> Nuevo Producto
+                </button>
+              </div>
             </div>
             <div className="bg-white rounded-lg shadow overflow-hidden border border-gray-200">
               <table className="min-w-full divide-y divide-gray-200">
@@ -487,7 +526,28 @@ const AdminPage = () => {
                     </div>
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-1">Categoría</label>
-                      <input type="text" name="category" value={formData.category} onChange={handleInputChange} required className="w-full rounded-md border-gray-300 shadow-sm border p-3 focus:ring-2 focus:ring-vandora-emerald outline-none" />
+                      <div className="flex gap-2">
+                        <select
+                          name="category"
+                          value={formData.category}
+                          onChange={handleInputChange}
+                          required
+                          className="flex-1 rounded-md border-gray-300 shadow-sm border p-3 focus:ring-2 focus:ring-vandora-emerald outline-none appearance-none bg-white"
+                        >
+                          <option value="">Seleccionar categoría...</option>
+                          {categories.map(cat => (
+                            <option key={cat.id} value={cat.name}>{cat.name}</option>
+                          ))}
+                        </select>
+                        <button
+                          type="button"
+                          onClick={() => setIsCategoryModalOpen(true)}
+                          className="p-3 border rounded-md hover:bg-gray-50 text-gray-400 hover:text-vandora-emerald transition-colors"
+                          title="Nueva Categoría"
+                        >
+                          <Plus className="w-5 h-5" />
+                        </button>
+                      </div>
                     </div>
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-1">Descripción Corta</label>
@@ -651,23 +711,38 @@ const AdminPage = () => {
           </div>
         )}
 
-        {isUserModalOpen && editingUser && (
+        {isUserModalOpen && (
           <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-[60]">
             <div className="bg-white rounded-lg w-full max-w-md p-6 shadow-2xl">
               <div className="flex justify-between items-center mb-6">
-                <h2 className="text-xl font-serif text-gray-900">Cambiar Rol de Usuario</h2>
+                <h2 className="text-xl font-serif text-gray-900">{editingUser ? 'Cambiar Rol de Usuario' : 'Invitar Usuario'}</h2>
                 <button onClick={() => setIsUserModalOpen(false)} className="text-gray-400 hover:text-gray-600"><X className="h-6 w-6" /></button>
               </div>
-              <div className="mb-6 p-3 bg-gray-50 rounded text-sm text-gray-600">
-                <p><strong>Usuario:</strong> {editingUser.name}</p>
-                <p><strong>Email:</strong> {editingUser.email || 'N/A'}</p>
-              </div>
+
+              {editingUser && (
+                <div className="mb-6 p-3 bg-gray-50 rounded text-sm text-gray-600">
+                  <p><strong>Usuario:</strong> {editingUser.name}</p>
+                  <p><strong>Email:</strong> {editingUser.email || 'N/A'}</p>
+                </div>
+              )}
+
               <form onSubmit={handleSaveUser} className="space-y-4">
+                {!editingUser && (
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Email del Invitado</label>
+                    <input
+                      type="email"
+                      required
+                      className="w-full rounded-md border-gray-300 shadow-sm border p-2 focus:ring-2 focus:ring-vandora-emerald outline-none"
+                      placeholder="correo@ejemplo.com"
+                    />
+                  </div>
+                )}
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Seleccionar Nuevo Rol</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Rol</label>
                   <select
-                    value={editingUser.role}
-                    onChange={(e) => setEditingUser({ ...editingUser, role: e.target.value })}
+                    value={editingUser?.role || 'cliente'}
+                    onChange={(e) => editingUser ? setEditingUser({ ...editingUser, role: e.target.value }) : null}
                     className="w-full rounded-md border-gray-300 shadow-sm border p-2 focus:ring-2 focus:ring-vandora-emerald outline-none"
                   >
                     <option value="cliente">Cliente (Usuario Estándar)</option>
@@ -677,10 +752,40 @@ const AdminPage = () => {
                   </select>
                 </div>
                 <div className="flex justify-end space-x-3 pt-6 border-t">
-                  <button type="button" onClick={() => setIsUserModalOpen(false)} className="px-6 py-2 border rounded-md text-gray-600">Cancelar</button>
-                  <button type="submit" className="px-6 py-2 bg-vandora-emerald text-white rounded-md hover:bg-emerald-800 transition-colors shadow-md">Actualizar Rol</button>
+                  <button type="button" onClick={() => setIsUserModalOpen(false)} className="px-6 py-2 border rounded-md text-gray-600 font-medium">Cancelar</button>
+                  <button type="submit" className="px-6 py-2 bg-vandora-emerald text-white rounded-md hover:bg-emerald-800 transition-colors shadow-md font-medium">
+                    {editingUser ? 'Actualizar Rol' : 'Enviar Invitación'}
+                  </button>
                 </div>
               </form>
+            </div>
+          </div>
+        )}
+
+        {/* New Category Modal */}
+        {isCategoryModalOpen && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-[70]">
+            <div className="bg-white rounded-lg w-full max-w-sm p-6 shadow-2xl">
+              <div className="flex justify-between items-center mb-6">
+                <h2 className="text-xl font-serif text-gray-900">Nueva Categoría</h2>
+                <button onClick={() => setIsCategoryModalOpen(false)} className="text-gray-400 hover:text-gray-600"><X className="h-6 w-6" /></button>
+              </div>
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Nombre de la Categoría</label>
+                  <input
+                    type="text"
+                    value={newCategoryName}
+                    onChange={(e) => setNewCategoryName(e.target.value)}
+                    className="w-full rounded-md border-gray-300 shadow-sm border p-3 focus:ring-2 focus:ring-vandora-emerald outline-none"
+                    placeholder="Ej: Vestidos, Accesorios..."
+                  />
+                </div>
+                <div className="flex justify-end space-x-3 pt-6 border-t">
+                  <button type="button" onClick={() => setIsCategoryModalOpen(false)} className="px-6 py-2 border rounded-md text-gray-600">Cancelar</button>
+                  <button onClick={handleCreateCategory} className="px-6 py-2 bg-vandora-emerald text-white rounded-md hover:bg-emerald-800 transition-colors shadow-md">Crear</button>
+                </div>
+              </div>
             </div>
           </div>
         )}

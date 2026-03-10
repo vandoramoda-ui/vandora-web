@@ -89,8 +89,9 @@ const ProductDetailPage = () => {
   const [viewersCount, setViewersCount] = useState(12);
   const [timeLeft, setTimeLeft] = useState({ hours: 4, minutes: 59 });
 
-  // Filtered images based on color
+  // Filtered media based on color
   const [filteredImages, setFilteredImages] = useState<any[]>([]);
+  const [filteredVideos, setFilteredVideos] = useState<any[]>([]);
 
   const toggleAccordion = (id: string) => {
     setActiveAccordion(activeAccordion === id ? null : id);
@@ -122,12 +123,17 @@ const ProductDetailPage = () => {
     fetchProduct();
   }, [slug, navigate]);
 
-  // Update filtered images when color changes
+  // Update filtered media when color changes
   useEffect(() => {
     if (product) {
+      // Images
       const images = product.images.filter((img: any) => !img.color || img.color === selectedColor);
-      // If no images match, fallback to all or generic
       setFilteredImages(images.length > 0 ? images : product.images);
+
+      // Videos
+      const vids = (product.videos || []).filter((vid: any) => !vid.color || vid.color === selectedColor);
+      setFilteredVideos(vids.length > 0 ? vids : (product.videos || []));
+
       setActiveImageIndex(0);
     }
   }, [selectedColor, product]);
@@ -156,7 +162,8 @@ const ProductDetailPage = () => {
     });
   };
 
-  const hasVideo = product.videos && product.videos.length > 0;
+  const hasVideo = filteredVideos.length > 0;
+  const activeVideo = filteredVideos[0];
 
   const nextImage = () => {
     setActiveImageIndex((prev) => (prev + 1) % filteredImages.length);
@@ -195,7 +202,7 @@ const ProductDetailPage = () => {
                   {/* Placeholder for video player - in real app use <video> or iframe */}
                   <div className="text-white text-center">
                     <Play className="h-16 w-16 mx-auto mb-4 opacity-50" />
-                    <p>Reproduciendo video: {product.videos[0]}</p>
+                    <p>Reproduciendo video: {activeVideo?.url || 'N/A'}</p>
                     <button
                       onClick={() => setShowVideo(false)}
                       className="mt-4 text-sm underline hover:text-gray-300"
