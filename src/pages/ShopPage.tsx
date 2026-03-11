@@ -53,7 +53,9 @@ const ShopPage = () => {
         // Assuming the table structure matches closely
         const mappedProducts = data.map((p: any) => ({
           ...p,
-          image: p.images && p.images.length > 0 ? p.images[0] : 'https://placehold.co/600x800?text=No+Image',
+          image: p.images && p.images.length > 0 
+            ? (typeof p.images[0] === 'string' ? p.images[0] : p.images[0].url)
+            : 'https://placehold.co/600x800?text=No+Image',
           sizes: p.sizes || [],
           colors: Array.isArray(p.colors) 
             ? p.colors.map((c: any) => typeof c === 'string' ? { name: c, code: '#CCCCCC' } : c)

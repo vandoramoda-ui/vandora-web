@@ -126,7 +126,6 @@ const AdminPage = () => {
       const productData = {
         ...formData,
         slug,
-        image: formData.images.length > 0 ? formData.images[0].url : formData.image,
         price: parseFloat(formData.price),
         stock: parseInt(formData.stock),
         upsell_product_id: formData.upsell_product_id || null,
