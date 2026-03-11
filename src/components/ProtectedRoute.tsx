@@ -30,11 +30,16 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
     }
 
     if (requireStaff && !isStaff) {
+        console.warn('ProtectedRoute: Access denied (Staff required). Current role:', profile?.role || 'none');
         return <Navigate to="/" replace />;
     }
 
-    if (allowedRoles && profile && !allowedRoles.includes(profile.role)) {
-        return <Navigate to="/" replace />;
+    if (allowedRoles && profile) {
+        const normalizedRole = profile.role.toLowerCase().trim();
+        if (!allowedRoles.map(r => r.toLowerCase().trim()).includes(normalizedRole)) {
+            console.warn('ProtectedRoute: Access denied (Role not allowed). Current role:', profile.role);
+            return <Navigate to="/" replace />;
+        }
     }
 
     return <>{children}</>;

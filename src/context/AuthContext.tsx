@@ -55,16 +55,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     const fetchProfile = async (userId: string) => {
         try {
-            const { data, error } = await supabase
-                .from('profiles')
-                .select('*')
-                .eq('id', userId)
-                .single();
-
-            if (error && error.code !== 'PGRST116') {
-                console.error('Error fetching profile:', error);
+            if (data) {
+                console.log('Auth: Profile fetched successfully:', data);
+                console.log('Auth: Role detected ->', `"${data.role}"`);
             }
-
             setProfile(data as Profile);
         } catch (error) {
             console.error('Error in fetchProfile:', error);
@@ -77,8 +71,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         await supabase.auth.signOut();
     };
 
-    const isAdmin = ['superadmin', 'admin'].includes(profile?.role || '');
-    const isStaff = ['superadmin', 'admin', 'editor', 'support'].includes(profile?.role || '');
+    const normalizedRole = (profile?.role || '').toLowerCase().trim();
+    const isAdmin = ['superadmin', 'admin'].includes(normalizedRole);
+    const isStaff = ['superadmin', 'admin', 'editor', 'support'].includes(normalizedRole);
 
     return (
         <AuthContext.Provider value={{ user, profile, loading, isAdmin, isStaff, signOut }}>

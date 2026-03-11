@@ -44,11 +44,16 @@ const LoginPage = () => {
             .eq('id', data.user.id)
             .single();
             
-          const isStaff = ['superadmin', 'admin', 'editor', 'support'].includes(profile?.role || '');
+          const normalizedRole = (profile?.role || '').toLowerCase().trim();
+          console.log('LoginPage: Auth successful. Detected role:', `"${normalizedRole}"`);
+          
+          const isStaff = ['superadmin', 'admin', 'editor', 'support'].includes(normalizedRole);
           
           if (isStaff) {
+            console.log('LoginPage: Redirecting to Admin Panel');
             navigate('/administracion');
           } else {
+            console.log('LoginPage: Redirecting to My Account');
             navigate('/mi-cuenta');
           }
         }
