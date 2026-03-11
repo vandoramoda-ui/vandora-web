@@ -6,6 +6,7 @@ import { useNavigate } from 'react-router-dom';
 import { CheckCircle, Truck, CreditCard, ShieldCheck, Lock, Clock, AlertCircle } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import SEO from '../components/SEO';
+import PhoneInput from '../components/PhoneInput';
 
 interface CheckoutSettings {
   fields: {
@@ -249,29 +250,39 @@ const CheckoutPage = () => {
     };
 
     try {
+      console.log('Attempting to save order...', orderData);
       const { data: orderResult, error: orderError } = await supabase
         .from('orders')
         .insert([orderData])
         .select()
         .single();
 
-      if (orderError) throw orderError;
+      if (orderError) {
+        console.error('Supabase Order Error:', orderError);
+        throw new Error(orderError.message || 'Error al insertar pedido');
+      }
 
-      const { data: existingProfile } = await supabase
-        .from('profiles')
-        .select('id')
-        .eq('email_notifications', formData.email)
-        .single();
-
-      if (!existingProfile) {
-        // Optional: create guest profile or user record
+      // Fix for profiles table - check by id if user is logged in, or don't try to sync if guest
+      // Removed email_notifications as it doesn't exist in profiles schema
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (session?.user) {
+          const { error: profileError } = await supabase
+            .from('profiles')
+            .update({ full_name: `${formData.firstName} ${formData.lastName}` })
+            .eq('id', session.user.id);
+          
+          if (profileError) console.warn('Profile update failed:', profileError);
+        }
+      } catch (profileErr) {
+        console.warn('Profile sync skipped:', profileErr);
       }
 
       clearCart();
       navigate('/upsell', { state: { order: orderResult } });
     } catch (err: any) {
-      console.error('Error saving order:', err);
-      alert('Hubo un problema al procesar tu pedido. Por favor intenta de nuevo.');
+      console.error('CRITICAL Order Submission Failure:', err);
+      alert(`Hubo un problema al procesar tu pedido: ${err.message || 'Error desconocido'}. Por favor intenta de nuevo.`);
     }
   };
 
@@ -389,21 +400,12 @@ const CheckoutPage = () => {
                     </div>
                   )}
                   {settings.fields.phone.enabled && (
-                    <div>
-                      <label htmlFor="phone" className="block text-sm font-medium text-gray-700">
-                        {settings.fields.phone.label} {settings.fields.phone.required && '*'}
-                      </label>
-                      <input
-                        type="tel"
-                        name="phone"
-                        id="phone"
-                        required={settings.fields.phone.required}
-                        value={formData.phone}
-                        onChange={handleInputChange}
-                        className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-vandora-emerald focus:ring-vandora-emerald sm:text-sm p-3 border"
-                        placeholder="099..."
-                      />
-                    </div>
+                    <PhoneInput
+                      label={settings.fields.phone.label}
+                      required={settings.fields.phone.required}
+                      value={formData.phone}
+                      onChange={(value) => setFormData({ ...formData, phone: value })}
+                    />
                   )}
                 </div>
               </div>
