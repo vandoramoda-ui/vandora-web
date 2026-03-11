@@ -100,11 +100,30 @@ const AdminPage = () => {
     setLoading(true);
     const { data } = await supabase.from('products').select('*');
     if (data) {
+      const parseJSON = (val: any) => {
+        if (typeof val !== 'string') return val;
+        try {
+          const parsed = JSON.parse(val);
+          return parsed && typeof parsed === 'object' ? parsed : val;
+        } catch (e) {
+          return val;
+        }
+      };
+
       setProducts(data.map(p => ({
         ...p,
-        images: Array.isArray(p.images) ? p.images.map((img: any) => typeof img === 'string' ? { url: img } : img) : [],
-        videos: Array.isArray(p.videos) ? p.videos.map((vid: any) => typeof vid === 'string' ? { url: vid } : vid) : [],
-        colors: Array.isArray(p.colors) ? p.colors.map((c: any) => typeof c === 'string' ? { name: c, code: '#CCCCCC' } : c) : []
+        images: Array.isArray(p.images) ? p.images.map((img: any) => {
+          const parsed = parseJSON(img);
+          return typeof parsed === 'string' ? { url: parsed } : parsed;
+        }) : [],
+        videos: Array.isArray(p.videos) ? p.videos.map((vid: any) => {
+          const parsed = parseJSON(vid);
+          return typeof parsed === 'string' ? { url: parsed } : parsed;
+        }) : [],
+        colors: Array.isArray(p.colors) ? p.colors.map((c: any) => {
+          const parsed = parseJSON(c);
+          return typeof parsed === 'object' && parsed !== null ? parsed : { name: String(c), code: '#CCCCCC' };
+        }) : []
       })));
     }
     setLoading(false);
@@ -418,19 +437,35 @@ const AdminPage = () => {
                       <td className="px-6 py-4 text-right text-sm font-medium">
                         <button className="text-vandora-emerald hover:text-emerald-800 mr-4" onClick={() => {
                           setEditingProduct(product);
+                          const parseJSON = (val: any) => {
+                            if (typeof val !== 'string') return val;
+                            try {
+                              const parsed = JSON.parse(val);
+                              return parsed && typeof parsed === 'object' ? parsed : val;
+                            } catch (e) {
+                              return val;
+                            }
+                          };
+
                           setFormData({
                             ...product,
                             price: product.price.toString(),
                             stock: product.stock.toString(),
                             images: Array.isArray(product.images) 
-                              ? product.images.map((img: any) => typeof img === 'string' ? { url: img } : img) 
-                              : [],
+                              ? product.images.map((img: any) => {
+                                const parsed = parseJSON(img);
+                                return typeof parsed === 'string' ? { url: parsed } : parsed;
+                              }) : [],
                             videos: Array.isArray(product.videos) 
-                              ? product.videos.map((vid: any) => typeof vid === 'string' ? { url: vid } : vid) 
-                              : [],
+                              ? product.videos.map((vid: any) => {
+                                const parsed = parseJSON(vid);
+                                return typeof parsed === 'string' ? { url: parsed } : parsed;
+                              }) : [],
                             colors: Array.isArray(product.colors) 
-                              ? product.colors.map((c: any) => typeof c === 'string' ? { name: c, code: '#CCCCCC' } : c) 
-                              : [],
+                              ? product.colors.map((c: any) => {
+                                const parsed = parseJSON(c);
+                                return typeof parsed === 'object' && parsed !== null ? parsed : { name: String(c), code: '#CCCCCC' };
+                              }) : [],
                             sizes: Array.isArray(product.sizes) ? product.sizes : [],
                             variants: Array.isArray(product.variants) ? product.variants : []
                           });

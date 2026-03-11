@@ -113,19 +113,35 @@ const ProductDetailPage = () => {
         .single();
 
       if (!error && data) {
+        const parseJSON = (val: any) => {
+          if (typeof val !== 'string') return val;
+          try {
+            const parsed = JSON.parse(val);
+            return parsed && typeof parsed === 'object' ? parsed : val;
+          } catch (e) {
+            return val;
+          }
+        };
+
         // Normalize data to ensure arrays exist and have correct object shape
         const normalizedData = {
           ...data,
           images: Array.isArray(data.images) 
-            ? data.images.map((img: any) => typeof img === 'string' ? { url: img } : img) 
-            : [],
+            ? data.images.map((img: any) => {
+              const parsed = parseJSON(img);
+              return typeof parsed === 'string' ? { url: parsed } : parsed;
+            }) : [],
           colors: Array.isArray(data.colors) 
-            ? data.colors.map((c: any) => typeof c === 'string' ? { name: c, code: '#CCCCCC' } : c) 
-            : [],
+            ? data.colors.map((c: any) => {
+              const parsed = parseJSON(c);
+              return typeof parsed === 'object' && parsed !== null ? parsed : { name: String(c), code: '#CCCCCC' };
+            }) : [],
           sizes: Array.isArray(data.sizes) ? data.sizes : [],
           videos: Array.isArray(data.videos) 
-            ? data.videos.map((v: any) => typeof v === 'string' ? { url: v } : v) 
-            : []
+            ? data.videos.map((v: any) => {
+              const parsed = parseJSON(v);
+              return typeof parsed === 'string' ? { url: parsed } : parsed;
+            }) : []
         };
 
         // Ensure a main image exists if the image column is empty but images array has data

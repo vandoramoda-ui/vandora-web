@@ -49,18 +49,34 @@ const ShopPage = () => {
       if (error) throw error;
 
       if (data && data.length > 0) {
-        // Map Supabase data to our Product type if needed
-        // Assuming the table structure matches closely
-        const mappedProducts = data.map((p: any) => ({
-          ...p,
-          image: p.images && p.images.length > 0 
-            ? (typeof p.images[0] === 'string' ? p.images[0] : p.images[0].url)
-            : 'https://placehold.co/600x800?text=No+Image',
-          sizes: p.sizes || [],
-          colors: Array.isArray(p.colors) 
-            ? p.colors.map((c: any) => typeof c === 'string' ? { name: c, code: '#CCCCCC' } : c)
-            : []
-        }));
+        const parseJSON = (val: any) => {
+          if (typeof val !== 'string') return val;
+          try {
+            const parsed = JSON.parse(val);
+            return parsed && typeof parsed === 'object' ? parsed : val;
+          } catch (e) {
+            return val;
+          }
+        };
+
+        const mappedProducts = data.map((p: any) => {
+          const images = Array.isArray(p.images) ? p.images.map((img: any) => {
+            const parsed = parseJSON(img);
+            return typeof parsed === 'string' ? { url: parsed } : parsed;
+          }) : [];
+
+          const colors = Array.isArray(p.colors) ? p.colors.map((c: any) => {
+            const parsed = parseJSON(c);
+            return typeof parsed === 'object' && parsed !== null ? parsed : { name: String(c), code: '#CCCCCC' };
+          }) : [];
+
+          return {
+            ...p,
+            image: images.length > 0 ? images[0].url : (p.image || 'https://placehold.co/600x800?text=No+Image'),
+            sizes: Array.isArray(p.sizes) ? p.sizes : [],
+            colors
+          };
+        });
         setProducts(mappedProducts);
       } else {
         // Fallback mock data if DB is empty or connection fails gracefully
