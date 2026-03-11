@@ -245,7 +245,7 @@ const CheckoutPage = () => {
       address: `${formData.address}${formData.apartment ? ', ' + formData.apartment : ''}, ${formData.sector}, ${formData.city}, ${formData.province}`,
       province: formData.province,
       city: formData.city,
-      status: 'Pendiente',
+      status: 'pending',
       notes: '',
       created_at: new Date().toISOString()
     };
