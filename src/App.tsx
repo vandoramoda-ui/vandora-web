@@ -49,7 +49,7 @@ function App() {
             <Route path="/tienda" element={<Layout><ShopPage /></Layout>} />
             <Route path="/producto/:categoria/:slug" element={<Layout><ProductDetailPage /></Layout>} />
             <Route path="/pagar" element={<Layout><CheckoutPage /></Layout>} />
-            <Route path="/gracias" element={<Layout><ThankYouPage /></Layout>} />
+            <Route path="/thank-you" element={<Layout><ThankYouPage /></Layout>} />
             <Route path="/nuestra-historia" element={<Layout><StoryPage /></Layout>} />
             <Route path="/contacto" element={<Layout><ContactPage /></Layout>} />
             <Route path="/preguntas-frecuentes" element={<Layout><FAQPage /></Layout>} />

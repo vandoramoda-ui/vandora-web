@@ -88,7 +88,7 @@ const ThankYouPage = () => {
 
           <div className="space-y-3 pt-4">
             <Link 
-              to="/shop" 
+              to="/tienda" 
               className="block w-full bg-gray-900 text-white text-center py-3 rounded-md font-medium hover:bg-gray-800 transition-colors flex items-center justify-center"
             >
               <ShoppingBag className="h-4 w-4 mr-2" />

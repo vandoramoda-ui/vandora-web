@@ -30,10 +30,10 @@ const Footer = () => {
           <div>
             <h4 className="font-serif text-lg mb-4 text-vandora-gold">Explorar</h4>
             <ul className="space-y-2 text-sm text-gray-400">
-              <li><Link to="/shop" className="hover:text-white transition-colors">Nueva Colección</Link></li>
-              <li><Link to="/shop?category=dresses" className="hover:text-white transition-colors">Vestidos</Link></li>
-              <li><Link to="/shop?category=blouses" className="hover:text-white transition-colors">Blusas</Link></li>
-              <li><Link to="/shop?category=pants" className="hover:text-white transition-colors">Pantalones</Link></li>
+              <li><Link to="/tienda" className="hover:text-white transition-colors">Nueva Colección</Link></li>
+              <li><Link to="/tienda?category=dresses" className="hover:text-white transition-colors">Vestidos</Link></li>
+              <li><Link to="/tienda?category=blouses" className="hover:text-white transition-colors">Blusas</Link></li>
+              <li><Link to="/tienda?category=pants" className="hover:text-white transition-colors">Pantalones</Link></li>
             </ul>
           </div>
 
@@ -41,10 +41,10 @@ const Footer = () => {
           <div>
             <h4 className="font-serif text-lg mb-4 text-vandora-gold">Compañía</h4>
             <ul className="space-y-2 text-sm text-gray-400">
-              <li><Link to="/story" className="hover:text-white transition-colors">Nuestra Historia</Link></li>
-              <li><Link to="/contact" className="hover:text-white transition-colors">Contacto</Link></li>
-              <li><Link to="/faq" className="hover:text-white transition-colors">Preguntas Frecuentes</Link></li>
-              <li><Link to="/shipping" className="hover:text-white transition-colors">Envíos y Devoluciones</Link></li>
+              <li><Link to="/nuestra-historia" className="hover:text-white transition-colors">Nuestra Historia</Link></li>
+              <li><Link to="/contacto" className="hover:text-white transition-colors">Contacto</Link></li>
+              <li><Link to="/preguntas-frecuentes" className="hover:text-white transition-colors">Preguntas Frecuentes</Link></li>
+              <li><Link to="/envio" className="hover:text-white transition-colors">Envíos y Devoluciones</Link></li>
             </ul>
           </div>
 

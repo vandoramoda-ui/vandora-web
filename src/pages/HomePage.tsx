@@ -15,7 +15,7 @@ const HomePage = () => {
       title: 'El Legado del Florecimiento',
       subtitle: 'Para la mujer que empezó desde cero y hoy conquista sus metas.',
       buttonText: 'Explorar Colección',
-      buttonLink: '/shop',
+      buttonLink: '/tienda',
       buttonColor: '#D4AF37', // Gold
       textColor: '#FFFFFF'
     },
@@ -26,7 +26,7 @@ const HomePage = () => {
       title: 'Elegancia Natural',
       subtitle: 'Descubre nuestra nueva colección de vestidos Esmeralda.',
       buttonText: 'Ver Vestidos',
-      buttonLink: '/shop?category=Vestidos',
+      buttonLink: '/tienda?category=Vestidos',
       buttonColor: '#50C878', // Emerald
       textColor: '#FFFFFF'
     }
@@ -59,10 +59,10 @@ const HomePage = () => {
 
   // Mock Categories
   const categories = [
-    { name: 'Vestidos', image: 'https://images.unsplash.com/photo-1595777457583-95e059d581b8?q=80&w=500&auto=format&fit=crop', link: '/shop?category=Vestidos' },
-    { name: 'Blusas', image: 'https://images.unsplash.com/photo-1564257631407-4deb1f99d992?q=80&w=500&auto=format&fit=crop', link: '/shop?category=Blusas' },
-    { name: 'Pantalones', image: 'https://images.unsplash.com/photo-1584273143981-41c073dfe8f8?q=80&w=500&auto=format&fit=crop', link: '/shop?category=Pantalones' },
-    { name: 'Accesorios', image: 'https://images.unsplash.com/photo-1576053139778-7e32f2ae3cfd?q=80&w=500&auto=format&fit=crop', link: '/shop?category=Accesorios' }
+    { name: 'Vestidos', image: 'https://images.unsplash.com/photo-1595777457583-95e059d581b8?q=80&w=500&auto=format&fit=crop', link: '/tienda?category=Vestidos' },
+    { name: 'Blusas', image: 'https://images.unsplash.com/photo-1564257631407-4deb1f99d992?q=80&w=500&auto=format&fit=crop', link: '/tienda?category=Blusas' },
+    { name: 'Pantalones', image: 'https://images.unsplash.com/photo-1584273143981-41c073dfe8f8?q=80&w=500&auto=format&fit=crop', link: '/tienda?category=Pantalones' },
+    { name: 'Accesorios', image: 'https://images.unsplash.com/photo-1576053139778-7e32f2ae3cfd?q=80&w=500&auto=format&fit=crop', link: '/tienda?category=Accesorios' }
   ];
 
   // Mock featured products
@@ -282,7 +282,7 @@ const HomePage = () => {
             <h2 className="font-serif text-3xl text-vandora-black mb-2">Favoritos de la Temporada</h2>
             <p className="text-gray-500">Piezas seleccionadas para tu éxito diario.</p>
           </div>
-          <Link to="/shop" className="text-vandora-emerald font-medium hover:text-vandora-gold transition-colors border-b border-vandora-emerald hover:border-vandora-gold pb-1">
+          <Link to="/tienda" className="text-vandora-emerald font-medium hover:text-vandora-gold transition-colors border-b border-vandora-emerald hover:border-vandora-gold pb-1">
             Ver todo
           </Link>
         </div>
@@ -315,7 +315,7 @@ const HomePage = () => {
               Únete a nuestra comunidad de "Mujeres que Florecen". Comparte tu historia y viste con el orgullo de quien ha luchado por cada logro.
             </p>
             <Link 
-              to="/story" 
+              to="/nuestra-historia" 
               className="inline-block border border-vandora-gold text-vandora-gold px-6 py-3 rounded hover:bg-vandora-gold hover:text-vandora-emerald transition-colors uppercase tracking-wider text-sm"
             >
               Leer Nuestra Historia
