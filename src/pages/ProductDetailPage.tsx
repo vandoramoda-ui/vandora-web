@@ -113,14 +113,25 @@ const ProductDetailPage = () => {
         .single();
 
       if (!error && data) {
-        // Normalize data to ensure arrays exist
+        // Normalize data to ensure arrays exist and have correct object shape
         const normalizedData = {
           ...data,
-          images: Array.isArray(data.images) ? data.images : [],
-          colors: Array.isArray(data.colors) ? data.colors : [],
+          images: Array.isArray(data.images) 
+            ? data.images.map((img: any) => typeof img === 'string' ? { url: img } : img) 
+            : [],
+          colors: Array.isArray(data.colors) 
+            ? data.colors.map((c: any) => typeof c === 'string' ? { name: c, code: '#CCCCCC' } : c) 
+            : [],
           sizes: Array.isArray(data.sizes) ? data.sizes : [],
-          videos: Array.isArray(data.videos) ? data.videos : []
+          videos: Array.isArray(data.videos) 
+            ? data.videos.map((v: any) => typeof v === 'string' ? { url: v } : v) 
+            : []
         };
+
+        // Ensure a main image exists if the image column is empty but images array has data
+        if (!normalizedData.image && normalizedData.images.length > 0) {
+          normalizedData.image = normalizedData.images[0].url;
+        }
         setProduct(normalizedData);
         if (normalizedData.sizes.length > 0) setSelectedSize(normalizedData.sizes[0]);
         if (normalizedData.colors.length > 0) setSelectedColor(normalizedData.colors[0].name);
