@@ -103,7 +103,8 @@ const AdminPage = () => {
       setProducts(data.map(p => ({
         ...p,
         images: Array.isArray(p.images) ? p.images.map((img: any) => typeof img === 'string' ? { url: img } : img) : [],
-        videos: Array.isArray(p.videos) ? p.videos.map((vid: any) => typeof vid === 'string' ? { url: vid } : vid) : []
+        videos: Array.isArray(p.videos) ? p.videos.map((vid: any) => typeof vid === 'string' ? { url: vid } : vid) : [],
+        colors: Array.isArray(p.colors) ? p.colors.map((c: any) => typeof c === 'string' ? { name: c, code: '#CCCCCC' } : c) : []
       })));
     }
     setLoading(false);
@@ -123,11 +124,22 @@ const AdminPage = () => {
     e.preventDefault();
     try {
       const slug = formData.name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
+      
+      // Explicitly construct product data with type conversions and validation
       const productData = {
-        ...formData,
+        name: formData.name,
+        price: parseFloat(formData.price) || 0,
+        category: formData.category,
+        stock: parseInt(formData.stock) || 0,
+        description: formData.description,
+        details: formData.details,
+        materials: formData.materials,
+        care: formData.care,
+        images: formData.images,
+        videos: formData.videos,
+        sizes: formData.sizes,
+        colors: formData.colors,
         slug,
-        price: parseFloat(formData.price),
-        stock: parseInt(formData.stock),
         upsell_product_id: formData.upsell_product_id || null,
         downsell_product_id: formData.downsell_product_id || null,
         order_bump_product_id: formData.order_bump_product_id || null
@@ -142,7 +154,14 @@ const AdminPage = () => {
         const { data, error } = await supabase.from('products').insert([productData]).select();
         if (error) throw error;
         if (data) {
-          setProducts([...products, data[0]]);
+          // Normalize the returned data before adding to state
+          const newProduct = {
+            ...data[0],
+            images: Array.isArray(data[0].images) ? data[0].images.map((img: any) => typeof img === 'string' ? { url: img } : img) : [],
+            videos: Array.isArray(data[0].videos) ? data[0].videos.map((vid: any) => typeof vid === 'string' ? { url: vid } : vid) : [],
+            colors: Array.isArray(data[0].colors) ? data[0].colors.map((c: any) => typeof c === 'string' ? { name: c, code: '#CCCCCC' } : c) : []
+          };
+          setProducts([...products, newProduct]);
           closeModal();
         }
       }
@@ -403,10 +422,16 @@ const AdminPage = () => {
                             ...product,
                             price: product.price.toString(),
                             stock: product.stock.toString(),
-                            images: Array.isArray(product.images) ? product.images : [],
-                            videos: Array.isArray(product.videos) ? product.videos : [],
+                            images: Array.isArray(product.images) 
+                              ? product.images.map((img: any) => typeof img === 'string' ? { url: img } : img) 
+                              : [],
+                            videos: Array.isArray(product.videos) 
+                              ? product.videos.map((vid: any) => typeof vid === 'string' ? { url: vid } : vid) 
+                              : [],
+                            colors: Array.isArray(product.colors) 
+                              ? product.colors.map((c: any) => typeof c === 'string' ? { name: c, code: '#CCCCCC' } : c) 
+                              : [],
                             sizes: Array.isArray(product.sizes) ? product.sizes : [],
-                            colors: Array.isArray(product.colors) ? product.colors : [],
                             variants: Array.isArray(product.variants) ? product.variants : []
                           });
                           setIsModalOpen(true);
