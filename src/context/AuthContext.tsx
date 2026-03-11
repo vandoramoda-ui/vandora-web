@@ -55,6 +55,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     const fetchProfile = async (userId: string) => {
         try {
+            const { data, error } = await supabase
+                .from('profiles')
+                .select('*')
+                .eq('id', userId)
+                .single();
+
+            if (error && error.code !== 'PGRST116') {
+                console.error('Error fetching profile:', error);
+            }
+
             if (data) {
                 console.log('Auth: Profile fetched successfully:', data);
                 console.log('Auth: Role detected ->', `"${data.role}"`);
