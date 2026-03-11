@@ -176,7 +176,7 @@ const QuizFunnel = () => {
                 
                 <div className="space-y-4">
                   <Link
-                    to={recommendation?.link || '/shop'}
+                    to={recommendation?.link || '/tienda'}
                     className="block w-full bg-vandora-emerald text-white px-6 py-4 rounded-lg font-medium hover:bg-emerald-800 transition-colors shadow-lg"
                   >
                     Ver Prenda y Comprar

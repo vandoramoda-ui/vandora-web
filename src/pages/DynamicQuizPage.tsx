@@ -111,7 +111,7 @@ const DynamicQuizPage = () => {
                        <p className="font-bold text-lg text-gray-900">{outcome.product_recommendation}</p>
                     </div>
                     <Link
-                      to="/shop"
+                      to="/tienda"
                       className="block w-full bg-vandora-emerald text-white px-6 py-4 rounded-lg font-medium hover:bg-emerald-800 transition-colors shadow-lg"
                     >
                       Ver Colección

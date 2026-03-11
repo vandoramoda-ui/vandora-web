@@ -186,7 +186,7 @@ const FlowQuizPage = () => {
                   </div>
 
                   <Link
-                    to="/shop"
+                    to="/tienda"
                     className="w-full bg-vandora-emerald text-white py-4 rounded-xl font-medium text-lg hover:bg-emerald-800 transition-all shadow-lg shadow-emerald-200"
                   >
                     Ver Producto y Comprar
