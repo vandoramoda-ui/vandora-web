@@ -35,7 +35,23 @@ const LoginPage = () => {
           password,
         });
         if (error) throw error;
-        if (data.user) navigate('/');
+        
+        if (data.user) {
+          // Fetch profile to check role for redirection
+          const { data: profile } = await supabase
+            .from('profiles')
+            .select('role')
+            .eq('id', data.user.id)
+            .single();
+            
+          const isStaff = ['superadmin', 'admin', 'editor', 'support'].includes(profile?.role || '');
+          
+          if (isStaff) {
+            navigate('/administracion');
+          } else {
+            navigate('/mi-cuenta');
+          }
+        }
       } else {
         const { data, error } = await supabase.auth.signUp({
           email,

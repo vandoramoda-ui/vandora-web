@@ -15,9 +15,9 @@ const AdminPage = () => {
   const { profile } = useAuth();
   const role = profile?.role || 'cliente';
 
-  const canManageProducts = ['admin', 'editor'].includes(role);
-  const canManageOrders = ['admin', 'support'].includes(role);
-  const canManageUsers = ['admin'].includes(role);
+  const canManageProducts = ['superadmin', 'admin', 'editor'].includes(role);
+  const canManageOrders = ['superadmin', 'admin', 'support'].includes(role);
+  const canManageUsers = ['superadmin', 'admin'].includes(role);
 
   const [activeTab, setActiveTab] = useState(
     canManageProducts ? 'products' : (canManageOrders ? 'orders' : 'users')
@@ -330,7 +330,7 @@ const AdminPage = () => {
             </button>
           )}
 
-          {role === 'admin' && (
+          {['superadmin', 'admin'].includes(role) && (
             <>
               <button
                 onClick={() => { setActiveTab('media'); setIsSidebarOpen(false); }}
