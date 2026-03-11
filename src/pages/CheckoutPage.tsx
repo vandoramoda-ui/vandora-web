@@ -233,7 +233,9 @@ const CheckoutPage = () => {
 
     const currentTotal = total + (isBumpAccepted && bumpProduct ? bumpProduct.price : 0);
 
-    const orderData = {
+    const { data: { session } } = await supabase.auth.getSession();
+    
+    const orderData: any = {
       items: finalItems,
       total: currentTotal + shippingCost,
       shipping_cost: shippingCost,
@@ -247,7 +249,8 @@ const CheckoutPage = () => {
       city: formData.city,
       status: 'pending',
       notes: '',
-      created_at: new Date().toISOString()
+      created_at: new Date().toISOString(),
+      user_id: session?.user?.id || null
     };
 
     try {
