@@ -145,7 +145,7 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
                   </p>
                   <div className="mt-6">
                     <Link
-                      to="/checkout"
+                      to="/pagar"
                       onClick={() => setIsOpen(false)}
                       className="flex items-center justify-center rounded-md border border-transparent bg-vandora-emerald px-6 py-3 text-base font-medium text-white shadow-sm hover:bg-emerald-800 transition-colors"
                     >
