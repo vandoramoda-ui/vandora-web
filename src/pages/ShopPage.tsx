@@ -76,9 +76,10 @@ const ShopPage = () => {
     }
   };
 
-  const filteredProducts = categoryFilter === 'all' 
+  const filteredProducts = (categoryFilter === 'all' 
     ? products 
-    : products.filter(p => p.category.toLowerCase() === categoryFilter.toLowerCase());
+    : products.filter(p => p.category.toLowerCase() === categoryFilter.toLowerCase()))
+    .filter(p => p.stock > 0);
 
   const categories = ['all', ...Array.from(new Set(products.map(p => p.category.toLowerCase())))];
 

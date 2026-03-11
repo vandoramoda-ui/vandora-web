@@ -121,29 +121,34 @@ const AdminPage = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    const slug = formData.name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
-    const productData = {
-      ...formData,
-      slug,
-      price: parseFloat(formData.price),
-      stock: parseInt(formData.stock),
-      upsell_product_id: formData.upsell_product_id || null,
-      downsell_product_id: formData.downsell_product_id || null,
-      order_bump_product_id: formData.order_bump_product_id || null
-    };
+    try {
+      const slug = formData.name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
+      const productData = {
+        ...formData,
+        slug,
+        price: parseFloat(formData.price),
+        stock: parseInt(formData.stock),
+        upsell_product_id: formData.upsell_product_id || null,
+        downsell_product_id: formData.downsell_product_id || null,
+        order_bump_product_id: formData.order_bump_product_id || null
+      };
 
-    if (editingProduct) {
-      const { error } = await supabase.from('products').update(productData).eq('id', editingProduct.id);
-      if (!error) {
+      if (editingProduct) {
+        const { error } = await supabase.from('products').update(productData).eq('id', editingProduct.id);
+        if (error) throw error;
         setProducts(products.map(p => p.id === editingProduct.id ? { ...p, ...productData } : p));
         closeModal();
+      } else {
+        const { data, error } = await supabase.from('products').insert([productData]).select();
+        if (error) throw error;
+        if (data) {
+          setProducts([...products, data[0]]);
+          closeModal();
+        }
       }
-    } else {
-      const { data, error } = await supabase.from('products').insert([productData]).select();
-      if (!error && data) {
-        setProducts([...products, data[0]]);
-        closeModal();
-      }
+    } catch (error: any) {
+      console.error('Error saving product:', error);
+      alert('Error al guardar el producto: ' + (error.message || 'Error desconocido'));
     }
   };
 
@@ -185,10 +190,41 @@ const AdminPage = () => {
     if (!error && data) {
       setCategories([...categories, data[0]]);
       setNewCategoryName('');
-      setIsCategoryModalOpen(false);
     } else {
       alert('Error creando categoría: ' + (error?.message || 'Ya existe o error de conexión'));
     }
+  };
+
+  const handleUpdateCategory = async (id: string, oldName: string, newName: string) => {
+    if (!newName || oldName === newName) return;
+    
+    // Update category name
+    const { error: catError } = await supabase.from('product_categories').update({ name: newName }).eq('id', id);
+    if (catError) {
+      alert('Error al actualizar categoría: ' + catError.message);
+      return;
+    }
+
+    // Update all products with this category
+    const { error: prodError } = await supabase.from('products').update({ category: newName }).eq('category', oldName);
+    if (prodError) {
+      alert('Categoría actualizada, pero hubo un error al actualizar algunos productos.');
+    }
+
+    setCategories(categories.map(c => c.id === id ? { ...c, name: newName } : c));
+    setProducts(products.map(p => p.category === oldName ? { ...p, category: newName } : p));
+  };
+
+  const handleDeleteCategory = async (id: string, name: string) => {
+    if (!confirm(`¿Estás seguro de eliminar la categoría "${name}"? Los productos asociados NO serán eliminados pero quedarán sin categoría.`)) return;
+
+    const { error } = await supabase.from('product_categories').delete().eq('id', id);
+    if (error) {
+      alert('Error al eliminar categoría: ' + error.message);
+      return;
+    }
+
+    setCategories(categories.filter(c => c.id !== id));
   };
 
   return (
@@ -762,28 +798,54 @@ const AdminPage = () => {
           </div>
         )}
 
-        {/* New Category Modal */}
         {isCategoryModalOpen && (
           <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-[70]">
-            <div className="bg-white rounded-lg w-full max-w-sm p-6 shadow-2xl">
+            <div className="bg-white rounded-lg w-full max-w-md p-6 shadow-2xl">
               <div className="flex justify-between items-center mb-6">
-                <h2 className="text-xl font-serif text-gray-900">Nueva Categoría</h2>
+                <h2 className="text-xl font-serif text-gray-900">Gestionar Categorías</h2>
                 <button onClick={() => setIsCategoryModalOpen(false)} className="text-gray-400 hover:text-gray-600"><X className="h-6 w-6" /></button>
               </div>
-              <div className="space-y-4">
+              
+              <div className="space-y-4 mb-6 max-h-60 overflow-y-auto pr-2">
+                {categories.map(cat => (
+                  <div key={cat.id} className="flex items-center gap-2 p-2 hover:bg-gray-50 rounded-md group">
+                    <input 
+                      type="text" 
+                      defaultValue={cat.name}
+                      onBlur={(e) => handleUpdateCategory(cat.id, cat.name, e.target.value)}
+                      className="flex-1 bg-transparent border-none focus:ring-0 text-sm font-medium text-gray-700"
+                    />
+                    <button 
+                      onClick={() => handleDeleteCategory(cat.id, cat.name)}
+                      className="text-gray-400 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity"
+                    >
+                      <Trash className="h-4 w-4" />
+                    </button>
+                  </div>
+                ))}
+              </div>
+
+              <div className="space-y-4 pt-4 border-t">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Nombre de la Categoría</label>
-                  <input
-                    type="text"
-                    value={newCategoryName}
-                    onChange={(e) => setNewCategoryName(e.target.value)}
-                    className="w-full rounded-md border-gray-300 shadow-sm border p-3 focus:ring-2 focus:ring-vandora-emerald outline-none"
-                    placeholder="Ej: Vestidos, Accesorios..."
-                  />
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Nueva Categoría</label>
+                  <div className="flex gap-2">
+                    <input
+                      type="text"
+                      value={newCategoryName}
+                      onChange={(e) => setNewCategoryName(e.target.value)}
+                      className="flex-1 rounded-md border-gray-300 shadow-sm border p-2 focus:ring-2 focus:ring-vandora-emerald outline-none text-sm"
+                      placeholder="Ej: Vestidos, Accesorios..."
+                    />
+                    <button 
+                      onClick={handleCreateCategory}
+                      className="bg-vandora-emerald text-white px-4 py-2 rounded-md hover:bg-emerald-800 transition-colors shadow-sm text-sm"
+                    >
+                      Añadir
+                    </button>
+                  </div>
                 </div>
-                <div className="flex justify-end space-x-3 pt-6 border-t">
-                  <button type="button" onClick={() => setIsCategoryModalOpen(false)} className="px-6 py-2 border rounded-md text-gray-600">Cancelar</button>
-                  <button onClick={handleCreateCategory} className="px-6 py-2 bg-vandora-emerald text-white rounded-md hover:bg-emerald-800 transition-colors shadow-md">Crear</button>
+                <div className="flex justify-end pt-2">
+                  <button type="button" onClick={() => setIsCategoryModalOpen(false)} className="px-6 py-2 border rounded-md text-gray-600 text-sm">Cerrar</button>
                 </div>
               </div>
             </div>
