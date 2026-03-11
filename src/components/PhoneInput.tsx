@@ -87,7 +87,17 @@ const PhoneInput: React.FC<PhoneInputProps> = ({ value, onChange, required, labe
           onClick={() => setIsOpen(!isOpen)}
           className="flex items-center gap-2 px-3 py-2 bg-gray-50 border-r border-gray-300 hover:bg-gray-100 transition-colors"
         >
-          <span className="text-xl leading-none">{selectedCountry.flag}</span>
+          <img 
+            src={`https://flagcdn.com/w40/${selectedCountry.code.toLowerCase()}.png`}
+            alt={selectedCountry.name}
+            className="w-6 h-auto shadow-sm"
+            onError={(e) => {
+              (e.target as HTMLImageElement).style.display = 'none';
+              const span = (e.target as HTMLImageElement).nextSibling as HTMLElement;
+              if (span) span.style.display = 'inline';
+            }}
+          />
+          <span className="text-xl leading-none hidden">{selectedCountry.flag}</span>
           <span className="text-sm font-medium text-gray-600">{selectedCountry.dialCode}</span>
         </button>
 
@@ -115,7 +125,11 @@ const PhoneInput: React.FC<PhoneInputProps> = ({ value, onChange, required, labe
                 onClick={() => selectCountry(country)}
                 className="w-full flex items-center gap-3 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
               >
-                <span className="text-xl">{country.flag}</span>
+                <img 
+                  src={`https://flagcdn.com/w40/${country.code.toLowerCase()}.png`}
+                  alt={country.name}
+                  className="w-5 h-auto shadow-sm"
+                />
                 <span className="flex-1 text-left">{country.name}</span>
                 <span className="text-gray-400">{country.dialCode}</span>
               </button>

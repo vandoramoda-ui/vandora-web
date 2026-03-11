@@ -246,16 +246,49 @@ const CheckoutPage = () => {
       province: formData.province,
       city: formData.city,
       status: 'Pendiente',
+      notes: '',
       created_at: new Date().toISOString()
     };
 
     try {
       console.log('Attempting to save order...', orderData);
-      const { data: orderResult, error: orderError } = await supabase
+      
+      // Try first insert
+      let { data: orderResult, error: orderError } = await supabase
         .from('orders')
         .insert([orderData])
         .select()
         .single();
+
+      // If it fails with "column not found" for address, etc., try a fallback
+      if (orderError && (orderError.message.includes('column') || orderError.code === '42703')) {
+        console.warn('Addressing schema mismatch, trying fallback insert...', orderError.message);
+        
+        // Combine address info into notes
+        const fallbackAddress = `Dirección: ${formData.address}${formData.apartment ? ', ' + formData.apartment : ''}, ${formData.sector}, ${formData.city}, ${formData.province}. Ref: ${formData.reference}`;
+        
+        const fallbackData: any = {
+          items: orderData.items,
+          total: orderData.total,
+          customer_name: orderData.customer_name,
+          customer_email: orderData.customer_email,
+          customer_phone: orderData.customer_phone,
+          payment_method: orderData.payment_method,
+          status: 'pending',
+          created_at: orderData.created_at,
+          notes: (orderData.notes || '') + '\n' + fallbackAddress
+        };
+
+        // Try again with fallbackData
+        const { data: retryResult, error: retryError } = await supabase
+          .from('orders')
+          .insert([fallbackData])
+          .select()
+          .single();
+        
+        orderResult = retryResult;
+        orderError = retryError;
+      }
 
       if (orderError) {
         console.error('Supabase Order Error:', orderError);
