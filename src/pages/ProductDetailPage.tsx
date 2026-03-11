@@ -113,9 +113,17 @@ const ProductDetailPage = () => {
         .single();
 
       if (!error && data) {
-        setProduct(data);
-        if (data.sizes?.length > 0) setSelectedSize(data.sizes[0]);
-        if (data.colors?.length > 0) setSelectedColor(data.colors[0].name);
+        // Normalize data to ensure arrays exist
+        const normalizedData = {
+          ...data,
+          images: Array.isArray(data.images) ? data.images : [],
+          colors: Array.isArray(data.colors) ? data.colors : [],
+          sizes: Array.isArray(data.sizes) ? data.sizes : [],
+          videos: Array.isArray(data.videos) ? data.videos : []
+        };
+        setProduct(normalizedData);
+        if (normalizedData.sizes.length > 0) setSelectedSize(normalizedData.sizes[0]);
+        if (normalizedData.colors.length > 0) setSelectedColor(normalizedData.colors[0].name);
       } else {
         navigate('/tienda');
       }
@@ -127,12 +135,14 @@ const ProductDetailPage = () => {
   useEffect(() => {
     if (product) {
       // Images
-      const images = product.images.filter((img: any) => !img.color || img.color === selectedColor);
-      setFilteredImages(images.length > 0 ? images : product.images);
+      const allImages = Array.isArray(product.images) ? product.images : [];
+      const images = allImages.filter((img: any) => !img.color || img.color === selectedColor);
+      setFilteredImages(images.length > 0 ? images : allImages);
 
       // Videos
-      const vids = (product.videos || []).filter((vid: any) => !vid.color || vid.color === selectedColor);
-      setFilteredVideos(vids.length > 0 ? vids : (product.videos || []));
+      const allVideos = Array.isArray(product.videos) ? product.videos : [];
+      const vids = allVideos.filter((vid: any) => !vid.color || vid.color === selectedColor);
+      setFilteredVideos(vids.length > 0 ? vids : allVideos);
 
       setActiveImageIndex(0);
     }

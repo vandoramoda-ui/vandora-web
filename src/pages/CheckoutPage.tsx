@@ -100,8 +100,15 @@ const CheckoutPage = () => {
           .eq('key', 'checkout_config')
           .single();
 
-        if (data) {
-          setSettings({ ...DEFAULT_SETTINGS, ...data.value });
+        if (data && data.value) {
+          const merged = {
+            ...DEFAULT_SETTINGS,
+            ...data.value,
+            fields: { ...DEFAULT_SETTINGS.fields, ...data.value.fields },
+            paymentMethods: { ...DEFAULT_SETTINGS.paymentMethods, ...data.value.paymentMethods },
+            shippingRules: { ...DEFAULT_SETTINGS.shippingRules, ...data.value.shippingRules }
+          };
+          setSettings(merged);
         }
       } catch (error) {
         console.error('Error loading checkout settings', error);
