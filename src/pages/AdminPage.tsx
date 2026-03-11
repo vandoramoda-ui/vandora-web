@@ -499,7 +499,7 @@ const AdminPage = () => {
                     <tr key={order.id} className="hover:bg-gray-50 transition-colors">
                       <td className="px-6 py-4 text-sm font-medium text-gray-900">#{order.id.substring(0, 8)}</td>
                       <td className="px-6 py-4 text-sm text-gray-500">{order.customer_name}</td>
-                      <td className="px-6 py-4 text-sm text-gray-500">{formatPrice(order.total_amount || order.total)}</td>
+                      <td className="px-6 py-4 text-sm text-gray-500">{formatPrice(order.total)}</td>
                       <td className="px-6 py-4 text-sm text-gray-500">
                         <span className={`px-3 py-1 text-xs font-semibold rounded-full ${order.status === 'completed' ? 'bg-green-100 text-green-800' :
                           order.status === 'pending' ? 'bg-yellow-100 text-yellow-800' : 'bg-gray-100 text-gray-800'

@@ -125,7 +125,7 @@ const MyAccountPage = () => {
                                                 </div>
                                                 <div className="flex items-center gap-4">
                                                     <span className="text-sm font-medium text-gray-900">
-                                                        {formatPrice(order.total_amount)}
+                                                        {formatPrice(order.total)}
                                                     </span>
                                                     <span className={`px-3 py-1 text-xs font-semibold rounded-full 
                             ${order.status === 'completed' ? 'bg-green-100 text-green-800' :

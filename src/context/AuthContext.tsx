@@ -2,7 +2,7 @@ import React, { createContext, useContext, useEffect, useState } from 'react';
 import { supabase } from '../lib/supabase';
 import { User } from '@supabase/supabase-js';
 
-export type UserRole = 'admin' | 'editor' | 'support' | 'cliente';
+export type UserRole = 'superadmin' | 'admin' | 'editor' | 'support' | 'cliente';
 
 type Profile = {
     id: string;
@@ -77,8 +77,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         await supabase.auth.signOut();
     };
 
-    const isAdmin = profile?.role === 'admin';
-    const isStaff = ['admin', 'editor', 'support'].includes(profile?.role || '');
+    const isAdmin = ['superadmin', 'admin'].includes(profile?.role || '');
+    const isStaff = ['superadmin', 'admin', 'editor', 'support'].includes(profile?.role || '');
 
     return (
         <AuthContext.Provider value={{ user, profile, loading, isAdmin, isStaff, signOut }}>
