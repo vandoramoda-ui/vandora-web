@@ -253,6 +253,15 @@ const AdminPage = () => {
     setProducts(products.map(p => p.category === oldName ? { ...p, category: newName } : p));
   };
 
+  const handleUpdateCategoryImage = async (id: string, imageUrl: string) => {
+    const { error } = await supabase.from('product_categories').update({ image_url: imageUrl }).eq('id', id);
+    if (error) {
+      alert('Error al actualizar imagen de categoría: ' + error.message);
+      return;
+    }
+    setCategories(categories.map(c => c.id === id ? { ...c, image_url: imageUrl } : c));
+  };
+
   const handleDeleteCategory = async (id: string, name: string) => {
     if (!confirm(`¿Estás seguro de eliminar la categoría "${name}"? Los productos asociados NO serán eliminados pero quedarán sin categoría.`)) return;
 
@@ -948,9 +957,29 @@ const AdminPage = () => {
                       onBlur={(e) => handleUpdateCategory(cat.id, cat.name, e.target.value)}
                       className="flex-1 bg-transparent border-none focus:ring-0 text-sm font-medium text-gray-700"
                     />
+                    <div className="flex items-center gap-2">
+                       {cat.image_url ? (
+                         <img src={cat.image_url} alt="" className="w-8 h-8 rounded object-cover border" />
+                       ) : (
+                         <div className="w-8 h-8 rounded bg-gray-100 flex items-center justify-center border border-dashed text-gray-400">
+                           <ImageIcon className="w-4 h-4" />
+                         </div>
+                       )}
+                       <button 
+                         onClick={() => {
+                           const url = prompt('URL de la imagen para ' + cat.name, cat.image_url || '');
+                           if (url !== null) handleUpdateCategoryImage(cat.id, url);
+                         }}
+                         className="text-gray-400 hover:text-vandora-emerald p-1"
+                         title="Cambiar imagen"
+                       >
+                         <ImageIcon className="h-4 w-4" />
+                       </button>
+                    </div>
                     <button 
                       onClick={() => handleDeleteCategory(cat.id, cat.name)}
-                      className="text-gray-400 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity"
+                      className="p-1 text-gray-400 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity"
+                      title="Eliminar categoría"
                     >
                       <Trash className="h-4 w-4" />
                     </button>

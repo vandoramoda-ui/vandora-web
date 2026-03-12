@@ -1,8 +1,39 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Facebook, Instagram, Twitter } from 'lucide-react';
+import { Facebook, Instagram, Twitter, Globe, Share2, Youtube, Linkedin, Send } from 'lucide-react';
+import { supabase } from '../lib/supabase';
 
 const Footer = () => {
+  const [socialLinks, setSocialLinks] = useState<any>({});
+
+  useEffect(() => {
+    const fetchSocial = async () => {
+      const { data } = await supabase
+        .from('site_content')
+        .select('content')
+        .eq('section_key', 'social_links')
+        .single();
+      
+      if (data?.content) {
+        setSocialLinks(data.content);
+      }
+    };
+    fetchSocial();
+  }, []);
+
+  const getIcon = (key: string) => {
+    switch (key) {
+      case 'instagram': return <Instagram className="h-5 w-5" />;
+      case 'facebook': return <Facebook className="h-5 w-5" />;
+      case 'twitter': return <Twitter className="h-5 w-5" />;
+      case 'tiktok': return <Share2 className="h-5 w-5" />; // Lucide doesn't have tiktok in default, use Share or Globe
+      case 'whatsapp': return <Send className="h-5 w-5" />;
+      case 'youtube': return <Youtube className="h-5 w-5" />;
+      case 'linkedin': return <Linkedin className="h-5 w-5" />;
+      default: return <Globe className="h-5 w-5" />;
+    }
+  };
+
   return (
     <footer className="bg-vandora-black text-white pt-16 pb-8">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -13,16 +44,26 @@ const Footer = () => {
             <p className="text-gray-400 text-sm leading-relaxed mb-6">
               "El Legado del Florecimiento". Moda elegante para la mujer que construye su propio camino.
             </p>
-            <div className="flex space-x-4">
-              <a href="#" className="text-gray-400 hover:text-vandora-gold transition-colors">
-                <Instagram className="h-5 w-5" />
-              </a>
-              <a href="#" className="text-gray-400 hover:text-vandora-gold transition-colors">
-                <Facebook className="h-5 w-5" />
-              </a>
-              <a href="#" className="text-gray-400 hover:text-vandora-gold transition-colors">
-                <Twitter className="h-5 w-5" />
-              </a>
+            <div className="flex flex-wrap gap-4">
+              {Object.entries(socialLinks).filter(([_, data]: [any, any]) => data.enabled && data.url).map(([key, data]: [any, any]) => (
+                <a 
+                  key={key} 
+                  href={data.url} 
+                  target="_blank" 
+                  rel="noopener noreferrer"
+                  className="text-gray-400 hover:text-vandora-gold transition-colors"
+                  title={key}
+                >
+                  {getIcon(key)}
+                </a>
+              ))}
+              {/* Default if none enabled yet */}
+              {Object.values(socialLinks).filter((d: any) => d.enabled).length === 0 && (
+                 <>
+                    <a href="#" className="text-gray-400 hover:text-vandora-gold"><Instagram className="h-5 w-5" /></a>
+                    <a href="#" className="text-gray-400 hover:text-vandora-gold"><Facebook className="h-5 w-5" /></a>
+                 </>
+              )}
             </div>
           </div>
 

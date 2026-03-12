@@ -1,97 +1,90 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Link } from 'react-router-dom';
-import { ChevronLeft, ChevronRight, ArrowRight } from 'lucide-react';
+import { ChevronLeft, ChevronRight, ArrowRight, Loader2 } from 'lucide-react';
 import ProductCard from '../components/ProductCard';
 import SEO from '../components/SEO';
+import { supabase } from '../lib/supabase';
 
 const HomePage = () => {
-  // Mock Hero Slides (In real app, fetch from DB)
-  const heroSlides = [
-    {
-      id: 1,
-      imageDesktop: 'https://images.unsplash.com/photo-1490481651871-ab68de25d43d?q=80&w=2000&auto=format&fit=crop',
-      imageMobile: 'https://images.unsplash.com/photo-1490481651871-ab68de25d43d?q=80&w=800&auto=format&fit=crop',
-      title: 'El Legado del Florecimiento',
-      subtitle: 'Para la mujer que empezó desde cero y hoy conquista sus metas.',
-      buttonText: 'Explorar Colección',
-      buttonLink: '/tienda',
-      buttonColor: '#D4AF37', // Gold
-      textColor: '#FFFFFF'
-    },
-    {
-      id: 2,
-      imageDesktop: 'https://images.unsplash.com/photo-1595777457583-95e059d581b8?q=80&w=2000&auto=format&fit=crop',
-      imageMobile: 'https://images.unsplash.com/photo-1595777457583-95e059d581b8?q=80&w=800&auto=format&fit=crop',
-      title: 'Elegancia Natural',
-      subtitle: 'Descubre nuestra nueva colección de vestidos Esmeralda.',
-      buttonText: 'Ver Vestidos',
-      buttonLink: '/tienda?category=Vestidos',
-      buttonColor: '#50C878', // Emerald
-      textColor: '#FFFFFF'
-    }
-  ];
-
+  const [heroSlides, setHeroSlides] = useState<any[]>([]);
+  const [categories, setCategories] = useState<any[]>([]);
+  const [featuredProducts, setFeaturedProducts] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
   const [currentSlide, setCurrentSlide] = useState(0);
+
+  useEffect(() => {
+    const fetchData = async () => {
+      setLoading(true);
+      try {
+        // Fetch Hero Slides
+        const { data: heroData } = await supabase
+          .from('site_content')
+          .select('content')
+          .eq('section_key', 'hero_slides')
+          .single();
+        
+        if (heroData?.content) {
+          setHeroSlides(heroData.content);
+        } else {
+          // Fallback static slides if record doesn't exist
+          setHeroSlides([
+            {
+              id: 1,
+              imageDesktop: 'https://images.unsplash.com/photo-1490481651871-ab68de25d43d?q=80&w=2000&auto=format&fit=crop',
+              imageMobile: 'https://images.unsplash.com/photo-1490481651871-ab68de25d43d?q=80&w=800&auto=format&fit=crop',
+              title: 'El Legado del Florecimiento',
+              subtitle: 'Para la mujer que empezó desde cero y hoy conquista sus metas.',
+              buttonText: 'Explorar Colección',
+              buttonLink: '/tienda',
+              buttonColor: '#D4AF37',
+              textColor: '#FFFFFF'
+            }
+          ]);
+        }
+
+        // Fetch Categories
+        const { data: catData } = await supabase
+          .from('product_categories')
+          .select('name, image_url')
+          .order('name');
+        
+        if (catData) {
+          setCategories(catData.map(c => ({
+            name: c.name,
+            image: c.image_url || 'https://images.unsplash.com/photo-1490481651871-ab68de25d43d?q=80&w=500&auto=format&fit=crop',
+            link: `/tienda?category=${encodeURIComponent(c.name)}`
+          })));
+        }
+
+        // Fetch Featured Products (last 3 for now)
+        const { data: prodData } = await supabase
+          .from('products')
+          .select('*')
+          .order('created_at', { ascending: false })
+          .limit(3);
+        
+        if (prodData) {
+          setFeaturedProducts(prodData);
+        }
+      } catch (err) {
+        console.error('Error fetching home data:', err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchData();
+  }, []);
 
   // Auto-slide
   useEffect(() => {
+    if (heroSlides.length <= 1) return;
     const timer = setInterval(() => {
       setCurrentSlide((prev) => (prev + 1) % heroSlides.length);
     }, 6000);
     return () => clearInterval(timer);
   }, [heroSlides.length]);
-
-  const nextSlide = () => setCurrentSlide((prev) => (prev + 1) % heroSlides.length);
-  const prevSlide = () => setCurrentSlide((prev) => (prev - 1 + heroSlides.length) % heroSlides.length);
-
-  const categoryScrollRef = React.useRef<HTMLDivElement>(null);
-
-  const scrollCategories = (direction: 'left' | 'right') => {
-    if (categoryScrollRef.current) {
-      const scrollAmount = 300;
-      categoryScrollRef.current.scrollBy({
-        left: direction === 'left' ? -scrollAmount : scrollAmount,
-        behavior: 'smooth'
-      });
-    }
-  };
-
-  // Mock Categories
-  const categories = [
-    { name: 'Vestidos', image: 'https://images.unsplash.com/photo-1595777457583-95e059d581b8?q=80&w=500&auto=format&fit=crop', link: '/tienda?category=Vestidos' },
-    { name: 'Blusas', image: 'https://images.unsplash.com/photo-1564257631407-4deb1f99d992?q=80&w=500&auto=format&fit=crop', link: '/tienda?category=Blusas' },
-    { name: 'Pantalones', image: 'https://images.unsplash.com/photo-1584273143981-41c073dfe8f8?q=80&w=500&auto=format&fit=crop', link: '/tienda?category=Pantalones' },
-    { name: 'Accesorios', image: 'https://images.unsplash.com/photo-1576053139778-7e32f2ae3cfd?q=80&w=500&auto=format&fit=crop', link: '/tienda?category=Accesorios' }
-  ];
-
-  // Mock featured products
-  const featuredProducts = [
-    {
-      id: '1',
-      name: 'Vestido Esmeralda Real',
-      price: 85.00,
-      image: 'https://images.unsplash.com/photo-1595777457583-95e059d581b8?q=80&w=1000&auto=format&fit=crop',
-      category: 'Vestidos',
-      colors: [{ name: 'Esmeralda', code: '#50C878' }, { name: 'Negro', code: '#000000' }]
-    },
-    {
-      id: '2',
-      name: 'Blusa Seda Champagne',
-      price: 45.00,
-      image: 'https://images.unsplash.com/photo-1564257631407-4deb1f99d992?q=80&w=1000&auto=format&fit=crop',
-      category: 'Blusas',
-      colors: [{ name: 'Champagne', code: '#F7E7CE' }, { name: 'Blanco', code: '#FFFFFF' }]
-    },
-    {
-      id: '3',
-      name: 'Pantalón Palazzo Crema',
-      price: 60.00,
-      image: 'https://images.unsplash.com/photo-1584273143981-41c073dfe8f8?q=80&w=1000&auto=format&fit=crop',
-      category: 'Pantalones',
-      colors: [{ name: 'Crema', code: '#FFFDD0' }, { name: 'Negro', code: '#000000' }, { name: 'Azul Marino', code: '#000080' }]
-    }
-  ];
 
   return (
     <div className="bg-vandora-cream">
