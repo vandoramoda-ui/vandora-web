@@ -55,13 +55,8 @@ function App() {
             <Route path="/preguntas-frecuentes" element={<Layout><FAQPage /></Layout>} />
             <Route path="/envio" element={<Layout><ShippingPage /></Layout>} />
             <Route path="/rastrear-pedido" element={<Layout><OrderTrackingPage /></Layout>} />
-            <Route path="/mi-cuenta" element={<Layout><MyAccountPage /></Layout>} />
-            <Route path="/upsell" element={<UpsellPage />} />
-            <Route path="/downsell" element={<DownsellPage />} />
-
-            {/* Standalone Routes */}
-            <Route path="/iniciar-sesion" element={<LoginPage />} />
-            <Route path="/restablecer-contrasena" element={<ResetPasswordPage />} />
+            <Route path="/iniciar-sesion" element={<Layout><LoginPage /></Layout>} />
+            <Route path="/restablecer-contrasena" element={<Layout><ResetPasswordPage /></Layout>} />
             <Route path="/administracion" element={
               <ProtectedRoute requireStaff>
                 <AdminPage />

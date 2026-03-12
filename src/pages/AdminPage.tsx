@@ -89,7 +89,7 @@ const AdminPage = () => {
       setUsers(data.map(profile => ({
         id: profile.id,
         name: profile.full_name || 'Desconocido',
-        email: profile.id,
+        email: profile.email || profile.id,
         role: profile.role || 'Cliente',
         status: 'Activo'
       })));
@@ -422,16 +422,32 @@ const AdminPage = () => {
               <table className="min-w-full divide-y divide-gray-200">
                 <thead className="bg-gray-50">
                   <tr>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Producto</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Precio</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Stock</th>
-                    <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">Acciones</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">ID</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Producto</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Categoría</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Precio</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Stock</th>
+                    <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Acciones</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-gray-200 bg-white">
-                  {products.map(product => (
+                <tbody className="bg-white divide-y divide-gray-200">
+                  {products.map((product) => (
                     <tr key={product.id} className="hover:bg-gray-50 transition-colors">
-                      <td className="px-6 py-4 text-sm font-medium text-gray-900">{product.name}</td>
+                      <td className="px-6 py-4 text-xs font-mono text-gray-400">
+                        {product.id.substring(0, 8)}
+                        <button 
+                          onClick={() => {
+                            navigator.clipboard.writeText(product.id);
+                            alert('ID copiado al portapapeles');
+                          }}
+                          className="ml-2 hover:text-vandora-emerald"
+                          title="Copiar ID completo"
+                        >
+                          📋
+                        </button>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{product.name}</td>
+                      <td className="px-6 py-4 text-sm text-gray-500">{product.category}</td>
                       <td className="px-6 py-4 text-sm text-gray-500">{formatPrice(product.price)}</td>
                       <td className="px-6 py-4 text-sm text-gray-500">{product.stock}</td>
                       <td className="px-6 py-4 text-right text-sm font-medium">
@@ -791,7 +807,9 @@ const AdminPage = () => {
                     </div>
                     <div>
                       <p className="text-gray-500">Método Pago:</p>
-                      <p className="font-medium text-vandora-emerald">{editingOrder.payment_method === 'transfer' ? 'Transferencia' : 'Contra Entrega'}</p>
+                      <p className="font-medium text-vandora-emerald">
+                        {editingOrder.payment_method === 'transfer' ? `Transferencia - ${editingOrder.bank || 'Banco no especificado'}` : 'Contra Entrega'}
+                      </p>
                     </div>
                   </div>
                 </div>
@@ -802,6 +820,9 @@ const AdminPage = () => {
                     <p><span className="text-gray-500">Dirección:</span> {editingOrder.shipping_address || editingOrder.address || 'N/A'}</p>
                     <p><span className="text-gray-500">Ciudad:</span> {editingOrder.shipping_city || 'N/A'}</p>
                     <p><span className="text-gray-500">Provincia:</span> {editingOrder.shipping_province || 'N/A'}</p>
+                    {editingOrder.shipping_reference && (
+                      <p><span className="text-gray-500 font-medium">Referencia:</span> {editingOrder.shipping_reference}</p>
+                    )}
                   </div>
                 </div>
 
