@@ -774,6 +774,57 @@ const AdminPage = () => {
                 <button onClick={() => setIsOrderModalOpen(false)} className="text-gray-400 hover:text-gray-600"><X className="h-6 w-6" /></button>
               </div>
               <form onSubmit={handleSaveOrder} className="space-y-4">
+                <div className="bg-gray-50 p-4 rounded-lg space-y-3 mb-6">
+                  <h3 className="text-sm font-semibold text-gray-900 border-b pb-1">Información del Cliente</h3>
+                  <div className="grid grid-cols-2 gap-4 text-sm">
+                    <div>
+                      <p className="text-gray-500">Nombre:</p>
+                      <p className="font-medium">{editingOrder.customer_name}</p>
+                    </div>
+                    <div>
+                      <p className="text-gray-500">Email:</p>
+                      <p className="font-medium">{editingOrder.customer_email || 'N/A'}</p>
+                    </div>
+                    <div>
+                      <p className="text-gray-500">Teléfono:</p>
+                      <p className="font-medium">{editingOrder.customer_phone || 'N/A'}</p>
+                    </div>
+                    <div>
+                      <p className="text-gray-500">Método Pago:</p>
+                      <p className="font-medium text-vandora-emerald">{editingOrder.payment_method === 'transfer' ? 'Transferencia' : 'Contra Entrega'}</p>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="bg-gray-50 p-4 rounded-lg space-y-3 mb-6">
+                  <h3 className="text-sm font-semibold text-gray-900 border-b pb-1">Dirección de Envío</h3>
+                  <div className="text-sm space-y-1">
+                    <p><span className="text-gray-500">Dirección:</span> {editingOrder.shipping_address || editingOrder.address || 'N/A'}</p>
+                    <p><span className="text-gray-500">Ciudad:</span> {editingOrder.shipping_city || 'N/A'}</p>
+                    <p><span className="text-gray-500">Provincia:</span> {editingOrder.shipping_province || 'N/A'}</p>
+                  </div>
+                </div>
+
+                <div className="bg-emerald-50 p-4 rounded-lg space-y-3 mb-6">
+                  <h3 className="text-sm font-semibold text-vandora-emerald border-b border-emerald-100 pb-1">Productos</h3>
+                  <div className="space-y-2">
+                    {editingOrder.items && Array.isArray(editingOrder.items) ? (
+                      editingOrder.items.map((item: any, idx: number) => (
+                        <div key={idx} className="flex justify-between text-sm">
+                          <span>{item.quantity}x {item.name} ({item.size})</span>
+                          <span className="font-medium">{formatPrice(item.price * item.quantity)}</span>
+                        </div>
+                      ))
+                    ) : (
+                      <p className="text-sm text-gray-500 italic">No hay detalles de productos</p>
+                    )}
+                    <div className="pt-2 border-t border-emerald-100 flex justify-between font-bold text-vandora-emerald">
+                      <span>Total:</span>
+                      <span>{formatPrice(editingOrder.total)}</span>
+                    </div>
+                  </div>
+                </div>
+
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">Estado del Pedido</label>
                   <select
@@ -794,7 +845,7 @@ const AdminPage = () => {
                     value={editingOrder.notes || ''}
                     onChange={(e) => setEditingOrder({ ...editingOrder, notes: e.target.value })}
                     className="w-full rounded-md border-gray-300 shadow-sm border p-2 focus:ring-2 focus:ring-vandora-emerald outline-none"
-                    rows={4}
+                    rows={3}
                     placeholder="Detalles sobre el envío o pago..."
                   />
                 </div>
