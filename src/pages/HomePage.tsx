@@ -69,6 +69,20 @@ const HomePage = () => {
         }
       } catch (err) {
         console.error('Error fetching home data:', err);
+        // Fallback on error
+        setHeroSlides([
+          {
+            id: 1,
+            imageDesktop: 'https://images.unsplash.com/photo-1490481651871-ab68de25d43d?q=80&w=2000&auto=format&fit=crop',
+            imageMobile: 'https://images.unsplash.com/photo-1490481651871-ab68de25d43d?q=80&w=800&auto=format&fit=crop',
+            title: 'El Legado del Florecimiento',
+            subtitle: 'Para la mujer que empezó desde cero y hoy conquista sus metas.',
+            buttonText: 'Explorar Colección',
+            buttonLink: '/tienda',
+            buttonColor: '#D4AF37',
+            textColor: '#FFFFFF'
+          }
+        ]);
       } finally {
         setLoading(false);
       }
@@ -86,6 +100,34 @@ const HomePage = () => {
     return () => clearInterval(timer);
   }, [heroSlides.length]);
 
+  const nextSlide = () => {
+    if (heroSlides.length === 0) return;
+    setCurrentSlide((prev) => (prev + 1) % heroSlides.length);
+  };
+  
+  const prevSlide = () => {
+    if (heroSlides.length === 0) return;
+    setCurrentSlide((prev) => (prev - 1 + heroSlides.length) % heroSlides.length);
+  };
+
+  const categoryScrollRef = React.useRef<HTMLDivElement>(null);
+
+  const scrollCategories = (direction: 'left' | 'right') => {
+    if (categoryScrollRef.current) {
+      const scrollAmount = 300;
+      categoryScrollRef.current.scrollBy({
+        left: direction === 'left' ? -scrollAmount : scrollAmount,
+        behavior: 'smooth'
+      });
+    }
+  };
+
+  if (loading) return (
+    <div className="flex items-center justify-center p-20 min-h-screen">
+      <Loader2 className="w-8 h-8 animate-spin text-vandora-emerald" />
+    </div>
+  );
+
   return (
     <div className="bg-vandora-cream">
       <SEO 
@@ -95,67 +137,71 @@ const HomePage = () => {
       
       {/* Hero Slider */}
       <section className="relative h-[80vh] w-full overflow-hidden bg-gray-900">
-        <AnimatePresence mode="wait">
-          <motion.div
-            key={currentSlide}
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: 0.8 }}
-            className="absolute inset-0"
-          >
-            {/* Desktop Image */}
-            <img 
-              src={heroSlides[currentSlide].imageDesktop} 
-              alt={heroSlides[currentSlide].title}
-              className="hidden md:block w-full h-full object-cover opacity-80"
-            />
-            {/* Mobile Image */}
-            <img 
-              src={heroSlides[currentSlide].imageMobile} 
-              alt={heroSlides[currentSlide].title}
-              className="block md:hidden w-full h-full object-cover opacity-80"
-            />
-            <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/30 to-transparent" />
-          </motion.div>
-        </AnimatePresence>
-
-        <div className="absolute inset-0 flex items-center justify-center z-10 px-4">
-          <div className="text-center max-w-4xl mx-auto">
+        {heroSlides.length > 0 && (
+          <>
             <AnimatePresence mode="wait">
               <motion.div
                 key={currentSlide}
-                initial={{ opacity: 0, y: 30 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -30 }}
-                transition={{ duration: 0.6, delay: 0.2 }}
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                transition={{ duration: 0.8 }}
+                className="absolute inset-0"
               >
-                <h1 
-                  className="font-serif text-4xl md:text-7xl mb-6 tracking-tight drop-shadow-lg"
-                  style={{ color: heroSlides[currentSlide].textColor }}
-                >
-                  {heroSlides[currentSlide].title}
-                </h1>
-                <p 
-                  className="text-lg md:text-xl font-light mb-8 max-w-2xl mx-auto drop-shadow-md"
-                  style={{ color: heroSlides[currentSlide].textColor }}
-                >
-                  {heroSlides[currentSlide].subtitle}
-                </p>
-                <Link 
-                  to={heroSlides[currentSlide].buttonLink}
-                  className="inline-block px-8 py-4 rounded-sm font-semibold uppercase tracking-widest text-sm transition-transform hover:scale-105 shadow-lg"
-                  style={{ 
-                    backgroundColor: heroSlides[currentSlide].buttonColor,
-                    color: '#FFFFFF' // Assuming white text on colored buttons for contrast
-                  }}
-                >
-                  {heroSlides[currentSlide].buttonText}
-                </Link>
+                {/* Desktop Image */}
+                <img 
+                  src={heroSlides[currentSlide]?.imageDesktop} 
+                  alt={heroSlides[currentSlide]?.title}
+                  className="hidden md:block w-full h-full object-cover opacity-80"
+                />
+                {/* Mobile Image */}
+                <img 
+                  src={heroSlides[currentSlide]?.imageMobile} 
+                  alt={heroSlides[currentSlide]?.title}
+                  className="block md:hidden w-full h-full object-cover opacity-80"
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/30 to-transparent" />
               </motion.div>
             </AnimatePresence>
-          </div>
-        </div>
+
+            <div className="absolute inset-0 flex items-center justify-center z-10 px-4">
+              <div className="text-center max-w-4xl mx-auto">
+                <AnimatePresence mode="wait">
+                  <motion.div
+                    key={currentSlide}
+                    initial={{ opacity: 0, y: 30 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -30 }}
+                    transition={{ duration: 0.6, delay: 0.2 }}
+                  >
+                    <h1 
+                      className="font-serif text-4xl md:text-7xl mb-6 tracking-tight drop-shadow-lg"
+                      style={{ color: heroSlides[currentSlide]?.textColor }}
+                    >
+                      {heroSlides[currentSlide]?.title}
+                    </h1>
+                    <p 
+                      className="text-lg md:text-xl font-light mb-8 max-w-2xl mx-auto drop-shadow-md"
+                      style={{ color: heroSlides[currentSlide]?.textColor }}
+                    >
+                      {heroSlides[currentSlide]?.subtitle}
+                    </p>
+                    <Link 
+                      to={heroSlides[currentSlide]?.buttonLink}
+                      className="inline-block px-8 py-4 rounded-sm font-semibold uppercase tracking-widest text-sm transition-transform hover:scale-105 shadow-lg"
+                      style={{ 
+                        backgroundColor: heroSlides[currentSlide]?.buttonColor,
+                        color: '#FFFFFF'
+                      }}
+                    >
+                      {heroSlides[currentSlide]?.buttonText}
+                    </Link>
+                  </motion.div>
+                </AnimatePresence>
+              </div>
+            </div>
+          </>
+        )}
 
         {/* Slider Controls */}
         {heroSlides.length > 1 && (
