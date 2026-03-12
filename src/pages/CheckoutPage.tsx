@@ -249,6 +249,7 @@ const CheckoutPage = () => {
       shipping_city: formData.city,
       shipping_province: formData.province,
       shipping_country: 'Ecuador',
+      shipping_reference: formData.reference || '',
       province: formData.province,
       city: formData.city,
       status: 'pending',

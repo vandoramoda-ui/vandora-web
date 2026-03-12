@@ -14,7 +14,7 @@ const MyAccountPage = () => {
 
     useEffect(() => {
         if (!authLoading && !user) {
-            navigate('/login');
+            navigate('/iniciar-sesion');
         }
     }, [user, authLoading, navigate]);
 
