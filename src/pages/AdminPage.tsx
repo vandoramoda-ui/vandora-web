@@ -917,6 +917,7 @@ const AdminPage = () => {
                     <option value="support">Soporte (Pedidos)</option>
                     <option value="editor">Editor (Productos/Contenido)</option>
                     <option value="admin">Administrador (Total)</option>
+                    <option value="superadmin">Superadmin (Creador/Dueño)</option>
                   </select>
                 </div>
                 <div className="flex justify-end space-x-3 pt-6 border-t">
