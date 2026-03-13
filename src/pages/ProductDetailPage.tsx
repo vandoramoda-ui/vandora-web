@@ -3,7 +3,7 @@ import { supabase } from '../lib/supabase';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useCart } from '../context/CartContext';
 import { formatPrice } from '../lib/utils';
-import { Star, Truck, ShieldCheck, ArrowLeft, Minus, Plus, ChevronDown, ChevronUp, Clock, Eye, ShoppingBag, Play, X, Ruler } from 'lucide-react';
+import { Star, Truck, ShieldCheck, ArrowLeft, Minus, Plus, ChevronDown, ChevronUp, Clock, Eye, ShoppingBag, Play, X, Ruler, MessageCircle } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import ProductCard from '../components/ProductCard';
 import SEO from '../components/SEO';
@@ -430,13 +430,24 @@ const ProductDetailPage = () => {
 
             {/* Actions */}
             <div className="flex flex-col space-y-4 mb-8">
-              <button
-                onClick={handleAddToCart}
-                className="w-full bg-vandora-emerald text-white py-4 px-8 rounded-md hover:bg-emerald-800 transition-all font-medium shadow-lg hover:shadow-xl active:transform active:scale-[0.98] flex items-center justify-center text-lg uppercase tracking-wide"
-              >
-                <ShoppingBag className="h-5 w-5 mr-2" />
-                Añadir al Carrito - {formatPrice(product.price * quantity)}
-              </button>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <button
+                  onClick={handleAddToCart}
+                  className="w-full bg-vandora-emerald text-white py-4 px-8 rounded-md hover:bg-emerald-800 transition-all font-medium shadow-lg hover:shadow-xl active:transform active:scale-[0.98] flex items-center justify-center text-lg uppercase tracking-wide order-last sm:order-first"
+                >
+                  <ShoppingBag className="h-5 w-5 mr-2" />
+                  Añadir al Carrito
+                </button>
+                <a
+                  href={`https://wa.me/593900000000?text=Hola! Estoy interesada en el producto: ${product.name}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="w-full bg-white text-[#25D366] border-2 border-[#25D366] py-4 px-8 rounded-md hover:bg-[#25D366] hover:text-white transition-all font-medium shadow-sm hover:shadow-md flex items-center justify-center text-lg uppercase tracking-wide"
+                >
+                  <MessageCircle className="h-5 w-5 mr-2" />
+                  Consultar WhatsApp
+                </a>
+              </div>
 
               {/* Free Shipping Progress */}
               <div className="bg-emerald-50 rounded-md p-3 text-center text-sm text-emerald-800 border border-emerald-100">

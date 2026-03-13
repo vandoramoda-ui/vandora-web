@@ -5,6 +5,7 @@ import { formatPrice } from '../lib/utils';
 import { useNavigate } from 'react-router-dom';
 import { CheckCircle, Truck, CreditCard, ShieldCheck, Lock, Clock, AlertCircle } from 'lucide-react';
 import { supabase } from '../lib/supabase';
+import { useAuth } from '../context/AuthContext';
 import SEO from '../components/SEO';
 import PhoneInput from '../components/PhoneInput';
 
@@ -63,6 +64,7 @@ const DEFAULT_SETTINGS: CheckoutSettings = {
 
 const CheckoutPage = () => {
   const { items, total, clearCart } = useCart();
+  const { user } = useAuth();
   const navigate = useNavigate();
   const [settings, setSettings] = useState<CheckoutSettings>(DEFAULT_SETTINGS);
   const [loadingSettings, setLoadingSettings] = useState(true);
@@ -232,8 +234,6 @@ const CheckoutPage = () => {
     }
 
     const currentTotal = total + (isBumpAccepted && bumpProduct ? bumpProduct.price : 0);
-
-    const { data: { session } } = await supabase.auth.getSession();
     
     const orderData: any = {
       items: finalItems,
@@ -255,11 +255,12 @@ const CheckoutPage = () => {
       status: 'pending',
       notes: '',
       created_at: new Date().toISOString(),
-      user_id: session?.user?.id || null
+      user_id: user?.id || null
     };
 
     try {
-      console.log('Finalizing order...', orderData);
+      console.log('Checkout: Submitting order with user ID:', user?.id);
+      console.log('Checkout: Order details:', orderData);
       
       const { data: orderResult, error: orderError } = await supabase
         .from('orders')
@@ -275,12 +276,11 @@ const CheckoutPage = () => {
       // Fix for profiles table - check by id if user is logged in, or don't try to sync if guest
       // Removed email_notifications as it doesn't exist in profiles schema
       try {
-        const { data: { session } } = await supabase.auth.getSession();
-        if (session?.user) {
+        if (user) {
           const { error: profileError } = await supabase
             .from('profiles')
             .update({ full_name: `${formData.firstName} ${formData.lastName}` })
-            .eq('id', session.user.id);
+            .eq('id', user.id);
           
           if (profileError) console.warn('Profile update failed:', profileError);
         }

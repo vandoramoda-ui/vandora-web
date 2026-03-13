@@ -50,7 +50,7 @@ const ProductCard: React.FC<ProductCardProps> = ({ id, name, price, image, categ
         </div>
         <p className="text-sm font-medium text-gray-900">{formatPrice(price)}</p>
       </div>
-      <button className="mt-4 w-full bg-vandora-black text-white py-2 px-4 rounded opacity-0 group-hover:opacity-100 transition-opacity text-sm uppercase tracking-wide">
+      <button className="mt-4 w-full bg-vandora-black text-white py-2 px-4 rounded md:opacity-0 group-hover:opacity-100 transition-opacity text-sm uppercase tracking-wide">
         Ver Detalles
       </button>
     </motion.div>

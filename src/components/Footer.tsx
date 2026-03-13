@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Facebook, Instagram, Twitter, Globe, Share2, Youtube, Linkedin, Send } from 'lucide-react';
+import { Facebook, Instagram, Twitter, Globe, Youtube, Linkedin, MessageCircle } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 
 const Footer = () => {
@@ -26,8 +26,20 @@ const Footer = () => {
       case 'instagram': return <Instagram className="h-5 w-5" />;
       case 'facebook': return <Facebook className="h-5 w-5" />;
       case 'twitter': return <Twitter className="h-5 w-5" />;
-      case 'tiktok': return <Share2 className="h-5 w-5" />; // Lucide doesn't have tiktok in default, use Share or Globe
-      case 'whatsapp': return <Send className="h-5 w-5" />;
+      case 'tiktok': return (
+        <svg 
+          viewBox="0 0 24 24" 
+          fill="none" 
+          stroke="currentColor" 
+          strokeWidth="2" 
+          strokeLinecap="round" 
+          strokeLinejoin="round" 
+          className="h-5 w-5"
+        >
+          <path d="M9 12a4 4 0 1 0 4 4V4a5 5 0 0 0 5 5" />
+        </svg>
+      );
+      case 'whatsapp': return <MessageCircle className="h-5 w-5" />;
       case 'youtube': return <Youtube className="h-5 w-5" />;
       case 'linkedin': return <Linkedin className="h-5 w-5" />;
       default: return <Globe className="h-5 w-5" />;

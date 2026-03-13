@@ -10,6 +10,14 @@ const HomePage = () => {
   const [heroSlides, setHeroSlides] = useState<any[]>([]);
   const [categories, setCategories] = useState<any[]>([]);
   const [featuredProducts, setFeaturedProducts] = useState<any[]>([]);
+  const [founderSection, setFounderSection] = useState<any>({
+    image: 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?q=80&w=1000&auto=format&fit=crop',
+    title: 'De la Calle a la Vitrina',
+    description1: 'Vandora nació del sueño de una mujer que entendió que el verdadero lujo es la libertad de ser una misma. Cada prenda está diseñada pensando en la mujer ecuatoriana: fuerte, diversa y llena de ambición.',
+    description2: 'Únete a nuestra comunidad de "Mujeres que Florecen". Comparte tu historia y viste con el orgullo de quien ha luchado por cada logro.',
+    buttonText: 'Leer Nuestra Historia',
+    buttonLink: '/nuestra-historia'
+  });
   const [loading, setLoading] = useState(true);
   const [currentSlide, setCurrentSlide] = useState(0);
 
@@ -65,7 +73,45 @@ const HomePage = () => {
           .limit(3);
         
         if (prodData) {
-          setFeaturedProducts(prodData);
+          const parseJSON = (val: any) => {
+            if (typeof val !== 'string') return val;
+            try {
+              const parsed = JSON.parse(val);
+              return parsed && typeof parsed === 'object' ? parsed : val;
+            } catch (e) {
+              return val;
+            }
+          };
+
+          const mappedProducts = prodData.map((p: any) => {
+            const images = Array.isArray(p.images) ? p.images.map((img: any) => {
+              const parsed = parseJSON(img);
+              return typeof parsed === 'string' ? { url: parsed } : parsed;
+            }) : [];
+
+            const colors = Array.isArray(p.colors) ? p.colors.map((c: any) => {
+              const parsed = parseJSON(c);
+              return typeof parsed === 'object' && parsed !== null ? parsed : { name: String(c), code: '#CCCCCC' };
+            }) : [];
+
+            return {
+              ...p,
+              image: images.length > 0 ? images[0].url : (p.image || 'https://placehold.co/600x800?text=No+Image'),
+              colors
+            };
+          });
+          setFeaturedProducts(mappedProducts);
+        }
+
+        // Fetch Founder Section
+        const { data: founderData } = await supabase
+          .from('site_content')
+          .select('content')
+          .eq('section_key', 'founder_section')
+          .single();
+        
+        if (founderData?.content) {
+          setFounderSection(founderData.content);
         }
       } catch (err) {
         console.error('Error fetching home data:', err);
@@ -339,25 +385,24 @@ const HomePage = () => {
           <div className="relative">
             <div className="absolute -top-4 -left-4 w-full h-full border-2 border-vandora-gold rounded-lg z-0" />
             <img 
-              src="https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?q=80&w=1000&auto=format&fit=crop" 
+              src={founderSection.image} 
               alt="Fundadora Vandora" 
-              className="relative z-10 rounded-lg shadow-2xl w-full h-[500px] object-cover grayscale hover:grayscale-0 transition-all duration-500"
+              className="relative z-10 rounded-lg shadow-2xl w-full h-auto min-h-[400px] max-h-[600px] object-cover grayscale hover:grayscale-0 transition-all duration-500"
             />
           </div>
           <div>
-            <h2 className="font-serif text-4xl mb-6 text-vandora-gold">De la Calle a la Vitrina</h2>
+            <h2 className="font-serif text-4xl mb-6 text-vandora-gold">{founderSection.title}</h2>
             <p className="text-gray-200 mb-6 leading-relaxed">
-              Vandora nació del sueño de una mujer que entendió que el verdadero lujo es la libertad de ser una misma. 
-              Cada prenda está diseñada pensando en la mujer ecuatoriana: fuerte, diversa y llena de ambición.
+              {founderSection.description1}
             </p>
             <p className="text-gray-200 mb-8 leading-relaxed">
-              Únete a nuestra comunidad de "Mujeres que Florecen". Comparte tu historia y viste con el orgullo de quien ha luchado por cada logro.
+              {founderSection.description2}
             </p>
             <Link 
-              to="/nuestra-historia" 
+              to={founderSection.buttonLink} 
               className="inline-block border border-vandora-gold text-vandora-gold px-6 py-3 rounded hover:bg-vandora-gold hover:text-vandora-emerald transition-colors uppercase tracking-wider text-sm"
             >
-              Leer Nuestra Historia
+              {founderSection.buttonText}
             </Link>
           </div>
         </div>

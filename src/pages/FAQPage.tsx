@@ -1,8 +1,10 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import SEO from '../components/SEO';
+import { supabase } from '../lib/supabase';
+import { Loader2 } from 'lucide-react';
 
 const FAQPage = () => {
-  const faqs = [
+  const [faqs, setFaqs] = useState<any[]>([
     {
       question: "¿Cómo puedo realizar un pedido?",
       answer: "Navega por nuestra tienda, selecciona las prendas que te gusten, elige tu talla y color, y añádelas al carrito. Luego ve al carrito y sigue los pasos para finalizar la compra."
@@ -27,7 +29,35 @@ const FAQPage = () => {
       question: "¿Tienen tienda física?",
       answer: "Actualmente somos una tienda 100% online, pero pronto abriremos nuestro primer showroom. ¡Mantente atenta a nuestras redes!"
     }
-  ];
+  ]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchFaqs = async () => {
+      try {
+        const { data } = await supabase
+          .from('site_content')
+          .select('content')
+          .eq('section_key', 'page_faq')
+          .single();
+        
+        if (data?.content && Array.isArray(data.content)) {
+          setFaqs(data.content);
+        }
+      } catch (err) {
+        console.error('Error fetching FAQ content:', err);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchFaqs();
+  }, []);
+
+  if (loading) return (
+    <div className="flex items-center justify-center p-20 min-h-screen">
+      <Loader2 className="w-8 h-8 animate-spin text-vandora-emerald" />
+    </div>
+  );
 
   return (
     <div className="min-h-screen bg-vandora-cream py-12 px-4 sm:px-6 lg:px-8">

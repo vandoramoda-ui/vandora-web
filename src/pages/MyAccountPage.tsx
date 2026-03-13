@@ -26,11 +26,11 @@ const MyAccountPage = () => {
 
     const fetchOrders = async () => {
         try {
-            console.log('MyAccount: Fetching orders for user ID:', user?.id);
-            const { data, error } = await supabase
+            console.log('MyAccount: Fetching orders for user ID:', user?.id, 'and email:', user?.email);
+            const { data, error, count } = await supabase
                 .from('orders')
-                .select('*')
-                .eq('user_id', user?.id)
+                .select('*', { count: 'exact' })
+                .or(`user_id.eq.${user?.id},customer_email.eq.${user?.email}`)
                 .order('created_at', { ascending: false });
 
             if (error) {
@@ -38,10 +38,10 @@ const MyAccountPage = () => {
                 throw error;
             }
             
-            console.log('MyAccount: Orders found:', data?.length || 0);
+            console.log('MyAccount: Query successful. Orders found:', data?.length || 0, 'Total count:', count);
             setOrders(data || []);
-        } catch (error) {
-            console.error('Error in fetchOrders:', error);
+        } catch (error: any) {
+            console.error('Error detail in fetchOrders:', error.message || error);
         } finally {
             setLoadingOrders(false);
         }
@@ -63,7 +63,7 @@ const MyAccountPage = () => {
             <div className="max-w-5xl mx-auto">
                 <div className="mb-8">
                     <h1 className="text-3xl font-serif text-vandora-emerald">Mi Cuenta</h1>
-                    <p className="text-gray-600">Bienvenida de nuevo, {user.user_metadata?.full_name || 'Cliente'}</p>
+                    <p className="text-gray-600">Bienvenida de nuevo, {profile?.full_name || user.user_metadata?.full_name || 'Cliente'}</p>
                 </div>
 
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
@@ -86,7 +86,7 @@ const MyAccountPage = () => {
                                     <User className="w-4 h-4 text-gray-400 mt-1 mr-3" />
                                     <div>
                                         <p className="text-sm font-medium text-gray-900">Nombre</p>
-                                        <p className="text-sm text-gray-500">{user.user_metadata?.full_name || 'No proporcionado'}</p>
+                                        <p className="text-sm text-gray-500">{profile?.full_name || user.user_metadata?.full_name || 'No proporcionado'}</p>
                                     </div>
                                 </div>
                                 <div className="flex items-start">

@@ -2,6 +2,7 @@ import React from 'react';
 import Navbar from './Navbar';
 import Footer from './Footer';
 import ChatWidget from './ChatWidget';
+import Breadcrumbs from './Breadcrumbs';
 import { useCart } from '../context/CartContext';
 import { X, Minus, Plus, Trash2, Truck } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
@@ -17,6 +18,7 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   return (
     <div className="min-h-screen flex flex-col bg-vandora-cream font-sans text-vandora-black">
       <Navbar />
+      <Breadcrumbs />
       <main className="flex-grow">
         {children}
       </main>
