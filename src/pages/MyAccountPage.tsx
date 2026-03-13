@@ -47,6 +47,50 @@ const MyAccountPage = () => {
         }
     };
 
+    const [isEditing, setIsEditing] = useState(false);
+    const [editData, setEditData] = useState({
+        full_name: '',
+        phone: '',
+        address: '',
+        birthday: ''
+    });
+    const [saving, setSaving] = useState(false);
+
+    useEffect(() => {
+        if (profile) {
+            setEditData({
+                full_name: profile.full_name || '',
+                phone: profile.phone || '',
+                address: profile.address || '',
+                birthday: profile.birthday || ''
+            });
+        }
+    }, [profile]);
+
+    const handleUpdateProfile = async (e: React.FormEvent) => {
+        e.preventDefault();
+        setSaving(true);
+        try {
+            const { error } = await supabase
+                .from('profiles')
+                .update({
+                    full_name: editData.full_name,
+                    phone: editData.phone,
+                    address: editData.address,
+                    birthday: editData.birthday || null
+                })
+                .eq('id', user?.id);
+
+            if (error) throw error;
+            setIsEditing(false);
+            window.location.reload(); // Quick way to refresh profile in context
+        } catch (error: any) {
+            alert('Error al actualizar el perfil: ' + error.message);
+        } finally {
+            setSaving(false);
+        }
+    };
+
     if (authLoading || (user && loadingOrders)) {
         return (
             <div className="min-h-[60vh] flex items-center justify-center">
@@ -61,44 +105,120 @@ const MyAccountPage = () => {
         <div className="bg-vandora-cream min-h-screen py-12 px-4 sm:px-6 lg:px-8">
             <SEO title="Mi Cuenta" description="Administra tu perfil y pedidos en Vandora" />
             <div className="max-w-5xl mx-auto">
-                <div className="mb-8">
-                    <h1 className="text-3xl font-serif text-vandora-emerald">Mi Cuenta</h1>
-                    <p className="text-gray-600">Bienvenida de nuevo, {profile?.full_name || user.user_metadata?.full_name || 'Cliente'}</p>
+                <div className="mb-8 flex justify-between items-end">
+                    <div>
+                        <h1 className="text-3xl font-serif text-vandora-emerald">Mi Cuenta</h1>
+                        <p className="text-gray-600">Bienvenida de nuevo, {profile?.full_name || user.user_metadata?.full_name || 'Cliente'}</p>
+                    </div>
                 </div>
 
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
                     {/* Profile Details Sidebar */}
                     <div className="lg:col-span-1">
                         <div className="bg-white rounded-lg shadow-sm p-6 border border-gray-100">
-                            <h2 className="text-lg font-medium text-gray-900 mb-4 flex items-center border-b pb-2">
-                                <User className="w-5 h-5 mr-2 text-vandora-emerald" />
-                                Mi Perfil
-                            </h2>
-                            <div className="space-y-4">
-                                <div className="flex items-start">
-                                    <Mail className="w-4 h-4 text-gray-400 mt-1 mr-3" />
-                                    <div>
-                                        <p className="text-sm font-medium text-gray-900">Correo Electrónico</p>
-                                        <p className="text-sm text-gray-500">{user.email}</p>
-                                    </div>
-                                </div>
-                                <div className="flex items-start">
-                                    <User className="w-4 h-4 text-gray-400 mt-1 mr-3" />
-                                    <div>
-                                        <p className="text-sm font-medium text-gray-900">Nombre</p>
-                                        <p className="text-sm text-gray-500">{profile?.full_name || user.user_metadata?.full_name || 'No proporcionado'}</p>
-                                    </div>
-                                </div>
-                                <div className="flex items-start">
-                                    <MapPin className="w-4 h-4 text-gray-400 mt-1 mr-3" />
-                                    <div>
-                                        <p className="text-sm font-medium text-gray-900">Dirección</p>
-                                        <p className="text-sm text-gray-500">Puedes actualizarla al realizar tu próximo pedido.</p>
-                                    </div>
-                                </div>
+                            <div className="flex justify-between items-center mb-4 border-b pb-2">
+                                <h2 className="text-lg font-medium text-gray-900 flex items-center">
+                                    <User className="w-5 h-5 mr-2 text-vandora-emerald" />
+                                    Mi Perfil
+                                </h2>
+                                <button 
+                                    onClick={() => setIsEditing(!isEditing)}
+                                    className="text-vandora-emerald hover:text-emerald-800 text-sm font-medium"
+                                >
+                                    {isEditing ? 'Cancelar' : 'Editar'}
+                                </button>
                             </div>
+                            
+                            {isEditing ? (
+                                <form onSubmit={handleUpdateProfile} className="space-y-4">
+                                    <div>
+                                        <label className="block text-xs font-medium text-gray-500 uppercase mb-1">Nombre Completo</label>
+                                        <input 
+                                            type="text"
+                                            value={editData.full_name}
+                                            onChange={(e) => setEditData({...editData, full_name: e.target.value})}
+                                            className="w-full p-2 border rounded-md text-sm"
+                                            required
+                                        />
+                                    </div>
+                                    <div>
+                                        <label className="block text-xs font-medium text-gray-500 uppercase mb-1">Teléfono</label>
+                                        <input 
+                                            type="tel"
+                                            value={editData.phone}
+                                            onChange={(e) => setEditData({...editData, phone: e.target.value})}
+                                            className="w-full p-2 border rounded-md text-sm"
+                                            placeholder="099 999 9999"
+                                        />
+                                    </div>
+                                    <div>
+                                        <label className="block text-xs font-medium text-gray-500 uppercase mb-1">Dirección</label>
+                                        <input 
+                                            type="text"
+                                            value={editData.address}
+                                            onChange={(e) => setEditData({...editData, address: e.target.value})}
+                                            className="w-full p-2 border rounded-md text-sm"
+                                        />
+                                    </div>
+                                    <div>
+                                        <label className="block text-xs font-medium text-gray-500 uppercase mb-1">Fecha de Cumpleaños</label>
+                                        <input 
+                                            type="date"
+                                            value={editData.birthday}
+                                            onChange={(e) => setEditData({...editData, birthday: e.target.value})}
+                                            className="w-full p-2 border rounded-md text-sm"
+                                        />
+                                    </div>
+                                    <button 
+                                        type="submit"
+                                        disabled={saving}
+                                        className="w-full bg-vandora-emerald text-white py-2 rounded-md hover:bg-emerald-800 transition-colors text-sm font-medium disabled:opacity-50"
+                                    >
+                                        {saving ? 'Guardando...' : 'Guardar Cambios'}
+                                    </button>
+                                </form>
+                            ) : (
+                                <div className="space-y-4">
+                                    <div className="flex items-start">
+                                        <Mail className="w-4 h-4 text-gray-400 mt-1 mr-3" />
+                                        <div>
+                                            <p className="text-sm font-medium text-gray-900">Correo Electrónico</p>
+                                            <p className="text-sm text-gray-500">{user.email}</p>
+                                        </div>
+                                    </div>
+                                    <div className="flex items-start">
+                                        <User className="w-4 h-4 text-gray-400 mt-1 mr-3" />
+                                        <div>
+                                            <p className="text-sm font-medium text-gray-900">Nombre</p>
+                                            <p className="text-sm text-gray-500">{profile?.full_name || user.user_metadata?.full_name || 'No proporcionado'}</p>
+                                        </div>
+                                    </div>
+                                    <div className="flex items-start">
+                                        <Phone className="w-4 h-4 text-gray-400 mt-1 mr-3" />
+                                        <div>
+                                            <p className="text-sm font-medium text-gray-900">Teléfono</p>
+                                            <p className="text-sm text-gray-500">{profile?.phone || 'No proporcionado'}</p>
+                                        </div>
+                                    </div>
+                                    <div className="flex items-start">
+                                        <MapPin className="w-4 h-4 text-gray-400 mt-1 mr-3" />
+                                        <div>
+                                            <p className="text-sm font-medium text-gray-900">Dirección</p>
+                                            <p className="text-sm text-gray-500">{profile?.address || 'No proporcionado'}</p>
+                                        </div>
+                                    </div>
+                                    <div className="flex items-start">
+                                        <Calendar className="w-4 h-4 text-gray-400 mt-1 mr-3" />
+                                        <div>
+                                            <p className="text-sm font-medium text-gray-900">Cumpleaños</p>
+                                            <p className="text-sm text-gray-500">{profile?.birthday || 'No proporcionado'}</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            )}
                         </div>
                     </div>
+
 
                     {/* Orders List */}
                     <div className="lg:col-span-2">

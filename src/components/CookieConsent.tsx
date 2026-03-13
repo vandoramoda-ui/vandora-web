@@ -5,31 +5,62 @@ import { motion, AnimatePresence } from 'motion/react';
 const CookieConsent = () => {
   const [isVisible, setIsVisible] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
+  const [settings, setSettings] = useState({
+    essential: true,
+    marketing: false,
+    analytics: false
+  });
 
   useEffect(() => {
     const consent = localStorage.getItem('vandora-cookie-consent');
     if (!consent) {
       const timer = setTimeout(() => setIsVisible(true), 2000);
       return () => clearTimeout(timer);
+    } else {
+      try {
+        const savedSettings = JSON.parse(consent);
+        if (typeof savedSettings === 'object') {
+          setSettings(savedSettings);
+        }
+      } catch (e) {
+        // Fallback for old simple string format
+      }
     }
   }, []);
 
   const handleAccept = () => {
-    localStorage.setItem('vandora-cookie-consent', 'all');
+    localStorage.setItem('vandora-cookie-consent', JSON.stringify(settings));
+    setIsVisible(false);
+    setShowSettings(false);
+  };
+
+  const handleAcceptAll = () => {
+    const allOn = { essential: true, marketing: true, analytics: true };
+    setSettings(allOn);
+    localStorage.setItem('vandora-cookie-consent', JSON.stringify(allOn));
     setIsVisible(false);
     setShowSettings(false);
   };
 
   const handleDecline = () => {
-    localStorage.setItem('vandora-cookie-consent', 'essential');
+    const onlyEssential = { essential: true, marketing: false, analytics: false };
+    setSettings(onlyEssential);
+    localStorage.setItem('vandora-cookie-consent', JSON.stringify(onlyEssential));
     setIsVisible(false);
     setShowSettings(false);
   };
 
   const handleRejectAll = () => {
-    localStorage.setItem('vandora-cookie-consent', 'none');
+    const none = { essential: true, marketing: false, analytics: false }; // Essential usually can't be rejected
+    setSettings(none);
+    localStorage.setItem('vandora-cookie-consent', JSON.stringify(none));
     setIsVisible(false);
     setShowSettings(false);
+  };
+
+  const toggleSetting = (key: keyof typeof settings) => {
+    if (key === 'essential') return; // Cannot turn off essential
+    setSettings(prev => ({ ...prev, [key]: !prev[key] }));
   };
 
   return (
@@ -69,22 +100,42 @@ const CookieConsent = () => {
                   </div>
 
                   <div className="space-y-6 mb-8">
+                    {/* Essential */}
                     <div className="flex items-center justify-between p-4 bg-gray-50 rounded-2xl">
                       <div>
                         <h4 className="font-bold text-sm text-gray-900">Cookies Esenciales</h4>
                         <p className="text-xs text-gray-500">Necesarias para el funcionamiento de la tienda.</p>
                       </div>
-                      <div className="w-10 h-6 bg-vandora-emerald rounded-full flex items-center px-1">
+                      <div className="w-10 h-6 bg-vandora-emerald rounded-full flex items-center px-1 cursor-not-allowed">
                         <div className="w-4 h-4 bg-white rounded-full translate-x-4" />
                       </div>
                     </div>
-                    <div className="flex items-center justify-between p-4 border border-gray-100 rounded-2xl opacity-60">
+
+                    {/* Marketing */}
+                    <div 
+                      className={`flex items-center justify-between p-4 border rounded-2xl cursor-pointer transition-all ${settings.marketing ? 'border-vandora-emerald bg-emerald-50' : 'border-gray-100'}`}
+                      onClick={() => toggleSetting('marketing')}
+                    >
                       <div>
-                        <h4 className="font-bold text-sm text-gray-900">Marketing y Análisis</h4>
+                        <h4 className="font-bold text-sm text-gray-900">Marketing</h4>
+                        <p className="text-xs text-gray-500">Publicidad personalizada para ti.</p>
+                      </div>
+                      <div className={`w-10 h-6 rounded-full flex items-center px-1 transition-colors ${settings.marketing ? 'bg-vandora-emerald' : 'bg-gray-200'}`}>
+                        <div className={`w-4 h-4 bg-white rounded-full transition-transform ${settings.marketing ? 'translate-x-4' : ''}`} />
+                      </div>
+                    </div>
+
+                    {/* Analytics */}
+                    <div 
+                      className={`flex items-center justify-between p-4 border rounded-2xl cursor-pointer transition-all ${settings.analytics ? 'border-vandora-emerald bg-emerald-50' : 'border-gray-100'}`}
+                      onClick={() => toggleSetting('analytics')}
+                    >
+                      <div>
+                        <h4 className="font-bold text-sm text-gray-900">Análisis</h4>
                         <p className="text-xs text-gray-500">Nos ayudan a mejorar tu experiencia.</p>
                       </div>
-                      <div className="w-10 h-6 bg-gray-200 rounded-full flex items-center px-1">
-                        <div className="w-4 h-4 bg-white rounded-full" />
+                      <div className={`w-10 h-6 rounded-full flex items-center px-1 transition-colors ${settings.analytics ? 'bg-vandora-emerald' : 'bg-gray-200'}`}>
+                        <div className={`w-4 h-4 bg-white rounded-full transition-transform ${settings.analytics ? 'translate-x-4' : ''}`} />
                       </div>
                     </div>
                   </div>
@@ -107,6 +158,7 @@ const CookieConsent = () => {
               </motion.div>
             )}
           </AnimatePresence>
+
 
           <motion.div
             initial={{ y: 100, opacity: 0 }}
@@ -139,9 +191,10 @@ const CookieConsent = () => {
 
                 <div className="mt-5 space-y-2">
                   <button
-                    onClick={handleAccept}
+                    onClick={handleAcceptAll}
                     className="w-full bg-vandora-black text-white text-xs font-bold py-3 px-4 rounded-xl hover:bg-gray-800 transition-all flex items-center justify-center gap-2 group shadow-lg shadow-black/10"
                   >
+
                     Aceptar Todas
                     <ChevronRight className="h-3 w-3 group-hover:translate-x-0.5 transition-transform" />
                   </button>

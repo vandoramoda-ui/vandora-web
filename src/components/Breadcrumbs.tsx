@@ -31,9 +31,20 @@ const Breadcrumbs = () => {
         </li>
         {pathnames.map((value, index) => {
           const last = index === pathnames.length - 1;
-          const to = `/${pathnames.slice(0, index + 1).join('/')}`;
+          
+          // Determine the correct URL for the breadcrumb
+          let to = `/${pathnames.slice(0, index + 1).join('/')}`;
+          
+          // Fix for invalid intermediate pages
+          if (value === 'producto') {
+            to = '/tienda';
+          } else if (index > 0 && pathnames[index-1] === 'producto' && !last) {
+            // This is likely a category segment in /producto/:categoria/:slug
+            to = `/tienda?category=${value}`;
+          }
           
           // Try to get a readable name, otherwise capitalize the value
+
           let displayName = breadcrumbMap[value] || value.split('-').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ');
           
           // Shorten long names if they don't have a map entry

@@ -53,6 +53,7 @@ const DEFAULT_SETTINGS: CheckoutSettings = {
     address2: { enabled: true, required: false, label: 'Apartamento / Suite' },
     postalCode: { enabled: false, required: false, label: 'Código Postal' },
   },
+
   paymentMethods: { transfer: true, cash: true, card: false },
   transferDetails: "Banco Pichincha\nCuenta Corriente: 1234567890\nNombre: Vandora Moda\nRUC: 1790000000001",
   banks: [

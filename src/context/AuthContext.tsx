@@ -10,7 +10,11 @@ type Profile = {
     loyalty_points?: number;
     full_name?: string;
     email_notifications?: string;
+    phone?: string;
+    address?: string;
+    birthday?: string;
 };
+
 
 type AuthContextType = {
     user: User | null;

@@ -13,15 +13,20 @@ import { useAuth } from '../context/AuthContext';
 
 const AdminPage = () => {
   const { profile } = useAuth();
-  const role = profile?.role || 'cliente';
+  const rawRole = profile?.role || 'cliente';
+  const role = rawRole.toLowerCase().trim();
 
   const canManageProducts = ['superadmin', 'admin', 'editor'].includes(role);
   const canManageOrders = ['superadmin', 'admin', 'support'].includes(role);
   const canManageUsers = ['superadmin', 'admin'].includes(role);
 
-  const [activeTab, setActiveTab] = useState(
-    canManageProducts ? 'products' : (canManageOrders ? 'orders' : 'users')
-  );
+  const [activeTab, setActiveTab] = useState(() => {
+    if (canManageProducts) return 'products';
+    if (canManageOrders) return 'orders';
+    if (canManageUsers) return 'users';
+    return 'dashboard';
+  });
+
   const [products, setProducts] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);

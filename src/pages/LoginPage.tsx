@@ -16,6 +16,8 @@ const LoginPage = () => {
   const [message, setMessage] = useState<string | null>(null);
   const navigate = useNavigate();
 
+  const [isRegistered, setIsRegistered] = useState(false);
+
   const handleAuth = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
@@ -71,7 +73,10 @@ const LoginPage = () => {
         if (error) throw error;
         if (data.user) {
           setMessage('¡Registro exitoso! Por favor revisa tu correo para confirmar tu cuenta.');
-          setIsLogin(true);
+          setIsRegistered(true);
+          setEmail('');
+          setPassword('');
+          setFullName('');
         }
       }
     } catch (err: any) {
@@ -80,6 +85,7 @@ const LoginPage = () => {
       setLoading(false);
     }
   };
+
 
   return (
     <div className="min-h-screen bg-vandora-cream flex items-center justify-center px-4 py-12">
@@ -108,107 +114,112 @@ const LoginPage = () => {
           </div>
         )}
 
-        <form onSubmit={handleAuth} className="space-y-6">
-          {!isLogin && !isForgotPassword && (
-            <div>
-              <label className="block text-sm font-medium text-gray-700">Nombre Completo</label>
-              <input
-                type="text"
-                required={!isLogin && !isForgotPassword}
-                value={fullName}
-                onChange={(e) => setFullName(e.target.value)}
-                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-vandora-emerald focus:ring-vandora-emerald p-2 border"
-              />
-            </div>
-          )}
+        {!isRegistered && (
+          <>
+            <form onSubmit={handleAuth} className="space-y-6">
+              {!isLogin && !isForgotPassword && (
+                <div>
+                  <label className="block text-sm font-medium text-gray-700">Nombre Completo</label>
+                  <input
+                    type="text"
+                    required={!isLogin && !isForgotPassword}
+                    value={fullName}
+                    onChange={(e) => setFullName(e.target.value)}
+                    className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-vandora-emerald focus:ring-vandora-emerald p-2 border"
+                  />
+                </div>
+              )}
 
-          <div>
-            <label className="block text-sm font-medium text-gray-700">Email</label>
-            <input
-              type="email"
-              required
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-vandora-emerald focus:ring-vandora-emerald p-2 border"
-            />
-          </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700">Email</label>
+                <input
+                  type="email"
+                  required
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-vandora-emerald focus:ring-vandora-emerald p-2 border"
+                />
+              </div>
 
-          {!isForgotPassword && (
-            <div>
-              <div className="flex justify-between items-center">
-                <label className="block text-sm font-medium text-gray-700">Contraseña</label>
-                {isLogin && (
+              {!isForgotPassword && (
+                <div>
+                  <div className="flex justify-between items-center">
+                    <label className="block text-sm font-medium text-gray-700">Contraseña</label>
+                    {isLogin && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setIsForgotPassword(true);
+                          setError(null);
+                          setMessage(null);
+                        }}
+                        className="text-xs text-vandora-emerald hover:text-emerald-800 focus:outline-none underline"
+                      >
+                        ¿Olvidaste tu contraseña?
+                      </button>
+                    )}
+                  </div>
+                  <div className="mt-1 relative">
+                    <input
+                      type={showPassword ? "text" : "password"}
+                      required={!isForgotPassword}
+                      minLength={6}
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      className="block w-full rounded-md border-gray-300 shadow-sm focus:border-vandora-emerald focus:ring-vandora-emerald p-2 border pr-10"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowPassword(!showPassword)}
+                      className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-600 focus:outline-none"
+                    >
+                      {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
+                    </button>
+                  </div>
+                  {!isLogin && <p className="text-xs text-gray-500 mt-1">Mínimo 6 caracteres</p>}
+                </div>
+              )}
+
+              <button
+                type="submit"
+                disabled={loading}
+                className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-vandora-emerald hover:bg-emerald-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-vandora-emerald disabled:opacity-50 transition-colors"
+              >
+                {loading ? <Loader2 className="animate-spin h-5 w-5" /> : (isForgotPassword ? 'Enviar Enlace' : (isLogin ? 'Ingresar' : 'Registrarse'))}
+              </button>
+            </form>
+
+            <div className="mt-6 text-center">
+              {isForgotPassword ? (
+                <button
+                  onClick={() => {
+                    setIsForgotPassword(false);
+                    setError(null);
+                    setMessage(null);
+                  }}
+                  className="text-sm font-medium text-gray-600 flex items-center justify-center w-full hover:text-vandora-emerald focus:outline-none"
+                >
+                  &larr; Volver a iniciar sesión
+                </button>
+              ) : (
+                <p className="text-sm text-gray-600">
+                  {isLogin ? '¿No tienes cuenta?' : '¿Ya tienes cuenta?'}{' '}
                   <button
-                    type="button"
                     onClick={() => {
-                      setIsForgotPassword(true);
+                      setIsLogin(!isLogin);
                       setError(null);
                       setMessage(null);
                     }}
-                    className="text-xs text-vandora-emerald hover:text-emerald-800 focus:outline-none underline"
+                    className="font-medium text-vandora-emerald hover:text-emerald-800 underline focus:outline-none"
                   >
-                    ¿Olvidaste tu contraseña?
+                    {isLogin ? 'Regístrate aquí' : 'Inicia sesión'}
                   </button>
-                )}
-              </div>
-              <div className="mt-1 relative">
-                <input
-                  type={showPassword ? "text" : "password"}
-                  required={!isForgotPassword}
-                  minLength={6}
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  className="block w-full rounded-md border-gray-300 shadow-sm focus:border-vandora-emerald focus:ring-vandora-emerald p-2 border pr-10"
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowPassword(!showPassword)}
-                  className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-600 focus:outline-none"
-                >
-                  {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
-                </button>
-              </div>
-              {!isLogin && <p className="text-xs text-gray-500 mt-1">Mínimo 6 caracteres</p>}
+                </p>
+              )}
             </div>
-          )}
+          </>
+        )}
 
-          <button
-            type="submit"
-            disabled={loading}
-            className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-vandora-emerald hover:bg-emerald-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-vandora-emerald disabled:opacity-50 transition-colors"
-          >
-            {loading ? <Loader2 className="animate-spin h-5 w-5" /> : (isForgotPassword ? 'Enviar Enlace' : (isLogin ? 'Ingresar' : 'Registrarse'))}
-          </button>
-        </form>
-
-        <div className="mt-6 text-center">
-          {isForgotPassword ? (
-            <button
-              onClick={() => {
-                setIsForgotPassword(false);
-                setError(null);
-                setMessage(null);
-              }}
-              className="text-sm font-medium text-gray-600 flex items-center justify-center w-full hover:text-vandora-emerald focus:outline-none"
-            >
-              &larr; Volver a iniciar sesión
-            </button>
-          ) : (
-            <p className="text-sm text-gray-600">
-              {isLogin ? '¿No tienes cuenta?' : '¿Ya tienes cuenta?'}{' '}
-              <button
-                onClick={() => {
-                  setIsLogin(!isLogin);
-                  setError(null);
-                  setMessage(null);
-                }}
-                className="font-medium text-vandora-emerald hover:text-emerald-800 underline focus:outline-none"
-              >
-                {isLogin ? 'Regístrate aquí' : 'Inicia sesión'}
-              </button>
-            </p>
-          )}
-        </div>
       </div>
     </div>
   );
