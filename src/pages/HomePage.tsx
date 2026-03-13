@@ -383,7 +383,7 @@ const HomePage = () => {
       <section className="py-20 bg-vandora-emerald text-white">
         <div className="max-w-7xl mx-auto px-4 grid grid-cols-1 md:grid-cols-2 gap-12 items-center">
           <div className="relative">
-            <div className="absolute -top-4 -left-4 w-full h-full border-2 border-vandora-gold rounded-lg z-0" />
+            <div className="absolute top-4 left-4 w-full h-full border-2 border-vandora-gold rounded-lg z-0" />
             <img 
               src={founderSection.image} 
               alt="Fundadora Vandora" 

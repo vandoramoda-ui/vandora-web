@@ -21,7 +21,7 @@ const Breadcrumbs = () => {
   };
 
   return (
-    <nav className="flex py-4 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto text-sm text-gray-500 overflow-x-auto whitespace-nowrap hide-scrollbar" aria-label="Breadcrumb">
+    <nav className="w-full py-4 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto text-sm text-gray-500 overflow-x-auto whitespace-nowrap hide-scrollbar" aria-label="Breadcrumb">
       <ol className="flex items-center space-x-2">
         <li>
           <Link to="/" className="hover:text-vandora-emerald transition-colors flex items-center">
