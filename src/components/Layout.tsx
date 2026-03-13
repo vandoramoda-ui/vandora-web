@@ -8,10 +8,12 @@ import { useCart } from '../context/CartContext';
 import { X, Minus, Plus, Trash2, Truck } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { formatPrice } from '../lib/utils';
-import { Link } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 
 const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const { pathname } = useLocation();
   const { isOpen, setIsOpen, items, removeItem, updateQuantity, total } = useCart();
+  const isCheckout = pathname === '/pagar';
   const freeShippingThreshold = 100;
   const remainingForFreeShipping = Math.max(0, freeShippingThreshold - total);
   const progressPercentage = Math.min(100, (total / freeShippingThreshold) * 100);
@@ -23,8 +25,8 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
       <main className="flex-grow">
         {children}
       </main>
-      <Footer />
-      <ChatWidget />
+      {!isCheckout && <Footer />}
+      {!isCheckout && <ChatWidget />}
       <CookieConsent />
 
       {/* Cart Sidebar */}

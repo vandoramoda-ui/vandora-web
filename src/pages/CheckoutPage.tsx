@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useCart } from '../context/CartContext';
 import { ecuadorLocations } from '../lib/ecuador';
 import { formatPrice } from '../lib/utils';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { CheckCircle, Truck, CreditCard, ShieldCheck, Lock, Clock, AlertCircle } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../context/AuthContext';
@@ -121,6 +121,55 @@ const CheckoutPage = () => {
     };
     fetchSettings();
   }, []);
+
+  // Fetch user's last order for auto-fill
+  useEffect(() => {
+    const fetchLastOrder = async () => {
+      if (user) {
+        try {
+          const { data, error } = await supabase
+            .from('orders')
+            .select('customer_name, customer_email, customer_phone, shipping_province, shipping_city, address, shipping_reference')
+            .eq('user_id', user.id)
+            .order('created_at', { ascending: false })
+            .limit(1)
+            .single();
+
+          if (data && !error) {
+            const [firstName, ...lastNameParts] = data.customer_name.split(' ');
+            const lastName = lastNameParts.join(' ');
+            
+            // Clean address to extract sector if possible
+            const addressParts = data.address.split(', ');
+            const sector = addressParts.length > 2 ? addressParts[addressParts.length - 3] : '';
+            const mainAddress = addressParts[0];
+
+            setFormData(prev => ({
+              ...prev,
+              firstName: firstName || prev.firstName,
+              lastName: lastName || prev.lastName,
+              email: data.customer_email || prev.email,
+              phone: data.customer_phone || prev.phone,
+              province: data.shipping_province || prev.province,
+              city: data.shipping_city || prev.city,
+              address: mainAddress || prev.address,
+              sector: sector || prev.sector,
+              reference: data.shipping_reference || prev.reference
+            }));
+
+            // Sync cities dropdown if province exists
+            if (data.shipping_province) {
+              const location = ecuadorLocations.find(loc => loc.province === data.shipping_province);
+              if (location) setCities(location.cities);
+            }
+          }
+        } catch (err) {
+          console.warn('Error fetching last order for auto-fill:', err);
+        }
+      }
+    };
+    fetchLastOrder();
+  }, [user]);
 
   useEffect(() => {
     const fetchBumpProduct = async () => {
@@ -362,6 +411,36 @@ const CheckoutPage = () => {
           <div className="flex items-center"><Truck className="w-4 h-4 mr-1 text-green-600" /> Envío Garantizado</div>
           <div className="flex items-center"><ShieldCheck className="w-4 h-4 mr-1 text-green-600" /> Datos Protegidos</div>
         </div>
+
+        {!user && (
+          <div className="bg-vandora-emerald/5 border border-vandora-emerald/20 rounded-lg p-4 mb-8 flex items-center justify-between">
+            <div className="flex items-center">
+              <div className="bg-vandora-emerald/10 p-2 rounded-full mr-3">
+                <CheckCircle className="h-5 w-5 text-vandora-emerald" />
+              </div>
+              <p className="text-sm text-gray-700">
+                <span className="font-bold">¿Ya eres cliente?</span> Inicia sesión para usar tus datos guardados y finalizar más rápido.
+              </p>
+            </div>
+            <Link 
+              to="/iniciar-sesion" 
+              className="text-vandora-emerald font-bold text-sm hover:underline border border-vandora-emerald px-4 py-2 rounded-md transition-colors hover:bg-vandora-emerald hover:text-white"
+            >
+              Iniciar sesión
+            </Link>
+          </div>
+        )}
+
+        {user && (
+          <div className="bg-emerald-50 border border-emerald-200 rounded-lg p-4 mb-8 flex items-center">
+            <div className="bg-emerald-100 p-2 rounded-full mr-3 text-emerald-600">
+              <CheckCircle className="h-5 w-5" />
+            </div>
+            <p className="text-sm text-emerald-800">
+              <span className="font-bold">¡Hola!</span> Hemos cargado los datos de tu último pedido para tu comodidad.
+            </p>
+          </div>
+        )}
 
         <div className="grid grid-cols-1 lg:grid-cols-5 gap-12">
           <div className="lg:col-span-2">

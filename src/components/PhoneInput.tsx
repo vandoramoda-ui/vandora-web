@@ -107,7 +107,7 @@ const PhoneInput: React.FC<PhoneInputProps> = ({ value, onChange, required, labe
           onChange={handlePhoneChange}
           required={required}
           placeholder="000 000 000"
-          className="block w-full px-4 py-3 text-sm focus:outline-none"
+          className="block w-full px-3 py-2 sm:text-sm focus:outline-none"
         />
       </div>
 
