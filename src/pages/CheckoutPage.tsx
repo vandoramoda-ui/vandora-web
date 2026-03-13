@@ -207,6 +207,36 @@ const CheckoutPage = () => {
     setFormData({ ...formData, [name]: value });
   };
 
+  // Abandoned Cart Tracking Logic
+  useEffect(() => {
+    const trackCart = async () => {
+      if ((formData.email || formData.phone) && items.length > 0) {
+        try {
+          // Identify existing record or create new one
+          await supabase
+            .from('abandoned_carts')
+            .upsert({
+              customer_email: formData.email || null,
+              customer_phone: formData.phone || null,
+              cart_items: items,
+              total_amount: total,
+              updated_at: new Date().toISOString(),
+              user_id: user?.id || null,
+              status: 'pending'
+            }, { 
+              onConflict: 'customer_email,customer_phone' // Note: This requires a unique constraint in SQL
+            });
+        } catch (error) {
+          // Fail silently to not interrupt UX
+          console.warn('Abandoned cart tracking failed', error);
+        }
+      }
+    };
+
+    const timer = setTimeout(trackCart, 2000); // Debounce tracking
+    return () => clearTimeout(timer);
+  }, [formData.email, formData.phone, items, total, user]);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
@@ -286,6 +316,14 @@ const CheckoutPage = () => {
         }
       } catch (profileErr) {
         console.warn('Profile sync skipped:', profileErr);
+      }
+
+      // Clear abandoned cart entry if it exists
+      if (formData.email || formData.phone) {
+        await supabase
+          .from('abandoned_carts')
+          .delete()
+          .or(`customer_email.eq.${formData.email},customer_phone.eq.${formData.phone}`);
       }
 
       clearCart();

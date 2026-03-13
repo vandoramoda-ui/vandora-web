@@ -106,7 +106,7 @@ const ChatWidget = () => {
             initial={{ opacity: 0, y: 20, scale: 0.95 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 20, scale: 0.95 }}
-            className="fixed bottom-24 right-6 w-80 md:w-96 bg-white rounded-2xl shadow-2xl z-50 overflow-hidden border border-gray-100 flex flex-col max-h-[600px]"
+            className="fixed bottom-28 right-6 w-80 md:w-96 bg-white rounded-2xl shadow-2xl z-50 overflow-hidden border border-gray-100 flex flex-col max-h-[600px]"
           >
             {/* Header */}
             <div className="bg-vandora-emerald p-4 flex justify-between items-center">
@@ -197,7 +197,7 @@ const ChatWidget = () => {
         whileHover={{ scale: 1.05 }}
         whileTap={{ scale: 0.95 }}
         onClick={() => setIsOpen(!isOpen)}
-        className="fixed bottom-6 right-6 bg-vandora-emerald text-white p-4 rounded-full shadow-lg z-50 hover:bg-emerald-800 transition-colors flex items-center justify-center group"
+        className="fixed bottom-10 right-6 bg-vandora-emerald text-white p-4 rounded-full shadow-lg z-50 hover:bg-emerald-800 transition-colors flex items-center justify-center group"
       >
         <MessageCircle className="h-6 w-6" />
         <span className="absolute right-0 top-0 flex h-3 w-3">

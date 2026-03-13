@@ -2,6 +2,7 @@ import React from 'react';
 import Navbar from './Navbar';
 import Footer from './Footer';
 import ChatWidget from './ChatWidget';
+import CookieConsent from './CookieConsent';
 import Breadcrumbs from './Breadcrumbs';
 import { useCart } from '../context/CartContext';
 import { X, Minus, Plus, Trash2, Truck } from 'lucide-react';
@@ -24,6 +25,7 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
       </main>
       <Footer />
       <ChatWidget />
+      <CookieConsent />
 
       {/* Cart Sidebar */}
       <AnimatePresence>

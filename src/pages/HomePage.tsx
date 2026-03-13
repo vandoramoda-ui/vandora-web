@@ -84,12 +84,14 @@ const HomePage = () => {
           };
 
           const mappedProducts = prodData.map((p: any) => {
-            const images = Array.isArray(p.images) ? p.images.map((img: any) => {
+            const rawImages = parseJSON(p.images);
+            const images = Array.isArray(rawImages) ? rawImages.map((img: any) => {
               const parsed = parseJSON(img);
               return typeof parsed === 'string' ? { url: parsed } : parsed;
             }) : [];
 
-            const colors = Array.isArray(p.colors) ? p.colors.map((c: any) => {
+            const rawColors = parseJSON(p.colors);
+            const colors = Array.isArray(rawColors) ? rawColors.map((c: any) => {
               const parsed = parseJSON(c);
               return typeof parsed === 'object' && parsed !== null ? parsed : { name: String(c), code: '#CCCCCC' };
             }) : [];

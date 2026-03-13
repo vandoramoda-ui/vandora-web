@@ -433,16 +433,16 @@ const ProductDetailPage = () => {
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <button
                   onClick={handleAddToCart}
-                  className="w-full bg-vandora-emerald text-white py-4 px-8 rounded-md hover:bg-emerald-800 transition-all font-medium shadow-lg hover:shadow-xl active:transform active:scale-[0.98] flex items-center justify-center text-lg uppercase tracking-wide order-last sm:order-first"
+                  className="w-full bg-gradient-to-r from-vandora-emerald to-emerald-800 text-white py-4 px-8 rounded-xl hover:shadow-2xl transition-all font-bold shadow-emerald-200/50 active:scale-[0.98] flex items-center justify-center text-sm uppercase tracking-[0.15em] order-last sm:order-first group"
                 >
-                  <ShoppingBag className="h-5 w-5 mr-2" />
+                  <ShoppingBag className="h-5 w-5 mr-2 group-hover:rotate-12 transition-transform" />
                   Añadir al Carrito
                 </button>
                 <a
                   href={`https://wa.me/593900000000?text=Hola! Estoy interesada en el producto: ${product.name}`}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="w-full bg-white text-[#25D366] border-2 border-[#25D366] py-4 px-8 rounded-md hover:bg-[#25D366] hover:text-white transition-all font-medium shadow-sm hover:shadow-md flex items-center justify-center text-lg uppercase tracking-wide"
+                  className="w-full bg-white text-[#25D366] border border-[#25D366]/30 py-4 px-8 rounded-xl hover:bg-[#25D366] hover:text-white transition-all font-bold shadow-sm flex items-center justify-center text-sm uppercase tracking-[0.15em]"
                 >
                   <MessageCircle className="h-5 w-5 mr-2" />
                   Consultar WhatsApp
@@ -460,21 +460,20 @@ const ProductDetailPage = () => {
               </div>
             </div>
 
-            {/* Trust Badges */}
-            <div className="grid grid-cols-2 gap-4 border-t border-gray-200 pt-6">
-              <div className="flex items-start space-x-3">
-                <Truck className="h-6 w-6 text-vandora-gold flex-shrink-0" />
-                <div>
-                  <h4 className="text-sm font-medium text-gray-900">Envío Rápido</h4>
-                  <p className="text-xs text-gray-500 mt-1">Entrega en 2-3 días hábiles a todo el país.</p>
+            <div className="grid grid-cols-2 gap-4 border-t border-gray-100 pt-8 mt-4">
+              <div className="flex flex-col items-center text-center p-4 rounded-2xl bg-white border border-gray-100 shadow-sm hover:shadow-md transition-shadow">
+                <div className="bg-vandora-emerald/5 p-3 rounded-full mb-3">
+                  <Truck className="h-6 w-6 text-vandora-emerald" />
                 </div>
+                <h4 className="text-[10px] font-bold text-gray-900 uppercase tracking-widest mb-1">Envío Rápido</h4>
+                <p className="text-[9px] text-gray-500 leading-tight">Entrega certificada en 2-3 días hábiles.</p>
               </div>
-              <div className="flex items-start space-x-3">
-                <ShieldCheck className="h-6 w-6 text-vandora-gold flex-shrink-0" />
-                <div>
-                  <h4 className="text-sm font-medium text-gray-900">Garantía Total</h4>
-                  <p className="text-xs text-gray-500 mt-1">30 días para cambios o devoluciones sin costo.</p>
+              <div className="flex flex-col items-center text-center p-4 rounded-2xl bg-white border border-gray-100 shadow-sm hover:shadow-md transition-shadow">
+                <div className="bg-vandora-gold/5 p-3 rounded-full mb-3">
+                  <ShieldCheck className="h-6 w-6 text-vandora-gold" />
                 </div>
+                <h4 className="text-[10px] font-bold text-gray-900 uppercase tracking-widest mb-1">Garantía Vandora</h4>
+                <p className="text-[9px] text-gray-500 leading-tight">Tu satisfacción es nuestra prioridad #1.</p>
               </div>
             </div>
           </div>

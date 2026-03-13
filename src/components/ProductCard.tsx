@@ -18,7 +18,10 @@ const ProductCard: React.FC<ProductCardProps> = ({ id, name, price, image, categ
       whileHover={{ y: -5 }}
       className="group relative"
     >
-      <div className="aspect-[3/4] w-full overflow-hidden rounded-lg bg-gray-200 group-hover:opacity-75 transition-opacity">
+      <div className="aspect-[3/4] w-full overflow-hidden rounded-2xl bg-gray-200 transition-all duration-500 group-hover:shadow-2xl group-hover:scale-[1.02] relative">
+        <div className="absolute top-3 left-3 z-10">
+          <span className="bg-white/90 backdrop-blur-sm text-vandora-emerald text-[9px] font-bold px-2 py-1 rounded-full uppercase tracking-tighter shadow-sm">Nuevo Legado</span>
+        </div>
         <img
           src={image}
           alt={name}
@@ -48,9 +51,9 @@ const ProductCard: React.FC<ProductCardProps> = ({ id, name, price, image, categ
             </div>
           )}
         </div>
-        <p className="text-sm font-medium text-gray-900">{formatPrice(price)}</p>
+        <p className="text-[#B8860B] font-serif font-bold text-base">{formatPrice(price)}</p>
       </div>
-      <button className="mt-4 w-full bg-vandora-black text-white py-2 px-4 rounded md:opacity-0 group-hover:opacity-100 transition-opacity text-sm uppercase tracking-wide">
+      <button className="mt-4 w-full bg-vandora-black text-white py-3 px-4 rounded-xl md:opacity-0 group-hover:opacity-100 transition-all duration-300 text-[10px] font-bold uppercase tracking-[0.2em] shadow-lg hover:bg-gray-800">
         Ver Detalles
       </button>
     </motion.div>
