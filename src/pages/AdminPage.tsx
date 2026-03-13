@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
-import { Plus, Edit, Trash, Package, ShoppingBag, Users, Layout as LayoutIcon, Sparkles, Settings, X, Image as ImageIcon, Menu } from 'lucide-react';
+import { Plus, Edit, Trash, Package, ShoppingBag, Users, Layout as LayoutIcon, Sparkles, Settings, X, Image as ImageIcon, Menu, Ruler, Copy, Megaphone } from 'lucide-react';
 import { formatPrice } from '../lib/utils';
 import MediaManager from '../components/MediaManager';
 import SiteEditor from '../components/SiteEditor';
@@ -8,14 +8,18 @@ import QuizBuilder from '../components/QuizBuilder';
 import SettingsEditor from '../components/SettingsEditor';
 import VisualQuizBuilder from '../components/flow/VisualQuizBuilder';
 import CheckoutSettingsEditor from '../components/CheckoutSettingsEditor';
+import SizeGuideEditor from '../components/SizeGuideEditor';
+import PopupManager from '../components/PopupManager';
 import SEO from '../components/SEO';
 import { useAuth } from '../context/AuthContext';
 
 const AdminPage = () => {
-  const { profile } = useAuth();
+  const { profile, loading: authLoading } = useAuth();
   const rawRole = profile?.role || 'cliente';
   const role = rawRole.toLowerCase().trim();
 
+  const isSuperAdmin = ['superadmin'].includes(role);
+  const isAdmin = ['superadmin', 'admin'].includes(role);
   const canManageProducts = ['superadmin', 'admin', 'editor'].includes(role);
   const canManageOrders = ['superadmin', 'admin', 'support'].includes(role);
   const canManageUsers = ['superadmin', 'admin'].includes(role);
@@ -70,6 +74,14 @@ const AdminPage = () => {
   const [isCategoryModalOpen, setIsCategoryModalOpen] = useState(false);
 
   useEffect(() => {
+    if (activeTab === 'dashboard' && profile) {
+      if (canManageProducts) setActiveTab('products');
+      else if (canManageOrders) setActiveTab('orders');
+      else if (canManageUsers) setActiveTab('users');
+    }
+  }, [profile]);
+
+  useEffect(() => {
     if (activeTab === 'products') {
       fetchProducts();
       fetchCategories();
@@ -85,7 +97,11 @@ const AdminPage = () => {
 
   const fetchOrders = async () => {
     const { data, error } = await supabase.from('orders').select('*').order('created_at', { ascending: false });
-    if (!error && data) setOrders(data);
+    if (error) {
+      console.error('Admin: Error fetching orders:', error);
+      alert('Error al cargar pedidos: ' + error.message);
+    }
+    if (data) setOrders(data);
   };
 
   const fetchUsers = async () => {
@@ -132,6 +148,48 @@ const AdminPage = () => {
       })));
     }
     setLoading(false);
+  };
+
+  const handleDuplicateProduct = async (product: any) => {
+    if (!confirm(`¿Estás seguro de duplicar el producto "${product.name}"?`)) return;
+
+    try {
+      const { id, created_at, updated_at, slug: oldSlug, ...rest } = product;
+      
+      // Clean data based on what handleSubmit uses to avoid hidden state issues
+      const newName = `${product.name} (Copia)`;
+      const newSlug = `${oldSlug || newName.toLowerCase().replace(/[^a-z0-9]+/g, '-')}-copy-${Date.now()}`;
+      
+      const duplicatedProduct = {
+        ...rest,
+        name: newName,
+        slug: newSlug,
+        stock: 0,
+        active: false
+      };
+
+      const { data, error } = await supabase
+        .from('products')
+        .insert(duplicatedProduct)
+        .select()
+        .single();
+
+      if (error) throw error;
+      if (data) {
+        // Normalize as we do in fetchProducts
+        const normalized = {
+          ...data,
+          images: Array.isArray(data.images) ? data.images.map((img: any) => typeof img === 'string' ? { url: img } : img) : [],
+          videos: Array.isArray(data.videos) ? data.videos.map((vid: any) => typeof vid === 'string' ? { url: vid } : vid) : [],
+          colors: Array.isArray(data.colors) ? data.colors.map((c: any) => typeof c === 'string' ? { name: c, code: '#CCCCCC' } : c) : []
+        };
+        setProducts([normalized, ...products]);
+        alert('Producto duplicado correctamente.');
+      }
+    } catch (error: any) {
+      console.error('Error duplicating product:', error);
+      alert('Error al duplicar: ' + error.message);
+    }
   };
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
@@ -344,7 +402,7 @@ const AdminPage = () => {
             </button>
           )}
 
-          {['superadmin', 'admin'].includes(role) && (
+          {isAdmin && (
             <>
               <button
                 onClick={() => { setActiveTab('media'); setIsSidebarOpen(false); }}
@@ -368,10 +426,24 @@ const AdminPage = () => {
               </button>
 
               <button
+                onClick={() => { setActiveTab('popups'); setIsSidebarOpen(false); }}
+                className={`w-full flex items-center px-4 py-3 text-sm rounded-lg transition-colors ${activeTab === 'popups' ? 'bg-emerald-50 text-vandora-emerald font-medium' : 'text-gray-600 hover:bg-gray-50'}`}
+              >
+                <Megaphone className="h-5 w-5 mr-3" /> Popups
+              </button>
+
+              <button
                 onClick={() => { setActiveTab('settings'); setIsSidebarOpen(false); }}
                 className={`w-full flex items-center px-4 py-3 text-sm rounded-lg transition-colors ${activeTab === 'settings' ? 'bg-emerald-50 text-vandora-emerald font-medium' : 'text-gray-600 hover:bg-gray-50'}`}
               >
                 <Settings className="h-5 w-5 mr-3" /> Ajustes
+              </button>
+
+              <button
+                onClick={() => { setActiveTab('size-guide'); setIsSidebarOpen(false); }}
+                className={`w-full flex items-center px-4 py-3 text-sm rounded-lg transition-colors ${activeTab === 'size-guide' ? 'bg-emerald-50 text-vandora-emerald font-medium' : 'text-gray-600 hover:bg-gray-50'}`}
+              >
+                <Ruler className="h-5 w-5 mr-3" /> Guía de Tallas
               </button>
             </>
           )}
@@ -387,10 +459,14 @@ const AdminPage = () => {
                   activeTab === 'users' ? 'Gestión de Usuarios' :
                     activeTab === 'media' ? 'Multimedia' :
                       activeTab === 'site' ? 'Editor de Sitio' :
-                        activeTab === 'quizzes' ? 'Constructor de Quizzes' : 'Ajustes'}
+                        activeTab === 'quizzes' ? 'Constructor de Quizzes' : 
+                          activeTab === 'size-guide' ? 'Guía de Tallas' : 
+                            activeTab === 'popups' ? 'Gestión de Popups' : 'Ajustes'}
           </h1>
           <p className="text-sm text-gray-500">Bienvenido de nuevo, {role}</p>
         </header>
+
+        {activeTab === 'popups' && <PopupManager />}
 
         {activeTab === 'dashboard' && (
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
@@ -465,6 +541,13 @@ const AdminPage = () => {
                       <td className="px-6 py-4 text-sm text-gray-500">{formatPrice(product.price)}</td>
                       <td className="px-6 py-4 text-sm text-gray-500">{product.stock}</td>
                       <td className="px-6 py-4 text-right text-sm font-medium">
+                        <button 
+                          className="text-gray-400 hover:text-vandora-emerald transition-colors mr-4" 
+                          onClick={() => handleDuplicateProduct(product)}
+                          title="Duplicar Producto"
+                        >
+                          <Copy className="h-4 w-4" />
+                        </button>
                         <button className="text-vandora-emerald hover:text-emerald-800 mr-4" onClick={() => {
                           setEditingProduct(product);
                           const parseJSON = (val: any) => {
@@ -525,29 +608,37 @@ const AdminPage = () => {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-200 bg-white">
-                  {orders.map(order => (
-                    <tr key={order.id} className="hover:bg-gray-50 transition-colors">
-                      <td className="px-6 py-4 text-sm font-medium text-gray-900">#{order.id.substring(0, 8)}</td>
-                      <td className="px-6 py-4 text-sm text-gray-500">{order.customer_name}</td>
-                      <td className="px-6 py-4 text-sm text-gray-500">{formatPrice(order.total)}</td>
-                      <td className="px-6 py-4 text-sm text-gray-500">
-                        <span className={`px-3 py-1 text-xs font-semibold rounded-full ${order.status === 'completed' ? 'bg-green-100 text-green-800' :
-                          order.status === 'pending' ? 'bg-yellow-100 text-yellow-800' : 'bg-gray-100 text-gray-800'
-                          }`}>
-                          {order.status === 'pending' ? 'Pendiente' :
-                            order.status === 'completed' ? 'Completado' : order.status}
-                        </span>
-                      </td>
-                      <td className="px-6 py-4 text-right text-sm font-medium">
-                        <button className="text-vandora-emerald hover:text-emerald-900" onClick={() => {
-                          setEditingOrder(order);
-                          setIsOrderModalOpen(true);
-                        }}>
-                          <Edit className="h-4 w-4" />
-                        </button>
+                  {orders.length === 0 ? (
+                    <tr>
+                      <td colSpan={5} className="px-6 py-12 text-center text-gray-500 italic">
+                        No se encontraron pedidos.
                       </td>
                     </tr>
-                  ))}
+                  ) : (
+                    orders.map(order => (
+                      <tr key={order.id} className="hover:bg-gray-50 transition-colors">
+                        <td className="px-6 py-4 text-sm font-medium text-gray-900">#{order.id.substring(0, 8)}</td>
+                        <td className="px-6 py-4 text-sm text-gray-500">{order.customer_name}</td>
+                        <td className="px-6 py-4 text-sm text-gray-500">{formatPrice(order.total)}</td>
+                        <td className="px-6 py-4 text-sm text-gray-500">
+                          <span className={`px-3 py-1 text-xs font-semibold rounded-full ${order.status === 'completed' ? 'bg-green-100 text-green-800' :
+                            order.status === 'pending' ? 'bg-yellow-100 text-yellow-800' : 'bg-gray-100 text-gray-800'
+                            }`}>
+                            {order.status === 'pending' ? 'Pendiente' :
+                              order.status === 'completed' ? 'Completado' : order.status}
+                          </span>
+                        </td>
+                        <td className="px-6 py-4 text-right text-sm font-medium">
+                          <button className="text-vandora-emerald hover:text-emerald-900" onClick={() => {
+                            setEditingOrder(order);
+                            setIsOrderModalOpen(true);
+                          }}>
+                            <Edit className="h-4 w-4" />
+                          </button>
+                        </td>
+                      </tr>
+                    ))
+                  )}
                 </tbody>
               </table>
             </div>
@@ -609,6 +700,7 @@ const AdminPage = () => {
         {activeTab === 'site' && <div className="bg-white p-6 rounded-lg shadow-sm"><SiteEditor /></div>}
         {activeTab === 'quizzes' && <div className="bg-white p-6 rounded-lg shadow-sm space-y-8"><QuizBuilder /><VisualQuizBuilder onBack={() => setActiveTab('quizzes')} /></div>}
         {activeTab === 'settings' && <div className="bg-white p-6 rounded-lg shadow-sm space-y-8"><SettingsEditor /><CheckoutSettingsEditor /></div>}
+        {activeTab === 'size-guide' && <div className="bg-white p-6 rounded-lg shadow-sm"><SizeGuideEditor /></div>}
 
         {/* Modals remain same as before for products/orders/users edit */}
         {isModalOpen && (
@@ -720,18 +812,28 @@ const AdminPage = () => {
                           onChange={(e) => setNewColorName(e.target.value)}
                           className="flex-1 rounded-md border p-2 text-sm border-gray-300"
                         />
-                        <input
-                          type="color"
-                          value={newColorCode}
-                          onChange={(e) => setNewColorCode(e.target.value)}
-                          className="w-10 h-10 border-0 p-0 rounded-md cursor-pointer"
-                        />
+                        <div className="flex-1 flex gap-2">
+                          <input
+                            type="color"
+                            value={newColorCode.startsWith('#') && newColorCode.length === 7 ? newColorCode : '#000000'}
+                            onChange={(e) => setNewColorCode(e.target.value)}
+                            className="w-10 h-10 border-0 p-0 rounded-md cursor-pointer"
+                          />
+                          <input
+                            type="text"
+                            placeholder="Código (Hex, RGB...)"
+                            value={newColorCode}
+                            onChange={(e) => setNewColorCode(e.target.value)}
+                            className="flex-1 rounded-md border p-2 text-sm border-gray-300"
+                          />
+                        </div>
                         <button
                           type="button"
                           onClick={() => {
                             if (newColorName) {
                               setFormData({ ...formData, colors: [...formData.colors, { name: newColorName, code: newColorCode }] });
                               setNewColorName('');
+                              setNewColorCode('#000000');
                             }
                           }}
                           className="bg-gray-100 p-2 rounded-md hover:bg-gray-200"

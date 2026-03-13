@@ -371,17 +371,23 @@ const SiteEditor = () => {
                     {/* Images Column */}
                     <div className="lg:col-span-5 space-y-6">
                       <div>
-                        <label className="block text-xs font-bold text-gray-500 uppercase mb-2">Imagen Escritorio (1920x1080)</label>
-                        <ImageUpload 
-                          currentImage={slide.imageDesktop}
-                          onUpload={(url) => handleSlideChange(slide.id, 'imageDesktop', url)}
+                        <label className="block text-xs font-bold text-gray-500 uppercase mb-2">Imagen Escritorio (Recomendado: 2000x1000px)</label>
+                        <input 
+                          type="text" 
+                          value={slide.imageDesktop} 
+                          onChange={(e) => handleSlideChange(slide.id, 'imageDesktop', e.target.value)}
+                          className="w-full border rounded-lg px-3 py-2 text-sm" 
+                          placeholder="https://..."
                         />
                       </div>
                       <div>
-                        <label className="block text-xs font-bold text-gray-500 uppercase mb-2">Imagen Móvil (800x1200)</label>
-                        <ImageUpload 
-                          currentImage={slide.imageMobile}
-                          onUpload={(url) => handleSlideChange(slide.id, 'imageMobile', url)}
+                        <label className="block text-xs font-bold text-gray-500 uppercase mb-2">Imagen Mobile (Recomendado: 800x1200px)</label>
+                        <input 
+                          type="text" 
+                          value={slide.imageMobile} 
+                          onChange={(e) => handleSlideChange(slide.id, 'imageMobile', e.target.value)}
+                          className="w-full border rounded-lg px-3 py-2 text-sm" 
+                          placeholder="https://..."
                         />
                       </div>
                     </div>
@@ -426,36 +432,38 @@ const SiteEditor = () => {
                         />
                       </div>
                       <div>
-                        <label className="block text-xs font-bold text-gray-500 uppercase mb-2">Color del Botón</label>
+                        <label className="block text-xs font-bold text-gray-500 uppercase mb-2">Color del Botón (Hex, RGB, HSL)</label>
                         <div className="flex gap-2">
                             <input 
                               type="color" 
-                              value={slide.buttonColor} 
+                              value={slide.buttonColor.startsWith('#') && slide.buttonColor.length === 7 ? slide.buttonColor : '#000000'} 
                               onChange={(e) => handleSlideChange(slide.id, 'buttonColor', e.target.value)}
                               className="h-12 w-16 border rounded cursor-pointer" 
                             />
                             <input 
                               type="text" 
+                              placeholder="Ej: #D4AF37 o rgb(212, 175, 55)"
                               value={slide.buttonColor} 
                               onChange={(e) => handleSlideChange(slide.id, 'buttonColor', e.target.value)}
-                              className="flex-1 border rounded-lg px-3" 
+                              className="flex-1 border rounded-lg px-3 text-sm" 
                             />
                         </div>
                       </div>
                       <div>
-                        <label className="block text-xs font-bold text-gray-500 uppercase mb-2">Color de Texto</label>
+                        <label className="block text-xs font-bold text-gray-500 uppercase mb-2">Color de Texto (Hex, RGB, HSL)</label>
                         <div className="flex gap-2">
                             <input 
                               type="color" 
-                              value={slide.textColor || '#FFFFFF'} 
+                              value={(slide.textColor && slide.textColor.startsWith('#') && slide.textColor.length === 7) ? slide.textColor : '#FFFFFF'} 
                               onChange={(e) => handleSlideChange(slide.id, 'textColor', e.target.value)}
                               className="h-12 w-16 border rounded cursor-pointer" 
                             />
                              <input 
                               type="text" 
+                              placeholder="Ej: #FFFFFF o white"
                               value={slide.textColor || '#FFFFFF'} 
                               onChange={(e) => handleSlideChange(slide.id, 'textColor', e.target.value)}
-                              className="flex-1 border rounded-lg px-3" 
+                              className="flex-1 border rounded-lg px-3 text-sm" 
                             />
                         </div>
                       </div>

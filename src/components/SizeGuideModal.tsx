@@ -1,13 +1,54 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { X } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
+import { supabase } from '../lib/supabase';
 
 interface SizeGuideModalProps {
   isOpen: boolean;
   onClose: () => void;
 }
 
+interface SizeRow {
+  size: string;
+  bust: string;
+  waist: string;
+  hip: string;
+}
+
+interface SizeGuideData {
+  rows: SizeRow[];
+  instructions: string[];
+}
+
 const SizeGuideModal: React.FC<SizeGuideModalProps> = ({ isOpen, onClose }) => {
+  const [data, setData] = useState<SizeGuideData | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    if (isOpen) {
+      fetchSizeGuide();
+    }
+  }, [isOpen]);
+
+  const fetchSizeGuide = async () => {
+    setLoading(true);
+    const { data: dbData, error } = await supabase
+      .from('app_settings')
+      .select('value')
+      .eq('key', 'size_guide')
+      .single();
+
+    if (dbData && !error) {
+      try {
+        const parsed = JSON.parse(dbData.value);
+        setData(parsed);
+      } catch (e) {
+        console.error('Error parsing size guide:', e);
+      }
+    }
+    setLoading(false);
+  };
+
   return (
     <AnimatePresence>
       {isOpen && (
@@ -28,59 +69,45 @@ const SizeGuideModal: React.FC<SizeGuideModalProps> = ({ isOpen, onClose }) => {
             <div className="p-8">
               <h2 className="text-2xl font-serif text-gray-900 mb-6 text-center">Guía de Tallas</h2>
               
-              <div className="overflow-x-auto">
-                <table className="w-full text-sm text-left text-gray-500">
-                  <thead className="text-xs text-gray-700 uppercase bg-gray-50">
-                    <tr>
-                      <th className="px-6 py-3">Talla</th>
-                      <th className="px-6 py-3">Busto (cm)</th>
-                      <th className="px-6 py-3">Cintura (cm)</th>
-                      <th className="px-6 py-3">Cadera (cm)</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    <tr className="bg-white border-b">
-                      <td className="px-6 py-4 font-medium text-gray-900">XS</td>
-                      <td className="px-6 py-4">80-84</td>
-                      <td className="px-6 py-4">60-64</td>
-                      <td className="px-6 py-4">86-90</td>
-                    </tr>
-                    <tr className="bg-white border-b">
-                      <td className="px-6 py-4 font-medium text-gray-900">S</td>
-                      <td className="px-6 py-4">85-89</td>
-                      <td className="px-6 py-4">65-69</td>
-                      <td className="px-6 py-4">91-95</td>
-                    </tr>
-                    <tr className="bg-white border-b">
-                      <td className="px-6 py-4 font-medium text-gray-900">M</td>
-                      <td className="px-6 py-4">90-94</td>
-                      <td className="px-6 py-4">70-74</td>
-                      <td className="px-6 py-4">96-100</td>
-                    </tr>
-                    <tr className="bg-white border-b">
-                      <td className="px-6 py-4 font-medium text-gray-900">L</td>
-                      <td className="px-6 py-4">95-99</td>
-                      <td className="px-6 py-4">75-79</td>
-                      <td className="px-6 py-4">101-105</td>
-                    </tr>
-                    <tr className="bg-white border-b">
-                      <td className="px-6 py-4 font-medium text-gray-900">XL</td>
-                      <td className="px-6 py-4">100-104</td>
-                      <td className="px-6 py-4">80-84</td>
-                      <td className="px-6 py-4">106-110</td>
-                    </tr>
-                  </tbody>
-                </table>
-              </div>
-              
-              <div className="mt-6 text-xs text-gray-500">
-                <p className="font-medium mb-2">Cómo medir:</p>
-                <ul className="list-disc pl-4 space-y-1">
-                  <li><strong>Busto:</strong> Mide alrededor de la parte más completa del busto.</li>
-                  <li><strong>Cintura:</strong> Mide alrededor de la parte más estrecha de tu cintura natural.</li>
-                  <li><strong>Cadera:</strong> Mide alrededor de la parte más completa de tus caderas.</li>
-                </ul>
-              </div>
+              {loading ? (
+                <div className="py-12 text-center text-gray-500">Cargando guía...</div>
+              ) : data ? (
+                <>
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-sm text-left text-gray-500">
+                      <thead className="text-xs text-gray-700 uppercase bg-gray-50">
+                        <tr>
+                          <th className="px-6 py-3">Talla</th>
+                          <th className="px-6 py-3">Busto (cm)</th>
+                          <th className="px-6 py-3">Cintura (cm)</th>
+                          <th className="px-6 py-3">Cadera (cm)</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {data.rows.map((row, idx) => (
+                          <tr key={idx} className="bg-white border-b">
+                            <td className="px-6 py-4 font-medium text-gray-900">{row.size}</td>
+                            <td className="px-6 py-4">{row.bust}</td>
+                            <td className="px-6 py-4">{row.waist}</td>
+                            <td className="px-6 py-4">{row.hip}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                  
+                  <div className="mt-6 text-xs text-gray-500">
+                    <p className="font-medium mb-2">Cómo medir:</p>
+                    <ul className="list-disc pl-4 space-y-1">
+                      {data.instructions.map((inst, idx) => (
+                        <li key={idx} dangerouslySetInnerHTML={{ __html: inst.replace(/^(.*?):/, '<strong>$1:</strong>') }} />
+                      ))}
+                    </ul>
+                  </div>
+                </>
+              ) : (
+                <div className="py-12 text-center text-gray-500 italic">No hay información de tallas disponible.</div>
+              )}
             </div>
           </motion.div>
         </div>
@@ -88,5 +115,6 @@ const SizeGuideModal: React.FC<SizeGuideModalProps> = ({ isOpen, onClose }) => {
     </AnimatePresence>
   );
 };
+
 
 export default SizeGuideModal;

@@ -184,33 +184,34 @@ const HomePage = () => {
       />
       
       {/* Hero Slider */}
-      <section className="relative h-[80vh] w-full overflow-hidden bg-gray-900">
-        {heroSlides.length > 0 && (
-          <>
-            <AnimatePresence mode="wait">
-              <motion.div
-                key={currentSlide}
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
-                transition={{ duration: 0.8 }}
-                className="absolute inset-0"
-              >
-                {/* Desktop Image */}
-                <img 
-                  src={heroSlides[currentSlide]?.imageDesktop} 
-                  alt={heroSlides[currentSlide]?.title}
-                  className="hidden md:block w-full h-full object-cover opacity-80"
-                />
-                {/* Mobile Image */}
-                <img 
-                  src={heroSlides[currentSlide]?.imageMobile} 
-                  alt={heroSlides[currentSlide]?.title}
-                  className="block md:hidden w-full h-full object-cover opacity-80"
-                />
-                <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/30 to-transparent" />
-              </motion.div>
-            </AnimatePresence>
+      <section className="relative h-[60vh] md:h-[70vh] max-h-[700px] w-full overflow-hidden md:px-4 md:pt-4 bg-vandora-cream">
+        <div className="relative w-full h-full overflow-hidden md:rounded-2xl bg-gray-900 shadow-2xl">
+          {heroSlides.length > 0 && (
+            <>
+              <AnimatePresence mode="wait">
+                <motion.div
+                  key={currentSlide}
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
+                  transition={{ duration: 0.8 }}
+                  className="absolute inset-0"
+                >
+                  {/* Desktop Image */}
+                  <img 
+                    src={heroSlides[currentSlide]?.imageDesktop} 
+                    alt={heroSlides[currentSlide]?.title}
+                    className="hidden md:block w-full h-full object-cover opacity-80"
+                  />
+                  {/* Mobile Image */}
+                  <img 
+                    src={heroSlides[currentSlide]?.imageMobile} 
+                    alt={heroSlides[currentSlide]?.title}
+                    className="block md:hidden w-full h-full object-cover opacity-80"
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
+                </motion.div>
+              </AnimatePresence>
 
             <div className="absolute inset-0 flex items-center justify-center z-10 px-4">
               <div className="text-center max-w-4xl mx-auto">
@@ -277,8 +278,9 @@ const HomePage = () => {
                 />
               ))}
             </div>
-          </>
-        )}
+            </>
+          )}
+        </div>
       </section>
 
       {/* Category Slider (CRO) */}

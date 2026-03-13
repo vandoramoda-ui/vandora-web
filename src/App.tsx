@@ -8,6 +8,8 @@ import { BrowserRouter as Router, Routes, Route, useLocation } from 'react-route
 import { CartProvider } from './context/CartContext';
 import { AuthProvider } from './context/AuthContext';
 import Layout from './components/Layout';
+import FloatingWhatsApp from './components/FloatingWhatsApp';
+import PopupDisplay from './components/PopupDisplay';
 import HomePage from './pages/HomePage';
 import ShopPage from './pages/ShopPage';
 import ProductDetailPage from './pages/ProductDetailPage';
