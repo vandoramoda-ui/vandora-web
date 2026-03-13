@@ -98,6 +98,8 @@ const Footer = () => {
               <li><Link to="/contacto" className="hover:text-white transition-colors">Contacto</Link></li>
               <li><Link to="/preguntas-frecuentes" className="hover:text-white transition-colors">Preguntas Frecuentes</Link></li>
               <li><Link to="/envio" className="hover:text-white transition-colors">Envíos y Devoluciones</Link></li>
+              <li><Link to="/politica-de-privacidad" className="hover:text-white transition-colors">Política de Privacidad</Link></li>
+              <li><Link to="/terminos-y-condiciones" className="hover:text-white transition-colors">Términos y Condiciones</Link></li>
             </ul>
           </div>
 

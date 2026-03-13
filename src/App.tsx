@@ -23,6 +23,8 @@ import ThankYouPage from './pages/ThankYouPage';
 import OrderTrackingPage from './pages/OrderTrackingPage';
 import UpsellPage from './pages/UpsellPage';
 import DownsellPage from './pages/DownsellPage';
+import TermsPage from './pages/TermsPage';
+import PrivacyPolicyPage from './pages/PrivacyPolicyPage';
 
 // Scroll to top on route change
 const ScrollToTop = () => {
@@ -56,6 +58,8 @@ function App() {
             <Route path="/envio" element={<Layout><ShippingPage /></Layout>} />
             <Route path="/rastrear-pedido" element={<Layout><OrderTrackingPage /></Layout>} />
             <Route path="/mi-cuenta" element={<Layout><MyAccountPage /></Layout>} />
+            <Route path="/politica-de-privacidad" element={<Layout><PrivacyPolicyPage /></Layout>} />
+            <Route path="/terminos-y-condiciones" element={<Layout><TermsPage /></Layout>} />
             <Route path="/upsell" element={<UpsellPage />} />
             <Route path="/downsell" element={<DownsellPage />} />
             <Route path="/iniciar-sesion" element={<Layout><LoginPage /></Layout>} />

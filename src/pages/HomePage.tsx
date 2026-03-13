@@ -349,14 +349,22 @@ const HomePage = () => {
       </section>
 
       {/* Manifesto Section */}
-      <section className="py-20 px-4 bg-white">
-        <div className="max-w-3xl mx-auto text-center">
-          <h2 className="font-serif text-3xl md:text-4xl text-vandora-emerald mb-8">Nuestra Ideología</h2>
-          <p className="text-gray-600 text-lg leading-relaxed mb-8 italic font-serif">
+      <section className="py-12 px-4 bg-vandora-cream overflow-hidden">
+        <div className="max-w-4xl mx-auto text-center relative">
+          <motion.div
+            initial={{ opacity: 0, scale: 0.9 }}
+            whileInView={{ opacity: 1, scale: 1 }}
+            viewport={{ once: true }}
+            className="absolute -top-10 left-1/2 -translate-x-1/2 text-[120px] font-serif text-vandora-gold/5 pointer-events-none select-none"
+          >
+            Vandora
+          </motion.div>
+          <h2 className="font-serif text-2xl md:text-3xl text-vandora-emerald mb-4 relative z-10">Nuestra Ideología</h2>
+          <p className="text-gray-700 text-base md:text-lg leading-relaxed mb-6 italic font-serif relative z-10 max-w-2xl mx-auto">
             "Vandora es el reflejo de tu esfuerzo. No solo vestimos cuerpos, vestimos historias de resiliencia. 
             La elegancia no es un privilegio de nacimiento, sino un estado de superación."
           </p>
-          <div className="w-24 h-1 bg-vandora-gold mx-auto" />
+          <div className="w-16 h-0.5 bg-vandora-gold mx-auto" />
         </div>
       </section>
 
@@ -377,35 +385,54 @@ const HomePage = () => {
             <ProductCard key={product.id} {...product} />
           ))}
         </div>
-      </section>
-
-      {/* Story / Founder Section */}
-      <section className="py-20 bg-vandora-emerald text-white">
-        <div className="max-w-7xl mx-auto px-4 grid grid-cols-1 md:grid-cols-2 gap-12 items-center">
-          <div className="relative">
-            <div className="absolute top-4 left-4 w-full h-full border-2 border-vandora-gold rounded-lg z-0" />
-            <img 
-              src={founderSection.image} 
-              alt="Fundadora Vandora" 
-              className="relative z-10 rounded-lg shadow-2xl w-full h-auto min-h-[400px] max-h-[600px] object-cover grayscale hover:grayscale-0 transition-all duration-500"
-            />
-          </div>
-          <div>
-            <h2 className="font-serif text-4xl mb-6 text-vandora-gold">{founderSection.title}</h2>
-            <p className="text-gray-200 mb-6 leading-relaxed">
-              {founderSection.description1}
-            </p>
-            <p className="text-gray-200 mb-8 leading-relaxed">
-              {founderSection.description2}
-            </p>
-            <Link 
-              to={founderSection.buttonLink} 
-              className="inline-block border border-vandora-gold text-vandora-gold px-6 py-3 rounded hover:bg-vandora-gold hover:text-vandora-emerald transition-colors uppercase tracking-wider text-sm"
+       {/* Story / Founder Section */}
+      <section className="py-16 bg-white overflow-hidden">
+        <div className="max-w-6xl mx-auto px-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-center">
+            <motion.div 
+              initial={{ opacity: 0, x: -50 }}
+              whileInView={{ opacity: 1, x: 0 }}
+              viewport={{ once: true }}
+              className="relative order-2 md:order-1"
             >
-              {founderSection.buttonText}
-            </Link>
+              <div className="absolute top-4 left-4 w-full h-full border border-vandora-gold/30 rounded-lg z-0" />
+              <img 
+                src={founderSection.image} 
+                alt="Fundadora Vandora" 
+                className="relative z-10 rounded-lg shadow-xl w-full h-[400px] md:h-[500px] object-cover grayscale hover:grayscale-0 transition-all duration-700"
+              />
+              <div className="absolute -bottom-6 -right-6 w-32 h-32 bg-vandora-emerald rounded-full mix-blend-multiply filter blur-3xl opacity-20" />
+            </motion.div>
+            
+            <motion.div 
+              initial={{ opacity: 0, x: 50 }}
+              whileInView={{ opacity: 1, x: 0 }}
+              viewport={{ once: true }}
+              className="order-1 md:order-2 space-y-6"
+            >
+              <div className="inline-block px-3 py-1 bg-vandora-gold/10 text-vandora-gold text-[10px] tracking-widest uppercase rounded-full mb-2">
+                Nuestra Fundadora
+              </div>
+              <h2 className="font-serif text-3xl md:text-4xl text-vandora-emerald leading-tight">
+                {founderSection.title}
+              </h2>
+              <div className="space-y-4 text-gray-600 leading-relaxed text-sm md:text-base">
+                <p>{founderSection.description1}</p>
+                <p className="border-l-2 border-vandora-gold/20 pl-4 italic">
+                  {founderSection.description2}
+                </p>
+              </div>
+              <Link 
+                to="/nuestra-historia" 
+                className="inline-flex items-center text-vandora-emerald font-medium hover:text-vandora-gold transition-colors group"
+              >
+                Conocer historia completa
+                <ArrowRight className="h-4 w-4 ml-2 group-hover:translate-x-1 transition-transform" />
+              </Link>
+            </motion.div>
           </div>
         </div>
+      </section>
       </section>
     </div>
   );

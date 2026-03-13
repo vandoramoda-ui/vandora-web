@@ -49,6 +49,14 @@ const SiteEditor = () => {
     footer_text: 'Para gestionar un cambio, escríbenos a hola@vandora.com con tu número de pedido.',
     contact_email: 'hola@vandora.com'
   });
+  const [privacyPage, setPrivacyPage] = useState<any>({
+    title: 'Política de Privacidad',
+    sections: [{ title: 'Título de Sección', text: 'Contenido de la sección...' }]
+  });
+  const [termsPage, setTermsPage] = useState<any>({
+    title: 'Términos y Condiciones',
+    sections: [{ title: 'Título de Sección', text: 'Contenido de la sección...' }]
+  });
   const [activeTab, setActiveTab] = useState('home');
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -147,6 +155,22 @@ const SiteEditor = () => {
         .eq('section_key', 'page_shipping')
         .single();
       if (shippingData) setShippingPage(shippingData.content);
+
+      // Fetch Privacy Page
+      const { data: privacyData } = await supabase
+        .from('site_content')
+        .select('*')
+        .eq('section_key', 'page_privacy')
+        .single();
+      if (privacyData) setPrivacyPage(privacyData.content);
+
+      // Fetch Terms Page
+      const { data: termsData } = await supabase
+        .from('site_content')
+        .select('*')
+        .eq('section_key', 'page_terms')
+        .single();
+      if (termsData) setTermsPage(termsData.content);
     } catch (err) {
       console.error("Error fetching site content", err);
     } finally {
@@ -244,6 +268,18 @@ const SiteEditor = () => {
         .upsert({ section_key: 'page_shipping', content: shippingPage, updated_at: new Date().toISOString() }, { onConflict: 'section_key' });
       if (shippingError) throw shippingError;
 
+      // Save Privacy Page
+      const { error: privacyError } = await supabase
+        .from('site_content')
+        .upsert({ section_key: 'page_privacy', content: privacyPage, updated_at: new Date().toISOString() }, { onConflict: 'section_key' });
+      if (privacyError) throw privacyError;
+
+      // Save Terms Page
+      const { error: termsError } = await supabase
+        .from('site_content')
+        .upsert({ section_key: 'page_terms', content: termsPage, updated_at: new Date().toISOString() }, { onConflict: 'section_key' });
+      if (termsError) throw termsError;
+
       alert('Cambios guardados correctamente');
     } catch (err: any) {
       console.error('Error saving content:', err);
@@ -263,7 +299,7 @@ const SiteEditor = () => {
     <div className="max-w-6xl mx-auto space-y-12 pb-20">
       {/* Tab Navigation */}
       <div className="flex border-b border-gray-200 gap-8 mb-8 overflow-x-auto hide-scrollbar">
-        {['home', 'story', 'faq', 'contact', 'shipping'].map((tab) => (
+        {['home', 'story', 'faq', 'contact', 'shipping', 'privacy', 'terms'].map((tab) => (
           <button
             key={tab}
             onClick={() => setActiveTab(tab)}
@@ -276,7 +312,9 @@ const SiteEditor = () => {
             {tab === 'home' ? 'Página de Inicio' : 
              tab === 'story' ? 'Nuestra Historia' : 
              tab === 'faq' ? 'Preguntas Frecuentes' : 
-             tab === 'contact' ? 'Contacto' : 'Envíos'}
+             tab === 'contact' ? 'Contacto' : 
+             tab === 'shipping' ? 'Envíos' :
+             tab === 'privacy' ? 'Privacidad' : 'Términos'}
           </button>
         ))}
       </div>
@@ -759,6 +797,95 @@ const SiteEditor = () => {
                     <input type="email" value={shippingPage.contact_email} onChange={(e) => setShippingPage({...shippingPage, contact_email: e.target.value})} className="w-full border rounded-lg p-2" />
                  </div>
               </div>
+          </div>
+        </section>
+      )}
+
+      {(activeTab === 'privacy' || activeTab === 'terms') && (
+        <section className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden animate-in fade-in transition-all duration-300">
+          <div className="bg-gray-50 border-b px-8 py-4 flex items-center">
+            <Globe className="w-5 h-5 mr-2 text-vandora-emerald" />
+            <h2 className="text-xl font-serif text-gray-900">
+              Página: {activeTab === 'privacy' ? 'Política de Privacidad' : 'Términos y Condiciones'}
+            </h2>
+          </div>
+          <div className="p-8 space-y-8">
+            <div>
+              <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Título de la Página</label>
+              <input 
+                type="text" 
+                value={activeTab === 'privacy' ? privacyPage.title : termsPage.title} 
+                onChange={(e) => {
+                  if (activeTab === 'privacy') setPrivacyPage({...privacyPage, title: e.target.value});
+                  else setTermsPage({...termsPage, title: e.target.value});
+                }} 
+                className="w-full border rounded-lg p-3" 
+              />
+            </div>
+            
+            <div className="space-y-6">
+              <div className="flex justify-between items-center border-b pb-2">
+                <h3 className="font-bold text-gray-700 uppercase tracking-widest text-xs">Secciones de Contenido</h3>
+                <button 
+                  onClick={() => {
+                    const newSection = { title: '', text: '' };
+                    if (activeTab === 'privacy') setPrivacyPage({...privacyPage, sections: [...privacyPage.sections, newSection]});
+                    else setTermsPage({...termsPage, sections: [...termsPage.sections, newSection]});
+                  }}
+                  className="text-vandora-emerald text-xs font-bold flex items-center hover:underline"
+                >
+                  <Plus className="h-3 w-3 mr-1" /> Añadir Sección
+                </button>
+              </div>
+              
+              <div className="space-y-6">
+                {(activeTab === 'privacy' ? privacyPage.sections : termsPage.sections).map((section: any, idx: number) => (
+                  <div key={idx} className="bg-gray-50 p-4 rounded-lg relative group">
+                    <button 
+                      onClick={() => {
+                        if (activeTab === 'privacy') setPrivacyPage({...privacyPage, sections: privacyPage.sections.filter((_: any, i: number) => i !== idx)});
+                        else setTermsPage({...termsPage, sections: termsPage.sections.filter((_: any, i: number) => i !== idx)});
+                      }}
+                      className="absolute top-2 right-2 p-1 text-red-500 hover:bg-red-100 rounded opacity-0 group-hover:opacity-100 transition-opacity"
+                    >
+                      <Trash className="h-4 w-4" />
+                    </button>
+                    <div className="space-y-3">
+                      <div>
+                        <label className="block text-[10px] font-bold text-gray-400 uppercase mb-1">Título de Sección</label>
+                        <input 
+                          type="text" 
+                          value={section.title} 
+                          onChange={(e) => {
+                            const newSections = [...(activeTab === 'privacy' ? privacyPage.sections : termsPage.sections)];
+                            newSections[idx].title = e.target.value;
+                            if (activeTab === 'privacy') setPrivacyPage({...privacyPage, sections: newSections});
+                            else setTermsPage({...termsPage, sections: newSections});
+                          }}
+                          className="w-full border rounded p-2 text-sm" 
+                          placeholder="Ej: Información Recopilada"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-[10px] font-bold text-gray-400 uppercase mb-1">Contenido</label>
+                        <textarea 
+                          rows={4} 
+                          value={section.text} 
+                          onChange={(e) => {
+                            const newSections = [...(activeTab === 'privacy' ? privacyPage.sections : termsPage.sections)];
+                            newSections[idx].text = e.target.value;
+                            if (activeTab === 'privacy') setPrivacyPage({...privacyPage, sections: newSections});
+                            else setTermsPage({...termsPage, sections: newSections});
+                          }}
+                          className="w-full border rounded p-2 text-sm"
+                          placeholder="Escriba aquí el contenido detallado..."
+                        />
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
           </div>
         </section>
       )}
