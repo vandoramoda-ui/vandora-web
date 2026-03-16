@@ -4,20 +4,6 @@ import { motion, AnimatePresence } from 'framer-motion';
 import ReactMarkdown from 'react-markdown';
 import { supabase } from '../lib/supabase';
 
-const VANDORA_CONTEXT = `
-Eres "Vandora AI", la asistente virtual experta en moda de la tienda exclusiva "Vandora" en Ecuador.
-Tu tono es elegante, empático, profesional y cálido.
-Ideología: "El Legado del Florecimiento". La elegancia es un estado de superación.
-Productos: Vestidos, blusas, pantalones, faldas y chaquetas de alta calidad.
-Envíos: A todo el Ecuador por $5.00. Gratis en compras mayores a $100. Tiempo de entrega 2-3 días hábiles.
-Pagos: Transferencia bancaria y Efectivo contra entrega (solo Quito y Guayaquil).
-Cambios: 7 días para cambios.
-Ubicación: Tienda online, pronto showroom físico en Quito.
-Objetivo: Ayudar al cliente a elegir prendas, resolver dudas de tallas y envíos, y cerrar la venta.
-Si te preguntan por algo que no sabes, sugiere contactar a un humano por WhatsApp.
-Responde de manera concisa (máximo 3 oraciones por turno a menos que sea necesario más detalle).
-`;
-
 type Message = {
   role: 'user' | 'assistant';
   content: string;
@@ -25,12 +11,37 @@ type Message = {
 
 const ChatWidget = () => {
   const [isOpen, setIsOpen] = useState(false);
-  const [messages, setMessages] = useState<Message[]>([
-    { role: 'assistant', content: '¡Hola! Bienvenida a Vandora. Soy tu asesora de moda personal. ¿En qué puedo ayudarte hoy para que luzcas espectacular?' }
-  ]);
+  const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
+  const [config, setConfig] = useState<any>(null);
+  const [widgetEnabled, setWidgetEnabled] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    fetchConfig();
+  }, []);
+
+  const fetchConfig = async () => {
+    try {
+      const { data } = await supabase.from('app_settings').select('*');
+      if (data) {
+        const settings: any = {};
+        data.forEach(item => {
+          settings[item.key] = item.value;
+        });
+
+        setConfig(settings);
+        setWidgetEnabled(settings.ai_agent_enabled === 'true');
+        
+        // Use the custom welcome message if provided
+        const welcomeMsg = settings.ai_welcome_message || '¡Hola! Bienvenida a Vandora. Soy tu asesora de moda personal. ¿En qué puedo ayudarte hoy para que luzcas espectacular?';
+        setMessages([{ role: 'assistant', content: welcomeMsg }]);
+      }
+    } catch (error) {
+      console.error('Error fetching chat config:', error);
+    }
+  };
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -41,7 +52,7 @@ const ChatWidget = () => {
   }, [messages, isOpen]);
 
   const handleSend = async () => {
-    if (!input.trim()) return;
+    if (!input.trim() || !config) return;
 
     const userMessage = input;
     setInput('');
@@ -49,34 +60,41 @@ const ChatWidget = () => {
     setLoading(true);
 
     try {
-      // 1. Fetch OpenAI key from settings
-      const { data: settingsData } = await supabase
-        .from('app_settings')
-        .select('value')
-        .eq('key', 'openai_api_key')
-        .single();
-
-      const apiKey = settingsData?.value;
+      const apiKey = config.openai_api_key;
       if (!apiKey) {
         throw new Error('El administrador aún no ha configurado la clave de conexión. Por favor usa WhatsApp.');
       }
 
-      // 2. Format history for OpenAI
-      const systemMessage = { role: 'system', content: VANDORA_CONTEXT };
-      const apiMessages = [systemMessage, ...messages, { role: 'user', content: userMessage }].map(m => ({
-        role: m.role === 'assistant' ? 'assistant' : m.role === 'system' ? 'system' : 'user',
+      const provider = config.ai_provider || 'openai';
+      const model = config.ai_model || 'gpt-4o-mini';
+      const systemPrompt = config.ai_system_prompt || 'Eres "Vandora AI", la asistente virtual experta en moda de la tienda exclusiva "Vandora" en Ecuador. Tu tono es elegante, empático, profesional y cálido.';
+
+      const apiMessages = [
+        { role: 'system', content: systemPrompt },
+        ...messages,
+        { role: 'user', content: userMessage }
+      ].map(m => ({
+        role: m.role,
         content: m.content
       }));
 
-      // 3. Call OpenAI using fetch
-      const response = await fetch('https://api.openai.com/v1/chat/completions', {
+      let apiUrl = 'https://api.openai.com/v1/chat/completions';
+      const headers: any = {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${apiKey}`
+      };
+
+      if (provider === 'openrouter') {
+        apiUrl = 'https://openrouter.ai/api/v1/chat/completions';
+        headers['HTTP-Referer'] = window.location.origin;
+        headers['X-Title'] = 'Vandora Boutique';
+      }
+
+      const response = await fetch(apiUrl, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${apiKey}`
-        },
+        headers,
         body: JSON.stringify({
-          model: 'gpt-4o-mini',
+          model,
           messages: apiMessages,
           temperature: 0.7,
         })
@@ -97,6 +115,8 @@ const ChatWidget = () => {
       setLoading(false);
     }
   };
+
+  if (!widgetEnabled) return null;
 
   return (
     <>

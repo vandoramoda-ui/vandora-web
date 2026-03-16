@@ -1,12 +1,17 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
-import { Save, Loader2, BarChart } from 'lucide-react';
+import { Save, Loader2, BarChart, Sparkles, MessageSquare } from 'lucide-react';
 
 const SettingsEditor = () => {
   const [settings, setSettings] = useState({
     ga4_id: '',
     meta_pixel_id: '',
-    openai_api_key: ''
+    openai_api_key: '',
+    ai_agent_enabled: 'false',
+    ai_welcome_message: '¡Hola! Bienvenida a Vandora. Soy tu asesora de moda personal. ¿En qué puedo ayudarte hoy para que luzcas espectacular?',
+    ai_system_prompt: 'Eres "Vandora AI", la asistente virtual experta en moda de la tienda exclusiva "Vandora" en Ecuador. Tu tono es elegante, empático, profesional y cálido.',
+    ai_provider: 'openai',
+    ai_model: 'gpt-4o-mini'
   });
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -24,13 +29,18 @@ const SettingsEditor = () => {
         if (item.key === 'ga4_id') newSettings.ga4_id = item.value;
         if (item.key === 'meta_pixel_id') newSettings.meta_pixel_id = item.value;
         if (item.key === 'openai_api_key') newSettings.openai_api_key = item.value;
+        if (item.key === 'ai_agent_enabled') newSettings.ai_agent_enabled = item.value;
+        if (item.key === 'ai_welcome_message') newSettings.ai_welcome_message = item.value;
+        if (item.key === 'ai_system_prompt') newSettings.ai_system_prompt = item.value;
+        if (item.key === 'ai_provider') newSettings.ai_provider = item.value;
+        if (item.key === 'ai_model') newSettings.ai_model = item.value;
       });
       setSettings(newSettings);
     }
     setLoading(false);
   };
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     setSettings({ ...settings, [e.target.name]: e.target.value });
   };
 
@@ -40,13 +50,18 @@ const SettingsEditor = () => {
       const updates = [
         { key: 'ga4_id', value: settings.ga4_id },
         { key: 'meta_pixel_id', value: settings.meta_pixel_id },
-        { key: 'openai_api_key', value: settings.openai_api_key }
+        { key: 'openai_api_key', value: settings.openai_api_key },
+        { key: 'ai_agent_enabled', value: settings.ai_agent_enabled },
+        { key: 'ai_welcome_message', value: settings.ai_welcome_message },
+        { key: 'ai_system_prompt', value: settings.ai_system_prompt },
+        { key: 'ai_provider', value: settings.ai_provider },
+        { key: 'ai_model', value: settings.ai_model }
       ];
 
       const { error } = await supabase.from('app_settings').upsert(updates);
       if (error) throw error;
 
-      alert('Configuración guardada correctamente. Los cambios pueden tardar unos minutos en reflejarse.');
+      alert('Configuración guardada correctamente.');
     } catch (error: any) {
       console.error('Error saving settings:', error);
       alert('Error al guardar: ' + error.message);
@@ -55,70 +70,145 @@ const SettingsEditor = () => {
     }
   };
 
-  if (loading) return <div className="p-8 text-center">Cargando configuración...</div>;
+  if (loading) return <div className="p-8 text-center text-gray-500">Cargando configuración...</div>;
 
   return (
-    <div className="max-w-2xl mx-auto bg-white rounded-lg shadow p-8">
-      <div className="flex items-center mb-6 text-vandora-emerald">
-        <BarChart className="h-6 w-6 mr-2" />
-        <h2 className="text-xl font-bold text-gray-800">Integraciones y Analítica</h2>
-      </div>
+    <div className="max-w-4xl mx-auto space-y-8">
+      {/* Integrations & Analytics */}
+      <div className="bg-white rounded-lg shadow-sm border border-gray-100 p-8">
+        <div className="flex items-center mb-6 text-vandora-emerald border-b pb-4">
+          <BarChart className="h-6 w-6 mr-2" />
+          <h2 className="text-xl font-serif text-gray-800">Integraciones y Analítica</h2>
+        </div>
 
-      <div className="space-y-6">
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Google Analytics 4 (Measurement ID)</label>
-          <div className="mt-1 flex rounded-md shadow-sm">
-            <span className="inline-flex items-center px-3 rounded-l-md border border-r-0 border-gray-300 bg-gray-50 text-gray-500 text-sm">
-              G-
-            </span>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Google Analytics 4 (ID)</label>
+            <div className="mt-1 flex rounded-md shadow-sm">
+              <span className="inline-flex items-center px-3 rounded-l-md border border-r-0 border-gray-300 bg-gray-50 text-gray-500 text-sm">G-</span>
+              <input
+                type="text"
+                name="ga4_id"
+                value={settings.ga4_id}
+                onChange={handleChange}
+                placeholder="XXXXXXXXXX"
+                className="flex-1 min-w-0 block w-full px-3 py-2 rounded-none rounded-r-md border border-gray-300 focus:ring-vandora-emerald focus:border-vandora-emerald sm:text-sm"
+              />
+            </div>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Meta Pixel ID</label>
             <input
               type="text"
-              name="ga4_id"
-              value={settings.ga4_id}
+              name="meta_pixel_id"
+              value={settings.meta_pixel_id}
               onChange={handleChange}
-              placeholder="XXXXXXXXXX"
-              className="flex-1 min-w-0 block w-full px-3 py-2 rounded-none rounded-r-md border border-gray-300 focus:ring-vandora-emerald focus:border-vandora-emerald sm:text-sm"
+              placeholder="123456789012345"
+              className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-vandora-emerald focus:border-vandora-emerald sm:text-sm"
             />
           </div>
-          <p className="mt-1 text-xs text-gray-500">Ejemplo: G-1234567890</p>
+        </div>
+      </div>
+
+      {/* AI Configuration */}
+      <div className="bg-white rounded-lg shadow-sm border border-gray-100 p-8">
+        <div className="flex items-center mb-6 text-vandora-emerald border-b pb-4">
+          <Sparkles className="h-6 w-6 mr-2" />
+          <h2 className="text-xl font-serif text-gray-800">Configuración de Inteligencia Artificial</h2>
         </div>
 
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Meta Pixel ID (Facebook Ads)</label>
-          <input
-            type="text"
-            name="meta_pixel_id"
-            value={settings.meta_pixel_id}
-            onChange={handleChange}
-            placeholder="123456789012345"
-            className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-vandora-emerald focus:border-vandora-emerald sm:text-sm"
-          />
-          <p className="mt-1 text-xs text-gray-500">El ID numérico de tu Pixel de Facebook.</p>
-        </div>
+        <div className="space-y-6">
+          <div className="flex items-center justify-between p-4 bg-emerald-50 rounded-lg border border-emerald-100">
+            <div className="flex items-center">
+              <MessageSquare className="h-5 w-5 text-vandora-emerald mr-3" />
+              <div>
+                <p className="text-sm font-bold text-gray-800">Burbuja de Chat (IA)</p>
+                <p className="text-xs text-gray-500">Activa o desactiva el asistente virtual en la tienda.</p>
+              </div>
+            </div>
+            <select
+              name="ai_agent_enabled"
+              value={settings.ai_agent_enabled}
+              onChange={handleChange}
+              className="rounded-md border-gray-300 shadow-sm focus:ring-vandora-emerald focus:border-vandora-emerald text-sm"
+            >
+              <option value="true">Activado</option>
+              <option value="false">Desactivado</option>
+            </select>
+          </div>
 
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">OpenAI API Key (Para IA y Asistente)</label>
-          <input
-            type="password"
-            name="openai_api_key"
-            value={settings.openai_api_key}
-            onChange={handleChange}
-            placeholder="sk-proj-..."
-            className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-vandora-emerald focus:border-vandora-emerald sm:text-sm"
-          />
-          <p className="mt-1 text-xs text-gray-500">Tu clave secreta de OpenAI para el Chatbot y el Quiz Builder.</p>
-        </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Proveedor de IA</label>
+              <select
+                name="ai_provider"
+                value={settings.ai_provider}
+                onChange={handleChange}
+                className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-vandora-emerald focus:border-vandora-emerald sm:text-sm"
+              >
+                <option value="openai">OpenAI (Oficial)</option>
+                <option value="openrouter">OpenRouter (Multimodelo)</option>
+              </select>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Modelo de IA</label>
+              <input
+                type="text"
+                name="ai_model"
+                value={settings.ai_model}
+                onChange={handleChange}
+                placeholder="ej: gpt-4o-mini"
+                className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-vandora-emerald focus:border-vandora-emerald sm:text-sm"
+              />
+            </div>
+          </div>
 
-        <div className="pt-4 border-t border-gray-200 flex justify-end">
-          <button
-            onClick={handleSave}
-            disabled={saving}
-            className="bg-vandora-emerald text-white px-6 py-2 rounded-md hover:bg-emerald-800 flex items-center shadow-sm disabled:opacity-50"
-          >
-            {saving ? <Loader2 className="animate-spin h-4 w-4 mr-2" /> : <Save className="h-4 w-4 mr-2" />}
-            Guardar Configuración
-          </button>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">API Key (OpenAI o OpenRouter)</label>
+            <input
+              type="password"
+              name="openai_api_key"
+              value={settings.openai_api_key}
+              onChange={handleChange}
+              placeholder="sk-..."
+              className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-vandora-emerald focus:border-vandora-emerald sm:text-sm"
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Mensaje de Bienvenida</label>
+            <input
+              type="text"
+              name="ai_welcome_message"
+              value={settings.ai_welcome_message}
+              onChange={handleChange}
+              className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-vandora-emerald focus:border-vandora-emerald sm:text-sm"
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Prompt del Sistema (Personalidad)</label>
+            <textarea
+              name="ai_system_prompt"
+              value={settings.ai_system_prompt}
+              onChange={handleChange}
+              rows={4}
+              className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-vandora-emerald focus:border-vandora-emerald sm:text-sm"
+            />
+          </div>
         </div>
+      </div>
+
+      <div className="flex justify-end sticky bottom-4">
+        <button
+          onClick={handleSave}
+          disabled={saving}
+          className="bg-vandora-emerald text-white px-8 py-3 rounded-full hover:bg-emerald-800 flex items-center shadow-lg transform transition active:scale-95 disabled:opacity-50"
+        >
+          {saving ? <Loader2 className="animate-spin h-5 w-5 mr-2" /> : <Save className="h-5 w-5 mr-2" />}
+          Guardar Cambios
+        </button>
       </div>
     </div>
   );

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
-import { Plus, Edit, Trash, Package, ShoppingBag, Users, Layout as LayoutIcon, Sparkles, Settings, X, Image as ImageIcon, Menu, Ruler, Copy, Megaphone } from 'lucide-react';
+import { Plus, Edit, Trash, Package, ShoppingBag, Users, Layout as LayoutIcon, Sparkles, Settings, X, Image as ImageIcon, Menu, Ruler, Copy, Megaphone, Loader2 } from 'lucide-react';
 import { formatPrice } from '../lib/utils';
 import MediaManager from '../components/MediaManager';
 import SiteEditor from '../components/SiteEditor';
@@ -72,6 +72,19 @@ const AdminPage = () => {
   const [categories, setCategories] = useState<any[]>([]);
   const [newCategoryName, setNewCategoryName] = useState('');
   const [isCategoryModalOpen, setIsCategoryModalOpen] = useState(false);
+
+  const [improvingField, setImprovingField] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (isModalOpen || isUserModalOpen || isOrderModalOpen || isCategoryModalOpen) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = 'unset';
+    }
+    return () => {
+      document.body.style.overflow = 'unset';
+    };
+  }, [isModalOpen, isUserModalOpen, isOrderModalOpen, isCategoryModalOpen]);
 
   useEffect(() => {
     if (activeTab === 'dashboard' && profile) {
@@ -335,6 +348,72 @@ const AdminPage = () => {
     }
 
     setCategories(categories.filter(c => c.id !== id));
+  };
+
+  const handleImproveWithAI = async (field: 'description' | 'details') => {
+    const text = formData[field as keyof typeof formData];
+    if (typeof text !== 'string' || !text.trim()) {
+      alert('Por favor escribe algo primero para que la IA pueda mejorarlo.');
+      return;
+    }
+
+    setImprovingField(field);
+    try {
+      const { data: settingsData } = await supabase.from('app_settings').select('*');
+      if (!settingsData) throw new Error('No se pudo cargar la configuración.');
+      
+      const settings: any = {};
+      settingsData.forEach(item => {
+        settings[item.key] = item.value;
+      });
+
+      const apiKey = settings.openai_api_key;
+      if (!apiKey) throw new Error('Configura la API Key en la sección de Ajustes primero.');
+
+      const provider = settings.ai_provider || 'openai';
+      const model = settings.ai_model || 'gpt-4o-mini';
+
+      const prompt = `Mejora la estructura y el copy de esta descripción de producto de moda, haciéndola más atractiva y profesional, pero MANTENIENDO toda la información técnica, tallas y detalles importantes. No inventes información nueva. Estructura el texto con párrafos claros o puntos clave.\n\nTexto original:\n${text}`;
+
+      let apiUrl = 'https://api.openai.com/v1/chat/completions';
+      const headers: any = {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${apiKey}`
+      };
+
+      if (provider === 'openrouter') {
+        apiUrl = 'https://openrouter.ai/api/v1/chat/completions';
+        headers['HTTP-Referer'] = window.location.origin;
+        headers['X-Title'] = 'Vandora Admin';
+      }
+
+      const response = await fetch(apiUrl, {
+        method: 'POST',
+        headers,
+        body: JSON.stringify({
+          model,
+          messages: [{ role: 'user', content: prompt }],
+          temperature: 0.7,
+        })
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error?.message || 'Error en la comunicación con la IA.');
+      }
+
+      const data = await response.json();
+      const improvedText = data.choices[0]?.message?.content?.trim();
+
+      if (improvedText) {
+        setFormData(prev => ({ ...prev, [field]: improvedText }));
+      }
+    } catch (error: any) {
+      console.error('AI Improvement error:', error);
+      alert('Error al mejorar con IA: ' + (error.message || 'Error desconocido'));
+    } finally {
+      setImprovingField(null);
+    }
   };
 
   return (
@@ -704,11 +783,11 @@ const AdminPage = () => {
 
         {/* Modals remain same as before for products/orders/users edit */}
         {isModalOpen && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-[60]">
-            <div className="bg-white rounded-lg w-full max-w-5xl max-h-[90vh] overflow-y-auto p-8 shadow-2xl">
-              <div className="flex justify-between items-center mb-6 sticky top-0 bg-white z-10 pb-4 border-b">
-                <h2 className="text-2xl font-serif text-gray-900">{editingProduct ? 'Editar Producto' : 'Nuevo Producto'}</h2>
-                <button onClick={closeModal} className="text-gray-400 hover:text-gray-600 transition-colors"><X className="h-8 w-8" /></button>
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-2 md:p-4 z-[60]">
+            <div className="bg-white rounded-xl w-full max-w-5xl max-h-[95vh] overflow-y-auto p-4 md:p-8 shadow-2xl">
+              <div className="flex justify-between items-center mb-6 sticky top-0 bg-white z-10 -mx-4 md:-mx-8 px-4 md:px-8 pb-4 border-b">
+                <h2 className="text-xl md:text-2xl font-serif text-gray-900">{editingProduct ? 'Editar Producto' : 'Nuevo Producto'}</h2>
+                <button onClick={closeModal} className="text-gray-400 hover:text-gray-600 transition-colors"><X className="h-6 w-6 md:h-8 md:w-8" /></button>
               </div>
               <form onSubmit={handleSubmit} className="space-y-8">
                 {/* Media Section */}
@@ -768,7 +847,18 @@ const AdminPage = () => {
                       </div>
                     </div>
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">Descripción Corta</label>
+                      <div className="flex justify-between items-center mb-1">
+                        <label className="block text-sm font-medium text-gray-700">Descripción Corta</label>
+                        <button 
+                          type="button"
+                          onClick={() => handleImproveWithAI('description')}
+                          disabled={improvingField === 'description'}
+                          className="text-[10px] font-bold uppercase tracking-wider text-vandora-emerald hover:text-emerald-800 flex items-center transition-colors disabled:opacity-50"
+                        >
+                          {improvingField === 'description' ? <Loader2 className="animate-spin h-3 w-3 mr-1" /> : <Sparkles className="h-3 w-3 mr-1" />}
+                          Mejorar con IA
+                        </button>
+                      </div>
                       <textarea name="description" value={formData.description} onChange={handleInputChange} rows={3} className="w-full rounded-md border-gray-300 shadow-sm border p-3 focus:ring-2 focus:ring-vandora-emerald outline-none" />
                     </div>
                   </div>
@@ -875,7 +965,18 @@ const AdminPage = () => {
                   <h3 className="text-lg font-medium text-gray-900 border-b pb-2">Contenido Extendido</h3>
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">Detalles</label>
+                      <div className="flex justify-between items-center mb-1">
+                        <label className="block text-sm font-medium text-gray-700">Detalles</label>
+                        <button 
+                          type="button"
+                          onClick={() => handleImproveWithAI('details')}
+                          disabled={improvingField === 'details'}
+                          className="text-[10px] font-bold uppercase tracking-wider text-vandora-emerald hover:text-emerald-800 flex items-center transition-colors disabled:opacity-50"
+                        >
+                          {improvingField === 'details' ? <Loader2 className="animate-spin h-3 w-3 mr-1" /> : <Sparkles className="h-3 w-3 mr-1" />}
+                          Mejorar con IA
+                        </button>
+                      </div>
                       <textarea name="details" value={formData.details} onChange={handleInputChange} rows={4} className="w-full rounded-md border-gray-300 shadow-sm border p-3 focus:ring-2 focus:ring-vandora-emerald outline-none text-sm" />
                     </div>
                     <div>
@@ -1125,11 +1226,6 @@ const AdminPage = () => {
   );
 };
 
-
-// Internal icon for empty state
-const Megaphone = ({ className }: { className?: string }) => (
-  <svg className={className} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m11 15 1.5 4.5a.5.5 0 0 0 .95 0l4.5-13.5A.5.5 0 0 0 17.5 5.5l-13.5 4.5a.5.5 0 0 0 0 .95l13.5 4.5z"/></svg>
-);
 
 
 export default AdminPage;
