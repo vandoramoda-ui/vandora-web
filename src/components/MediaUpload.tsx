@@ -1,7 +1,7 @@
 import React, { useState, useCallback } from 'react';
 import { useDropzone } from 'react-dropzone';
 import { Upload, X, Loader2, FileAudio, FileVideo, Image as ImageIcon } from 'lucide-react';
-import { supabase } from '../lib/supabase';
+import { r2Storage } from '../lib/storage';
 
 interface MediaUploadProps {
   onUpload: (url: string) => void;
@@ -22,27 +22,24 @@ const MediaUpload: React.FC<MediaUploadProps> = ({ onUpload, currentUrl, type })
     setError(null);
 
     try {
-      const fileExt = file.name.split('.').pop();
-      const fileName = `${Math.random().toString(36).substring(2)}.${fileExt}`;
-      const filePath = `quiz-media/${fileName}`; // Subfolder in products bucket
-
-      const { error: uploadError } = await supabase.storage
-        .from('products') // Using 'products' bucket as it's known to exist
-        .upload(filePath, file);
+      // Subfolder for media type
+      const folder = type === 'image' ? 'products' : `quiz-${type}`;
+      
+      const { url, error: uploadError } = await r2Storage.uploadFile(file, folder);
 
       if (uploadError) throw uploadError;
 
-      const { data } = supabase.storage.from('products').getPublicUrl(filePath);
-      
-      setPreview(data.publicUrl);
-      onUpload(data.publicUrl);
+      if (url) {
+        setPreview(url);
+        onUpload(url);
+      }
     } catch (err: any) {
       console.error('Error uploading media:', err);
       setError('Error al subir el archivo. Intenta de nuevo.');
     } finally {
       setUploading(false);
     }
-  }, [onUpload]);
+  }, [onUpload, type]);
 
   const acceptTypes = {
     image: { 'image/*': ['.png', '.jpg', '.jpeg', '.webp', '.gif'] },
@@ -57,8 +54,11 @@ const MediaUpload: React.FC<MediaUploadProps> = ({ onUpload, currentUrl, type })
     multiple: false
   } as any);
 
-  const removeMedia = (e: React.MouseEvent) => {
+  const removeMedia = async (e: React.MouseEvent) => {
     e.stopPropagation();
+    if (preview) {
+      await r2Storage.deleteFile(preview);
+    }
     setPreview(null);
     onUpload('');
   };

@@ -1,7 +1,7 @@
 import React, { useState, useCallback } from 'react';
 import { useDropzone } from 'react-dropzone';
 import { Upload, X, Loader2 } from 'lucide-react';
-import { supabase } from '../lib/supabase';
+import { r2Storage } from '../lib/storage';
 
 interface ImageUploadProps {
   onUpload: (url: string) => void;
@@ -21,23 +21,15 @@ const ImageUpload: React.FC<ImageUploadProps> = ({ onUpload, currentImage }) => 
     setError(null);
 
     try {
-      // Create a unique file name
-      const fileExt = file.name.split('.').pop();
-      const fileName = `${Math.random().toString(36).substring(2)}.${fileExt}`;
-      const filePath = `${fileName}`;
-
-      // Upload to Supabase Storage
-      const { error: uploadError } = await supabase.storage
-        .from('products')
-        .upload(filePath, file);
+      // Upload to R2 Storage
+      const { url, error: uploadError } = await r2Storage.uploadFile(file, 'products');
 
       if (uploadError) throw uploadError;
 
-      // Get public URL
-      const { data } = supabase.storage.from('products').getPublicUrl(filePath);
-      
-      setPreview(data.publicUrl);
-      onUpload(data.publicUrl);
+      if (url) {
+        setPreview(url);
+        onUpload(url);
+      }
     } catch (err: any) {
       console.error('Error uploading image:', err);
       setError('Error al subir la imagen. Intenta de nuevo.');
@@ -55,8 +47,11 @@ const ImageUpload: React.FC<ImageUploadProps> = ({ onUpload, currentImage }) => 
     multiple: false
   } as any);
 
-  const removeImage = (e: React.MouseEvent) => {
+  const removeImage = async (e: React.MouseEvent) => {
     e.stopPropagation();
+    if (preview) {
+      await r2Storage.deleteFile(preview);
+    }
     setPreview(null);
     onUpload('');
   };

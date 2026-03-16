@@ -1,7 +1,7 @@
 import React, { useState, useCallback } from 'react';
 import { useDropzone } from 'react-dropzone';
 import { Upload, X, Loader2, Image as ImageIcon, Film, Plus } from 'lucide-react';
-import { supabase } from '../lib/supabase';
+import { r2Storage } from '../lib/storage';
 
 interface MediaItem {
   url: string;
@@ -30,18 +30,13 @@ const MediaManager: React.FC<MediaManagerProps> = ({ images, videos, colors, onI
 
     try {
       for (const file of acceptedFiles) {
-        const fileExt = file.name.split('.').pop();
-        const fileName = `${Math.random().toString(36).substring(2)}.${fileExt}`;
-        const filePath = `${fileName}`;
-
-        const { error: uploadError } = await supabase.storage
-          .from('products')
-          .upload(filePath, file);
+        const { url, error: uploadError } = await r2Storage.uploadFile(file, 'products');
 
         if (uploadError) throw uploadError;
 
-        const { data } = supabase.storage.from('products').getPublicUrl(filePath);
-        newImages.push({ url: data.publicUrl });
+        if (url) {
+          newImages.push({ url });
+        }
       }
 
       onImagesChange([...images, ...newImages]);
@@ -61,7 +56,11 @@ const MediaManager: React.FC<MediaManagerProps> = ({ images, videos, colors, onI
     multiple: true
   } as any);
 
-  const removeImage = (index: number) => {
+  const removeImage = async (index: number) => {
+    const imageToDelete = images[index];
+    if (imageToDelete && imageToDelete.url) {
+      await r2Storage.deleteFile(imageToDelete.url);
+    }
     const newImages = [...images];
     newImages.splice(index, 1);
     onImagesChange(newImages);
@@ -80,7 +79,14 @@ const MediaManager: React.FC<MediaManagerProps> = ({ images, videos, colors, onI
     }
   };
 
-  const removeVideo = (index: number) => {
+  const removeVideo = async (index: number) => {
+    const videoToDelete = videos[index];
+    if (videoToDelete && videoToDelete.url) {
+      // Only delete if it's a Cloudflare URL (not YouTube/external)
+      if (videoToDelete.url.includes(import.meta.env.VITE_CLOUDFLARE_PUBLIC_URL)) {
+        await r2Storage.deleteFile(videoToDelete.url);
+      }
+    }
     const newVideos = [...videos];
     newVideos.splice(index, 1);
     onVideosChange(newVideos);
