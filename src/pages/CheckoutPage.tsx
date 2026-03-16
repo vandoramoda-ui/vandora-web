@@ -349,8 +349,15 @@ const CheckoutPage = () => {
         .single();
 
       if (orderError) {
-        console.error('Supabase Order Error:', orderError);
-        throw new Error(orderError.message || 'Error al insertar pedido');
+        console.error('CRITICAL: Supabase Order Insertion Failed', {
+          error: orderError,
+          payload: orderData
+        });
+        throw new Error(orderError.message || 'Error al procesar el pedido en el servidor');
+      }
+
+      if (!orderResult) {
+        throw new Error('El pedido se creó pero no se pudo recuperar la confirmación. Por favor contacta a soporte.');
       }
 
       // Fix for profiles table - check by id if user is logged in, or don't try to sync if guest
