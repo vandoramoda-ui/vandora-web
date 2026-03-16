@@ -6,7 +6,7 @@ import CookieConsent from './CookieConsent';
 import Breadcrumbs from './Breadcrumbs';
 import { useCart } from '../context/CartContext';
 import { X, Minus, Plus, Trash2, Truck } from 'lucide-react';
-import { motion, AnimatePresence } from 'motion/react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { formatPrice } from '../lib/utils';
 import { Link, useLocation } from 'react-router-dom';
 

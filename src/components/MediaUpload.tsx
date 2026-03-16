@@ -55,7 +55,7 @@ const MediaUpload: React.FC<MediaUploadProps> = ({ onUpload, currentUrl, type })
     accept: acceptTypes[type],
     maxFiles: 1,
     multiple: false
-  });
+  } as any);
 
   const removeMedia = (e: React.MouseEvent) => {
     e.stopPropagation();

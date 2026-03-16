@@ -2,60 +2,70 @@ import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { ChevronRight, Home } from 'lucide-react';
 
+const BREADCRUMB_MAP: Record<string, string> = {
+  'tienda': 'Tienda',
+  'nuestra-historia': 'Nuestra Historia',
+  'preguntas-frecuentes': 'Preguntas Frecuentes',
+  'contacto': 'Contacto',
+  'envio': 'Envíos y Devoluciones',
+  'producto': 'Tienda',
+  'product': 'Tienda',
+  'mi-cuenta': 'Mi Cuenta',
+  'pagar': 'Finalizar Compra',
+  'rastrear-pedido': 'Rastreo de Pedido',
+  'thank-you': 'Gracias por tu Compra',
+  'iniciar-sesion': 'Iniciar Sesión',
+  'politica-de-privacidad': 'Política de Privacidad',
+  'terminos-y-condiciones': 'Términos y Condiciones'
+};
+
 const Breadcrumbs = () => {
   const location = useLocation();
   const pathnames = location.pathname.split('/').filter((x) => x);
 
-  if (location.pathname === '/' || pathnames.length === 0) return null;
-
-  const breadcrumbMap: { [key: string]: string } = {
-    'tienda': 'Tienda',
-    'nuestra-historia': 'Nuestra Historia',
-    'preguntas-frecuentes': 'Preguntas Frecuentes',
-    'contacto': 'Contacto',
-    'envio': 'Envíos y Devoluciones',
-    'producto': 'Producto',
-    'mi-cuenta': 'Mi Cuenta',
-    'pagar': 'Finalizar Compra',
-    'rastreo': 'Rastreo de Pedido'
-  };
+  // Don't show breadcrumbs on home or empty paths
+  if (!location.pathname || location.pathname === '/' || pathnames.length === 0) {
+    return null;
+  }
 
   return (
-    <nav className="w-full py-2 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto text-[10px] md:text-xs text-gray-400 overflow-x-auto whitespace-nowrap hide-scrollbar" aria-label="Breadcrumb">
+    <nav className="w-full py-2 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto text-[10px] md:text-xs text-gray-400 overflow-x-auto whitespace-nowrap" aria-label="Breadcrumb">
       <ol className="flex items-center space-x-2">
         <li>
           <Link to="/" className="hover:text-vandora-emerald transition-colors flex items-center">
-            <Home className="h-3 w-3 mr-1" />
-            Inicio
+            <Home size={12} className="mr-1" />
+            <span>Inicio</span>
           </Link>
         </li>
-        {pathnames.map((value, index) => {
-          const last = index === pathnames.length - 1;
+        {pathnames.map((value: string, index: number) => {
+          const isLast = index === pathnames.length - 1;
           
-          // Determine the correct URL for the breadcrumb
+          // Determine the correct URL for the breadcrumb level
           let to = `/${pathnames.slice(0, index + 1).join('/')}`;
           
-          // Fix for invalid intermediate pages
-          if (value === 'producto') {
+          // Redirect intermediate "product(o)" segments to the shop
+          if (value === 'producto' || value === 'product') {
             to = '/tienda';
-          } else if (index > 0 && pathnames[index-1] === 'producto' && !last) {
-            // This is likely a category segment in /producto/:categoria/:slug
+          } else if (index > 0 && (pathnames[index - 1] === 'producto' || pathnames[index - 1] === 'product') && !isLast) {
+            // Handle category segments in /producto/:categoria/:slug
             to = `/tienda?category=${value}`;
           }
           
-          // Try to get a readable name, otherwise capitalize the value
+          // Get readable name from map or format the slug
+          const mappedName = BREADCRUMB_MAP[value];
+          let displayName = mappedName || value.split('-').map((word: string) => 
+            (word.charAt(0) || '').toUpperCase() + word.slice(1)
+          ).join(' ');
 
-          let displayName = breadcrumbMap[value] || value.split('-').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ');
-          
-          // Shorten long names if they don't have a map entry
-          if (!breadcrumbMap[value] && displayName.length > 20) {
-            displayName = displayName.substring(0, 20) + '...';
+          // Truncate long generated names
+          if (!mappedName && displayName.length > 20) {
+            displayName = `${displayName.substring(0, 20)}...`;
           }
 
           return (
-            <li key={to} className="flex items-center">
-              <ChevronRight className="h-4 w-4 mx-1 flex-shrink-0 text-gray-400" />
-              {last ? (
+            <li key={`bc-${index}-${to}`} className="flex items-center">
+              <ChevronRight size={16} className="mx-1 flex-shrink-0 text-gray-400" />
+              {isLast ? (
                 <span className="font-medium text-vandora-black truncate max-w-[150px] sm:max-w-none">
                   {displayName}
                 </span>

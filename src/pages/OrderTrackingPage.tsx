@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Search, Package, ArrowRight, Truck, CheckCircle, Clock } from 'lucide-react';
 import SEO from '../components/SEO';
-import { motion } from 'motion/react';
+import { motion } from 'framer-motion';
 
 const OrderTrackingPage = () => {
   const [orderId, setOrderId] = useState('');

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { motion, AnimatePresence } from 'motion/react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { ChevronRight, Check, RefreshCcw, Sparkles } from 'lucide-react';
 import { Link } from 'react-router-dom';
 

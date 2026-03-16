@@ -4,7 +4,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { useCart } from '../context/CartContext';
 import { formatPrice } from '../lib/utils';
 import { Star, Truck, ShieldCheck, ArrowLeft, Minus, Plus, ChevronDown, ChevronUp, Clock, Eye, ShoppingBag, Play, X, Ruler, MessageCircle } from 'lucide-react';
-import { motion, AnimatePresence } from 'motion/react';
+import { motion, AnimatePresence } from 'framer-motion';
 import ProductCard from '../components/ProductCard';
 import SEO from '../components/SEO';
 import SizeGuideModal from '../components/SizeGuideModal';

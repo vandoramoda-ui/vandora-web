@@ -59,7 +59,7 @@ const MediaManager: React.FC<MediaManagerProps> = ({ images, videos, colors, onI
       'image/*': ['.png', '.jpg', '.jpeg', '.webp']
     },
     multiple: true
-  });
+  } as any);
 
   const removeImage = (index: number) => {
     const newImages = [...images];

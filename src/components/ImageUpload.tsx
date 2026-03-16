@@ -53,7 +53,7 @@ const ImageUpload: React.FC<ImageUploadProps> = ({ onUpload, currentImage }) => 
     },
     maxFiles: 1,
     multiple: false
-  });
+  } as any);
 
   const removeImage = (e: React.MouseEvent) => {
     e.stopPropagation();

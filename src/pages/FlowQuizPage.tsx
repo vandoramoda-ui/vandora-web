@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
-import { motion, AnimatePresence } from 'motion/react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { ChevronRight, Loader2, ArrowRight } from 'lucide-react';
 import SEO from '../components/SEO';
 import { useAnalytics } from '../context/AnalyticsContext';

@@ -1,21 +1,27 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
-import { Save, CheckCircle, AlertCircle } from 'lucide-react';
+import { Save, CheckCircle, AlertCircle, Settings } from 'lucide-react';
+
+interface FieldConfig {
+  enabled: boolean;
+  required: boolean;
+  label: string;
+}
 
 interface CheckoutSettings {
   fields: {
-    firstName: { enabled: boolean; required: boolean; label: string };
-    lastName: { enabled: boolean; required: boolean; label: string };
-    phone: { enabled: boolean; required: boolean; label: string };
-    email: { enabled: boolean; required: boolean; label: string };
-    province: { enabled: boolean; required: boolean; label: string };
-    city: { enabled: boolean; required: boolean; label: string };
-    sector: { enabled: boolean; required: boolean; label: string };
-    address: { enabled: boolean; required: boolean; label: string };
-    reference: { enabled: boolean; required: boolean; label: string };
-    company: { enabled: boolean; required: boolean; label: string };
-    address2: { enabled: boolean; required: boolean; label: string };
-    postalCode: { enabled: boolean; required: boolean; label: string };
+    firstName: FieldConfig;
+    lastName: FieldConfig;
+    phone: FieldConfig;
+    email: FieldConfig;
+    province: FieldConfig;
+    city: FieldConfig;
+    sector: FieldConfig;
+    address: FieldConfig;
+    reference: FieldConfig;
+    company: FieldConfig;
+    address2: FieldConfig;
+    postalCode: FieldConfig;
   };
   paymentMethods: {
     transfer: boolean;
@@ -179,7 +185,7 @@ const CheckoutSettingsEditor = () => {
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
-                {Object.entries(settings.fields).map(([key, field]) => (
+                {(Object.entries(settings.fields) as [string, FieldConfig][]).map(([key, field]) => (
                   <tr key={key}>
                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 capitalize">
                       {key.replace(/([A-Z])/g, ' $1').trim()}
@@ -374,6 +380,5 @@ const CheckoutSettingsEditor = () => {
   );
 };
 
-import { Settings } from 'lucide-react';
 
 export default CheckoutSettingsEditor;
