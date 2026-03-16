@@ -783,13 +783,13 @@ const AdminPage = () => {
 
         {/* Modals remain same as before for products/orders/users edit */}
         {isModalOpen && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-2 md:p-4 z-[60]">
-            <div className="bg-white rounded-xl w-full max-w-5xl max-h-[95vh] overflow-y-auto p-4 md:p-8 shadow-2xl">
-              <div className="flex justify-between items-center mb-6 sticky top-0 bg-white z-10 -mx-4 md:-mx-8 px-4 md:px-8 pb-4 border-b">
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-2 sm:p-4 z-[60] backdrop-blur-sm">
+            <div className="bg-white rounded-xl w-full sm:max-w-lg md:max-w-2xl lg:max-w-5xl xl:max-w-6xl max-h-[95vh] overflow-y-auto flex flex-col shadow-2xl transition-all duration-300">
+              <div className="flex justify-between items-center p-4 md:p-6 sticky top-0 bg-white/80 backdrop-blur-md z-20 border-b">
                 <h2 className="text-xl md:text-2xl font-serif text-gray-900">{editingProduct ? 'Editar Producto' : 'Nuevo Producto'}</h2>
-                <button onClick={closeModal} className="text-gray-400 hover:text-gray-600 transition-colors"><X className="h-6 w-6 md:h-8 md:w-8" /></button>
+                <button onClick={closeModal} className="text-gray-400 hover:text-gray-600 transition-all hover:scale-110"><X className="h-6 w-6 md:h-8 md:w-8" /></button>
               </div>
-              <form onSubmit={handleSubmit} className="space-y-8">
+              <form onSubmit={handleSubmit} className="p-4 md:p-8 space-y-8 flex-1">
                 {/* Media Section */}
                 <div className="bg-gray-50 p-6 rounded-xl border border-gray-100">
                   <h3 className="text-lg font-medium text-gray-900 mb-4 flex items-center">
@@ -804,7 +804,7 @@ const AdminPage = () => {
                   />
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
                   <div className="space-y-6">
                     <h3 className="text-lg font-medium text-gray-900 border-b pb-2">Información Básica</h3>
                     <div>
@@ -894,27 +894,27 @@ const AdminPage = () => {
                     {/* Colors selection */}
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-2">Colores</label>
-                      <div className="flex items-center space-x-2 mb-4">
+                      <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 mb-4">
                         <input
                           type="text"
                           placeholder="Nombre color"
                           value={newColorName}
                           onChange={(e) => setNewColorName(e.target.value)}
-                          className="flex-1 rounded-md border p-2 text-sm border-gray-300"
+                          className="flex-1 rounded-md border p-2 text-sm border-gray-300 min-w-0"
                         />
-                        <div className="flex-1 flex gap-2">
+                        <div className="flex gap-2 min-w-0">
                           <input
                             type="color"
                             value={newColorCode.startsWith('#') && newColorCode.length === 7 ? newColorCode : '#000000'}
                             onChange={(e) => setNewColorCode(e.target.value)}
-                            className="w-10 h-10 border-0 p-0 rounded-md cursor-pointer"
+                            className="w-10 h-10 border-0 p-0 rounded-md cursor-pointer shrink-0"
                           />
                           <input
                             type="text"
                             placeholder="Código (Hex, RGB...)"
                             value={newColorCode}
                             onChange={(e) => setNewColorCode(e.target.value)}
-                            className="flex-1 rounded-md border p-2 text-sm border-gray-300"
+                            className="flex-1 rounded-md border p-2 text-sm border-gray-300 min-w-0"
                           />
                         </div>
                         <button
@@ -926,7 +926,7 @@ const AdminPage = () => {
                               setNewColorCode('#000000');
                             }
                           }}
-                          className="bg-gray-100 p-2 rounded-md hover:bg-gray-200"
+                          className="bg-gray-100 p-2 rounded-md hover:bg-gray-200 shrink-0 flex items-center justify-center h-10 w-10"
                         >
                           <Plus className="w-5 h-5" />
                         </button>
@@ -990,7 +990,7 @@ const AdminPage = () => {
                   </div>
                 </div>
 
-                <div className="flex justify-end space-x-3 pt-6 border-t sticky bottom-0 bg-white z-10">
+                <div className="flex justify-end space-x-3 p-4 md:p-6 border-t sticky bottom-0 bg-white/80 backdrop-blur-md z-20">
                   <button type="button" onClick={closeModal} className="px-6 py-2 border border-gray-300 rounded-md text-gray-600 hover:bg-gray-50 transition-colors">Cancelar</button>
                   <button type="submit" className="px-6 py-2 bg-vandora-emerald text-white rounded-md hover:bg-emerald-800 transition-colors shadow-md">Guardar Producto</button>
                 </div>
