@@ -1125,4 +1125,11 @@ const AdminPage = () => {
   );
 };
 
+
+// Internal icon for empty state
+const Megaphone = ({ className }: { className?: string }) => (
+  <svg className={className} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m11 15 1.5 4.5a.5.5 0 0 0 .95 0l4.5-13.5A.5.5 0 0 0 17.5 5.5l-13.5 4.5a.5.5 0 0 0 0 .95l13.5 4.5z"/></svg>
+);
+
+
 export default AdminPage;
