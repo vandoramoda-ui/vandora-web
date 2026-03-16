@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
-import { Save, Loader2, Image as ImageIcon, Plus, Trash, Globe, Instagram, Facebook as FbIcon, Twitter, CheckCircle2, AlertCircle } from 'lucide-react';
+import { Save, Loader2, Image as ImageIcon, Plus, Trash, Globe, Instagram, Facebook as FbIcon, Twitter, CheckCircle2, AlertCircle, Truck } from 'lucide-react';
 import ImageUpload from '../components/ImageUpload';
 
 const SiteEditor = () => {
