@@ -263,19 +263,24 @@ const CheckoutPage = () => {
       if ((formData.email || formData.phone) && items.length > 0) {
         try {
           // Identify existing record or create new one
-          await supabase
+          const { error } = await supabase
             .from('abandoned_carts')
             .upsert({
-              customer_email: formData.email || null,
-              customer_phone: formData.phone || null,
+              customer_email: formData.email?.trim() || null,
+              customer_phone: formData.phone?.trim() || null,
               cart_items: items,
               total_amount: total,
               updated_at: new Date().toISOString(),
               user_id: user?.id || null,
               status: 'pending'
             }, { 
-              onConflict: 'customer_email,customer_phone' // Note: This requires a unique constraint in SQL
+              onConflict: 'customer_email,customer_phone'
             });
+
+          if (error) {
+            // Logs for debugging but don't show to user
+            console.warn('Abandoned cart sync error:', error.message);
+          }
         } catch (error) {
           // Fail silently to not interrupt UX
           console.warn('Abandoned cart tracking failed', error);
