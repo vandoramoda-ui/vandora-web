@@ -15,6 +15,8 @@ const SettingsEditor = () => {
   });
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [fetchingModels, setFetchingModels] = useState(false);
+  const [availableModels, setAvailableModels] = useState<string[]>([]);
 
   useEffect(() => {
     fetchSettings();
@@ -42,6 +44,53 @@ const SettingsEditor = () => {
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     setSettings({ ...settings, [e.target.name]: e.target.value });
+  };
+
+  const handleFetchModels = async () => {
+    if (!settings.openai_api_key) {
+      alert('Por favor ingresa primero la API Key.');
+      return;
+    }
+
+    setFetchingModels(true);
+    try {
+      const provider = settings.ai_provider;
+      let url = '';
+      const headers: any = {
+        'Authorization': `Bearer ${settings.openai_api_key}`
+      };
+
+      if (provider === 'openai') {
+        url = 'https://api.openai.com/v1/models';
+      } else {
+        url = 'https://openrouter.ai/api/v1/models';
+      }
+
+      const response = await fetch(url, { headers });
+      if (!response.ok) throw new Error('Error al obtener modelos. Verifica tu API Key.');
+
+      const data = await response.json();
+      let models: string[] = [];
+
+      if (provider === 'openai') {
+        models = data.data
+          .filter((m: any) => m.id.includes('gpt') || m.id.includes('o1'))
+          .map((m: any) => m.id)
+          .sort();
+      } else {
+        models = data.data
+          .map((m: any) => m.id)
+          .sort();
+      }
+
+      setAvailableModels(models);
+      alert(`Se encontraron ${models.length} modelos disponibles.`);
+    } catch (error: any) {
+      console.error('Fetch models error:', error);
+      alert(error.message);
+    } finally {
+      setFetchingModels(false);
+    }
   };
 
   const handleSave = async () => {
@@ -152,15 +201,38 @@ const SettingsEditor = () => {
               </select>
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Modelo de IA</label>
-              <input
-                type="text"
-                name="ai_model"
-                value={settings.ai_model}
-                onChange={handleChange}
-                placeholder="ej: gpt-4o-mini"
-                className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-vandora-emerald focus:border-vandora-emerald sm:text-sm"
-              />
+              <div className="flex justify-between items-center mb-1">
+                <label className="block text-sm font-medium text-gray-700">Modelo de IA</label>
+                <button
+                  type="button"
+                  onClick={handleFetchModels}
+                  disabled={fetchingModels || !settings.openai_api_key}
+                  className="text-[10px] font-bold uppercase tracking-wider text-vandora-emerald hover:text-emerald-800 flex items-center transition-colors disabled:opacity-50"
+                >
+                  {fetchingModels ? <Loader2 className="animate-spin h-3 w-3 mr-1" /> : <Sparkles className="h-3 w-3 mr-1" />}
+                  Cargar Modelos
+                </button>
+              </div>
+              <div className="relative">
+                <input
+                  type="text"
+                  name="ai_model"
+                  list="ai-models-list"
+                  value={settings.ai_model}
+                  onChange={handleChange}
+                  placeholder="ej: gpt-4o-mini"
+                  className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-vandora-emerald focus:border-vandora-emerald sm:text-sm"
+                />
+                <datalist id="ai-models-list">
+                  {availableModels.map(model => (
+                    <option key={model} value={model} />
+                  ))}
+                  <option value="gpt-4o" />
+                  <option value="gpt-4o-mini" />
+                  <option value="o1-preview" />
+                  <option value="o1-mini" />
+                </datalist>
+              </div>
             </div>
           </div>
 

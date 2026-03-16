@@ -96,7 +96,7 @@ const ChatWidget = () => {
         body: JSON.stringify({
           model,
           messages: apiMessages,
-          temperature: 0.7,
+          temperature: 1,
         })
       });
 
