@@ -225,24 +225,28 @@ const SettingsEditor = () => {
                 </button>
               </div>
               <div className="relative">
-                <input
-                  type="text"
+                <select
                   name="ai_model"
-                  list="ai-models-list"
                   value={settings.ai_model}
                   onChange={handleChange}
-                  placeholder="ej: gpt-4o-mini"
                   className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-vandora-emerald focus:border-vandora-emerald sm:text-sm"
-                />
-                <datalist id="ai-models-list">
+                >
+                  <option value="">Selecciona un modelo...</option>
+                  {/* Static defaults for immediate use if cache is empty */}
+                  {!availableModels.length && (
+                    <>
+                      <option value="gpt-4o">gpt-4o</option>
+                      <option value="gpt-4o-mini">gpt-4o-mini</option>
+                      <option value="o1-preview">o1-preview</option>
+                      <option value="o1-mini">o1-mini</option>
+                    </>
+                  )}
                   {availableModels.map(model => (
-                    <option key={model} value={model} />
+                    <option key={model} value={model}>
+                      {model}
+                    </option>
                   ))}
-                  <option value="gpt-4o" />
-                  <option value="gpt-4o-mini" />
-                  <option value="o1-preview" />
-                  <option value="o1-mini" />
-                </datalist>
+                </select>
               </div>
             </div>
           </div>
