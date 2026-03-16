@@ -36,6 +36,10 @@ const SettingsEditor = () => {
         if (item.key === 'ai_system_prompt') newSettings.ai_system_prompt = item.value;
         if (item.key === 'ai_provider') newSettings.ai_provider = item.value;
         if (item.key === 'ai_model') newSettings.ai_model = item.value;
+        
+        if (item.key === 'ai_available_models' && Array.isArray(item.value)) {
+          setAvailableModels(item.value);
+        }
       });
       setSettings(newSettings);
     }
@@ -84,7 +88,14 @@ const SettingsEditor = () => {
       }
 
       setAvailableModels(models);
-      alert(`Se encontraron ${models.length} modelos disponibles.`);
+      
+      // Cache models in database
+      await supabase.from('app_settings').upsert(
+        { key: 'ai_available_models', value: models },
+        { onConflict: 'key' }
+      );
+
+      alert(`Se encontraron ${models.length} modelos disponibles y se guardaron en caché.`);
     } catch (error: any) {
       console.error('Fetch models error:', error);
       alert(error.message);
@@ -107,7 +118,7 @@ const SettingsEditor = () => {
         { key: 'ai_model', value: settings.ai_model }
       ];
 
-      const { error } = await supabase.from('app_settings').upsert(updates);
+      const { error } = await supabase.from('app_settings').upsert(updates, { onConflict: 'key' });
       if (error) throw error;
 
       alert('Configuración guardada correctamente.');
