@@ -73,7 +73,6 @@ const AdminPage = () => {
 
   const [categories, setCategories] = useState<any[]>([]);
   const [newCategoryName, setNewCategoryName] = useState('');
-  const [isCategoryModalOpen, setIsCategoryModalOpen] = useState(false);
 
   const [improvingField, setImprovingField] = useState<string | null>(null);
 
