@@ -370,24 +370,16 @@ const SiteEditor = () => {
                   <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
                     {/* Images Column */}
                     <div className="lg:col-span-5 space-y-6">
-                      <div>
-                        <label className="block text-xs font-bold text-gray-500 uppercase mb-2">Imagen Escritorio (Recomendado: 2000x1000px)</label>
-                        <input 
-                          type="text" 
-                          value={slide.imageDesktop} 
-                          onChange={(e) => handleSlideChange(slide.id, 'imageDesktop', e.target.value)}
-                          className="w-full border rounded-lg px-3 py-2 text-sm" 
-                          placeholder="https://..."
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <ImageUpload 
+                          label="Imagen Escritorio (2000x1000px)"
+                          currentImage={slide.imageDesktop} 
+                          onUpload={(url) => handleSlideChange(slide.id, 'imageDesktop', url)}
                         />
-                      </div>
-                      <div>
-                        <label className="block text-xs font-bold text-gray-500 uppercase mb-2">Imagen Mobile (Recomendado: 800x1200px)</label>
-                        <input 
-                          type="text" 
-                          value={slide.imageMobile} 
-                          onChange={(e) => handleSlideChange(slide.id, 'imageMobile', e.target.value)}
-                          className="w-full border rounded-lg px-3 py-2 text-sm" 
-                          placeholder="https://..."
+                        <ImageUpload 
+                          label="Imagen Mobile (800x1200px)"
+                          currentImage={slide.imageMobile} 
+                          onUpload={(url) => handleSlideChange(slide.id, 'imageMobile', url)}
                         />
                       </div>
                     </div>
@@ -529,6 +521,7 @@ const SiteEditor = () => {
                 <div className="lg:col-span-4">
                   <label className="block text-xs font-bold text-gray-500 uppercase mb-2">Imagen Fundadora</label>
                   <ImageUpload 
+                    label="Imagen Fundadora"
                     currentImage={founderSection.image}
                     onUpload={(url: string) => setFounderSection({ ...founderSection, image: url })}
                   />
@@ -599,6 +592,7 @@ const SiteEditor = () => {
                 <div className="lg:col-span-4">
                   <label className="block text-xs font-bold text-gray-500 uppercase mb-2">Imagen Principal</label>
                   <ImageUpload 
+                    label="Imagen Principal"
                     currentImage={storyPage.image}
                     onUpload={(url: string) => setStoryPage({ ...storyPage, image: url })}
                   />

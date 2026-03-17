@@ -8,7 +8,6 @@ import { BrowserRouter as Router, Routes, Route, useLocation } from 'react-route
 import { CartProvider } from './context/CartContext';
 import { AuthProvider } from './context/AuthContext';
 import Layout from './components/Layout';
-import FloatingWhatsApp from './components/FloatingWhatsApp';
 import PopupDisplay from './components/PopupDisplay';
 import HomePage from './pages/HomePage';
 import ShopPage from './pages/ShopPage';
@@ -38,16 +37,17 @@ const ScrollToTop = () => {
 };
 
 import ProtectedRoute from './components/ProtectedRoute';
-
 import ResetPasswordPage from './pages/ResetPasswordPage';
+import { AnalyticsProvider } from './context/AnalyticsContext';
 
 function App() {
   return (
     <AuthProvider>
       <CartProvider>
         <Router>
-          <ScrollToTop />
-          <Routes>
+          <AnalyticsProvider>
+            <ScrollToTop />
+            <Routes>
             {/* Public Routes with Layout */}
             <Route path="/" element={<Layout><HomePage /></Layout>} />
             <Route path="/tienda" element={<Layout><ShopPage /></Layout>} />
@@ -72,6 +72,7 @@ function App() {
               </ProtectedRoute>
             } />
           </Routes>
+        </AnalyticsProvider>
         </Router>
       </CartProvider>
     </AuthProvider>

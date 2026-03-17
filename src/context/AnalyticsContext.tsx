@@ -3,10 +3,12 @@ import ReactGA from 'react-ga4';
 import ReactPixel from 'react-facebook-pixel';
 import { useLocation } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
+import { useAuth } from './AuthContext';
 
 interface AnalyticsContextType {
-  trackEvent: (category: string, action: string, label?: string, value?: number) => void;
-  trackPurchase: (transactionId: string, value: number, currency?: string) => void;
+  trackEvent: (category: string, action: string, label?: string, value?: number, eventId?: string) => void;
+  trackStandardEvent: (eventName: string, params?: any) => void;
+  trackPurchase: (transactionId: string, value: number, currency?: string, eventId?: string, extraUserData?: any) => void;
   trackQuizStart: (quizName: string) => void;
   trackQuizComplete: (quizName: string, result: string) => void;
 }
@@ -15,6 +17,7 @@ const AnalyticsContext = createContext<AnalyticsContextType | undefined>(undefin
 
 export const AnalyticsProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const location = useLocation();
+  const { user, profile } = useAuth();
   const [initialized, setInitialized] = useState(false);
 
   useEffect(() => {
@@ -27,12 +30,10 @@ export const AnalyticsProvider: React.FC<{ children: React.ReactNode }> = ({ chi
 
           if (ga4Id) {
             ReactGA.initialize(ga4Id);
-            console.log('GA4 Initialized');
           }
 
           if (pixelId) {
             ReactPixel.init(pixelId);
-            console.log('Meta Pixel Initialized');
           }
 
           setInitialized(true);
@@ -45,6 +46,42 @@ export const AnalyticsProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     initAnalytics();
   }, []);
 
+  const getCookie = (name: string) => {
+    const value = `; ${document.cookie}`;
+    const parts = value.split(`; ${name}=`);
+    if (parts.length === 2) return parts.pop()?.split(';').shift();
+    return null;
+  };
+
+  const generateEventId = (prefix = 'ev') => {
+    return `${prefix}_${Date.now()}_${Math.random().toString(36).substr(2, 6)}`;
+  };
+
+  const trackCAPI = async (eventName: string, eventId: string, params: any = {}, extraUserData: any = {}) => {
+    try {
+      const fbc = getCookie('_fbc');
+      const fbp = getCookie('_fbp');
+
+      // We send the data to our Supabase Edge Function
+      supabase.functions.invoke('meta-capi', {
+        body: { 
+          eventName, 
+          eventId, 
+          params, 
+          url: window.location.href,
+          userData: {
+            email: user?.email || extraUserData?.email || null,
+            phone: profile?.phone || extraUserData?.phone || null,
+            fbc,
+            fbp,
+          }
+        }
+      }).catch(err => console.warn('CAPI error:', err));
+    } catch (error) {
+      console.warn('CAPI track error:', error);
+    }
+  };
+
   // Track Page Views
   useEffect(() => {
     if (initialized) {
@@ -53,16 +90,42 @@ export const AnalyticsProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     }
   }, [location, initialized]);
 
-  const trackEvent = (category: string, action: string, label?: string, value?: number) => {
+  const trackEvent = (category: string, action: string, label?: string, value?: number, eventId?: string) => {
     if (!initialized) return;
     
+    const evId = eventId || generateEventId();
+    
     ReactGA.event({ category, action, label, value });
-    // Map generic events to Pixel standard events where possible, or custom
-    ReactPixel.trackCustom(action, { category, label, value });
+    // @ts-ignore - Meta Pixel supports 3rd arg for eventID but types may be limited
+    ReactPixel.trackCustom(action, { category, label, value }, { eventID: evId });
+    trackCAPI(action, evId, { category, label, value });
   };
 
-  const trackPurchase = (transactionId: string, value: number, currency = 'USD') => {
+  const trackStandardEvent = (eventName: string, params: any = {}, customEventId?: string) => {
     if (!initialized) return;
+
+    // Use custom event ID if provided (e.g. view-ID-time) or generate one
+    const eventId = customEventId || generateEventId(eventName.toLowerCase());
+
+    // GA4 Mapping
+    ReactGA.event({
+      category: 'MetaStandard',
+      action: eventName,
+      ...params
+    });
+
+    // Meta Pixel
+    // @ts-ignore - Meta Pixel supports 3rd arg for eventID
+    ReactPixel.track(eventName, params, { eventID: eventId });
+
+    // Meta CAPI
+    trackCAPI(eventName, eventId, params);
+  };
+
+  const trackPurchase = (transactionId: string, value: number, currency = 'USD', eventId?: string, extraUserData?: any) => {
+    if (!initialized) return;
+
+    const evId = eventId || `purchase_${transactionId}`;
 
     ReactGA.event({
       category: "Ecommerce",
@@ -71,12 +134,16 @@ export const AnalyticsProvider: React.FC<{ children: React.ReactNode }> = ({ chi
       label: transactionId
     });
 
-    ReactPixel.track('Purchase', {
+    const params = {
       value: value,
       currency: currency,
       content_ids: [transactionId],
       content_type: 'product'
-    });
+    };
+
+    // @ts-ignore - Meta Pixel supports 3rd arg for eventID
+    ReactPixel.track('Purchase', params, { eventID: evId });
+    trackCAPI('Purchase', evId, params, extraUserData);
   };
 
   const trackQuizStart = (quizName: string) => {
@@ -90,7 +157,7 @@ export const AnalyticsProvider: React.FC<{ children: React.ReactNode }> = ({ chi
   };
 
   return (
-    <AnalyticsContext.Provider value={{ trackEvent, trackPurchase, trackQuizStart, trackQuizComplete }}>
+    <AnalyticsContext.Provider value={{ trackEvent, trackStandardEvent, trackPurchase, trackQuizStart, trackQuizComplete }}>
       {children}
     </AnalyticsContext.Provider>
   );

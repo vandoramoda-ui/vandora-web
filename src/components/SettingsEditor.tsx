@@ -6,12 +6,14 @@ const SettingsEditor = () => {
   const [settings, setSettings] = useState({
     ga4_id: '',
     meta_pixel_id: '',
+    meta_capi_token: '',
+    meta_test_event_code: '',
     openai_api_key: '',
-    ai_agent_enabled: 'false',
-    ai_welcome_message: '¡Hola! Bienvenida a Vandora. Soy tu asesora de moda personal. ¿En qué puedo ayudarte hoy para que luzcas espectacular?',
-    ai_system_prompt: 'Eres "Vandora AI", la asistente virtual experta en moda de la tienda exclusiva "Vandora" en Ecuador. Tu tono es elegante, empático, profesional y cálido.',
+    ai_agent_enabled: false,
+    ai_welcome_message: '',
+    ai_system_prompt: '',
     ai_provider: 'openai',
-    ai_model: 'gpt-4o-mini'
+    ai_model: '',
   });
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -30,6 +32,8 @@ const SettingsEditor = () => {
       data.forEach(item => {
         if (item.key === 'ga4_id') newSettings.ga4_id = item.value;
         if (item.key === 'meta_pixel_id') newSettings.meta_pixel_id = item.value;
+        if (item.key === 'meta_capi_token') newSettings.meta_capi_token = item.value;
+        if (item.key === 'meta_test_event_code') newSettings.meta_test_event_code = item.value;
         if (item.key === 'openai_api_key') newSettings.openai_api_key = item.value;
         if (item.key === 'ai_agent_enabled') newSettings.ai_agent_enabled = item.value;
         if (item.key === 'ai_welcome_message') newSettings.ai_welcome_message = item.value;
@@ -110,6 +114,8 @@ const SettingsEditor = () => {
       const updates = [
         { key: 'ga4_id', value: settings.ga4_id },
         { key: 'meta_pixel_id', value: settings.meta_pixel_id },
+        { key: 'meta_capi_token', value: settings.meta_capi_token },
+        { key: 'meta_test_event_code', value: settings.meta_test_event_code },
         { key: 'openai_api_key', value: settings.openai_api_key },
         { key: 'ai_agent_enabled', value: settings.ai_agent_enabled },
         { key: 'ai_welcome_message', value: settings.ai_welcome_message },
@@ -164,9 +170,35 @@ const SettingsEditor = () => {
               name="meta_pixel_id"
               value={settings.meta_pixel_id}
               onChange={handleChange}
-              placeholder="123456789012345"
+              placeholder="XXXXXXXXXXXXXXX"
               className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-vandora-emerald focus:border-vandora-emerald sm:text-sm"
             />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1 flex items-center">
+              Meta CAPI Access Token
+              <span className="ml-2 text-[10px] bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded-full font-bold">RECOMENDADO</span>
+            </label>
+            <input
+              type="password"
+              name="meta_capi_token"
+              value={settings.meta_capi_token}
+              onChange={handleChange}
+              placeholder="EAAB..."
+              className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-vandora-emerald focus:border-vandora-emerald sm:text-sm"
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Test Event Code (CAPI)</label>
+            <input
+              type="text"
+              name="meta_test_event_code"
+              value={settings.meta_test_event_code}
+              onChange={handleChange}
+              placeholder="TESTXXXXX"
+              className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-vandora-emerald focus:border-vandora-emerald sm:text-sm"
+            />
+            <p className="mt-1 text-xs text-gray-500">Úsalo solo para verificar eventos en tiempo real.</p>
           </div>
         </div>
       </div>

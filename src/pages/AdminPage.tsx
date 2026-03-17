@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
-import { Plus, Edit, Trash, Package, ShoppingBag, Users, Layout as LayoutIcon, Sparkles, Settings, X, Image as ImageIcon, Menu, Ruler, Copy, Megaphone, Loader2 } from 'lucide-react';
+import { Plus, Edit, Trash, Package, ShoppingBag, Users, Layout as LayoutIcon, Sparkles, Settings, X, Image as ImageIcon, Menu, Ruler, Copy, Megaphone, Loader2, History } from 'lucide-react';
 import { formatPrice } from '../lib/utils';
 import MediaManager from '../components/MediaManager';
 import SiteEditor from '../components/SiteEditor';
@@ -44,6 +44,8 @@ const AdminPage = () => {
   const [editingUser, setEditingUser] = useState<any>(null);
   const [isOrderModalOpen, setIsOrderModalOpen] = useState(false);
   const [isUserModalOpen, setIsUserModalOpen] = useState(false);
+  const [isCategoryModalOpen, setIsCategoryModalOpen] = useState(false);
+  const [analyticsLogs, setAnalyticsLogs] = useState<any[]>([]);
 
   const [formData, setFormData] = useState({
     name: '',
@@ -101,7 +103,23 @@ const AdminPage = () => {
     }
     else if (activeTab === 'orders') fetchOrders();
     else if (activeTab === 'users') fetchUsers();
+    else if (activeTab === 'analytics-logs') fetchAnalyticsLogs();
   }, [activeTab]);
+
+  const fetchAnalyticsLogs = async () => {
+    setLoading(true);
+    const { data, error } = await supabase
+      .from('analytics_logs')
+      .select('*')
+      .order('created_at', { ascending: false })
+      .limit(50);
+    
+    if (error) {
+      console.warn('Could not fetch analytics logs. Table might not exist yet.', error);
+    }
+    if (data) setAnalyticsLogs(data);
+    setLoading(false);
+  };
 
   const fetchCategories = async () => {
     const { data, error } = await supabase.from('product_categories').select('*').order('name');
@@ -524,6 +542,13 @@ const AdminPage = () => {
               >
                 <Ruler className="h-5 w-5 mr-3" /> Guía de Tallas
               </button>
+
+              <button
+                onClick={() => { setActiveTab('analytics-logs'); setIsSidebarOpen(false); }}
+                className={`w-full flex items-center px-4 py-3 text-sm rounded-lg transition-colors ${activeTab === 'analytics-logs' ? 'bg-emerald-50 text-vandora-emerald font-medium' : 'text-gray-600 hover:bg-gray-50'}`}
+              >
+                <History className="h-5 w-5 mr-3" /> Logs de Meta
+              </button>
             </>
           )}
         </nav>
@@ -540,7 +565,8 @@ const AdminPage = () => {
                       activeTab === 'site' ? 'Editor de Sitio' :
                         activeTab === 'quizzes' ? 'Constructor de Quizzes' : 
                           activeTab === 'size-guide' ? 'Guía de Tallas' : 
-                            activeTab === 'popups' ? 'Gestión de Popups' : 'Ajustes'}
+                            activeTab === 'analytics-logs' ? 'Registro de Errores Meta CAPI' :
+                              activeTab === 'popups' ? 'Gestión de Popups' : 'Ajustes'}
           </h1>
           <p className="text-sm text-gray-500">Bienvenido de nuevo, {role}</p>
         </header>
@@ -780,6 +806,43 @@ const AdminPage = () => {
         {activeTab === 'quizzes' && <div className="bg-white p-6 rounded-lg shadow-sm space-y-8"><QuizBuilder /><VisualQuizBuilder onBack={() => setActiveTab('quizzes')} /></div>}
         {activeTab === 'settings' && <div className="bg-white p-6 rounded-lg shadow-sm space-y-8"><SettingsEditor /><CheckoutSettingsEditor /></div>}
         {activeTab === 'size-guide' && <div className="bg-white p-6 rounded-lg shadow-sm"><SizeGuideEditor /></div>}
+
+        {activeTab === 'analytics-logs' && (
+          <div className="space-y-4">
+            <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
+              <table className="min-w-full divide-y divide-gray-200">
+                <thead className="bg-gray-50">
+                  <tr>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Fecha</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Evento</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Error</th>
+                  </tr>
+                </thead>
+                <tbody className="bg-white divide-y divide-gray-200">
+                  {analyticsLogs.length === 0 ? (
+                    <tr>
+                      <td colSpan={4} className="px-6 py-12 text-center text-gray-500 italic">
+                        No hay logs registrados. Los errores de Meta CAPI aparecerán aquí.
+                      </td>
+                    </tr>
+                  ) : (
+                    analyticsLogs.map((log) => (
+                      <tr key={log.id} className="hover:bg-gray-50 transition-colors">
+                        <td className="px-6 py-4 text-sm text-gray-500">
+                          {new Date(log.created_at).toLocaleString()}
+                        </td>
+                        <td className="px-6 py-4 text-sm font-medium text-gray-900">{log.event_name}</td>
+                        <td className="px-6 py-4 text-sm text-gray-500">{log.status_code}</td>
+                        <td className="px-6 py-4 text-sm text-red-500">{log.error_message}</td>
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        )}
 
         {/* Modals remain same as before for products/orders/users edit */}
         {isModalOpen && (

@@ -8,6 +8,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import ProductCard from '../components/ProductCard';
 import SEO from '../components/SEO';
 import SizeGuideModal from '../components/SizeGuideModal';
+import { useAnalytics } from '../context/AnalyticsContext';
 
 // Reusing MOCK_PRODUCTS for simplicity in this demo if ID matches
 const MOCK_PRODUCTS = [
@@ -84,6 +85,7 @@ const ProductDetailPage = () => {
   const [activeImageIndex, setActiveImageIndex] = useState(0);
   const [showVideo, setShowVideo] = useState(false);
   const [isSizeGuideOpen, setIsSizeGuideOpen] = useState(false);
+  const { trackStandardEvent } = useAnalytics();
 
   // CRO States
   const [viewersCount, setViewersCount] = useState(12);
@@ -158,6 +160,19 @@ const ProductDetailPage = () => {
     fetchProduct();
   }, [slug, navigate]);
 
+  // Track ViewContent
+  useEffect(() => {
+    if (product) {
+      trackStandardEvent('ViewContent', {
+        content_name: product.name,
+        content_ids: [product.id],
+        content_type: 'product',
+        value: product.price,
+        currency: 'USD'
+      }, `view-${product.id}-${Date.now()}`);
+    }
+  }, [product?.id]); // Wait for product
+
   // Update filtered media when color changes
   useEffect(() => {
     if (product) {
@@ -197,6 +212,15 @@ const ProductDetailPage = () => {
       size: selectedSize,
       color: selectedColor
     });
+
+    trackStandardEvent('AddToCart', {
+      content_name: product.name,
+      content_ids: [product.id],
+      content_type: 'product',
+      value: product.price * quantity,
+      currency: 'USD',
+      num_items: quantity
+    }, `cart-${product.id}-${Date.now()}`);
   };
 
   const hasVideo = filteredVideos.length > 0;

@@ -6,9 +6,10 @@ import { r2Storage } from '../lib/storage';
 interface ImageUploadProps {
   onUpload: (url: string) => void;
   currentImage?: string;
+  label?: string;
 }
 
-const ImageUpload: React.FC<ImageUploadProps> = ({ onUpload, currentImage }) => {
+const ImageUpload: React.FC<ImageUploadProps> = ({ onUpload, currentImage, label = "Imagen del Producto" }) => {
   const [uploading, setUploading] = useState(false);
   const [preview, setPreview] = useState<string | null>(currentImage || null);
   const [error, setError] = useState<string | null>(null);

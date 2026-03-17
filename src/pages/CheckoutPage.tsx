@@ -8,6 +8,7 @@ import { supabase } from '../lib/supabase';
 import { useAuth } from '../context/AuthContext';
 import SEO from '../components/SEO';
 import PhoneInput from '../components/PhoneInput';
+import { useAnalytics } from '../context/AnalyticsContext';
 
 interface CheckoutSettings {
   fields: {
@@ -66,6 +67,7 @@ const DEFAULT_SETTINGS: CheckoutSettings = {
 const CheckoutPage = () => {
   const { items, total, clearCart } = useCart();
   const { user } = useAuth();
+  const { trackStandardEvent } = useAnalytics();
   const navigate = useNavigate();
   const [settings, setSettings] = useState<CheckoutSettings>(DEFAULT_SETTINGS);
   const [loadingSettings, setLoadingSettings] = useState(true);
@@ -122,6 +124,19 @@ const CheckoutPage = () => {
     };
     fetchSettings();
   }, []);
+
+  // Track InitiateCheckout
+  useEffect(() => {
+    if (items.length > 0) {
+      trackStandardEvent('InitiateCheckout', {
+        content_ids: items.map(i => i.id),
+        content_type: 'product',
+        value: total,
+        currency: 'USD',
+        num_items: items.reduce((acc, i) => acc + i.quantity, 0)
+      }, `initiate-${Date.now()}`);
+    }
+  }, []); // Only once on mount
 
   // Fetch user's last order for auto-fill
   useEffect(() => {

@@ -4,6 +4,7 @@ import ProductCard from '../components/ProductCard';
 import { Loader2 } from 'lucide-react';
 import { useSearchParams } from 'react-router-dom';
 import SEO from '../components/SEO';
+import { useAnalytics } from '../context/AnalyticsContext';
 
 type Product = {
   id: string;
@@ -22,6 +23,7 @@ const ShopPage = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [searchParams, setSearchParams] = useSearchParams();
+  const { trackStandardEvent } = useAnalytics();
   
   // Get category from URL or default to 'all'
   const categoryFilter = searchParams.get('category') || 'all';
@@ -38,6 +40,14 @@ const ShopPage = () => {
     }
     setSearchParams(searchParams);
   };
+
+  useEffect(() => {
+    trackStandardEvent('ViewContent', {
+      content_name: categoryFilter === 'all' ? 'Tienda - Todo' : `Tienda - ${categoryFilter}`,
+      content_category: categoryFilter,
+      content_type: 'product_group'
+    });
+  }, [categoryFilter]);
 
   const fetchProducts = async () => {
     try {
@@ -99,7 +109,7 @@ const ShopPage = () => {
     : products.filter(p => p.category.toLowerCase() === categoryFilter.toLowerCase()))
     .filter(p => p.stock > 0);
 
-  const categories = ['all', ...Array.from(new Set(products.map(p => p.category.toLowerCase())))];
+  const categories: string[] = ['all', ...Array.from<string>(new Set(products.map((p: Product) => p.category.toLowerCase())))];
 
   return (
     <div className="bg-vandora-cream min-h-screen py-12 px-4 sm:px-6 lg:px-8">

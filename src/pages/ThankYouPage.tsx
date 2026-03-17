@@ -3,16 +3,28 @@ import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { CheckCircle, ShoppingBag, ArrowRight, Heart } from 'lucide-react';
 import { motion } from 'framer-motion';
 import SEO from '../components/SEO';
+import { useAnalytics } from '../context/AnalyticsContext';
 
 const ThankYouPage = () => {
   const location = useLocation();
   const navigate = useNavigate();
+  const { trackPurchase } = useAnalytics();
   const order = location.state?.order;
 
   useEffect(() => {
     if (!order) {
       // Optional: Redirect to home if accessed directly without an order
       // navigate('/');
+    } else {
+      // Track Purchase only once
+      const trackedKey = `order_tracked_${order.id}`;
+      if (!sessionStorage.getItem(trackedKey)) {
+        trackPurchase(order.id, order.total, 'USD', `purchase-${order.id}`, {
+          email: order.customer_email,
+          phone: order.customer_phone
+        });
+        sessionStorage.setItem(trackedKey, 'true');
+      }
     }
   }, [order, navigate]);
 
