@@ -71,7 +71,8 @@ const AdminPage = () => {
     google_product_category: 'Apparel & Accessories > Clothing',
     gender: 'unisex',
     age_group: 'adult',
-    condition: 'new'
+    condition: 'new',
+    sale_price: ''
   });
 
   const STANDARD_SIZES = ['XS', 'S', 'M', 'L', 'XL', 'XXL'];
@@ -270,7 +271,8 @@ const AdminPage = () => {
         google_product_category: formData.google_product_category || 'Apparel & Accessories > Clothing',
         gender: formData.gender || 'unisex',
         age_group: formData.age_group || 'adult',
-        condition: formData.condition || 'new'
+        condition: formData.condition || 'new',
+        sale_price: parseFloat(formData.sale_price) || null
       };
 
       if (editingProduct) {
@@ -623,7 +625,7 @@ const AdminPage = () => {
                       name: '', price: '', category: '', stock: '', description: '', details: '', materials: '', care: '', images: [], videos: [], sizes: [], colors: [], variants: [], 
                       upsell_product_id: '', downsell_product_id: '', order_bump_product_id: '',
                       sku: '', gtin: '', mpn: '', brand: 'Vandora', google_product_category: 'Apparel & Accessories > Clothing', 
-                      gender: 'unisex', age_group: 'adult', condition: 'new' 
+                      gender: 'unisex', age_group: 'adult', condition: 'new', sale_price: ''
                     });
                     setIsModalOpen(true);
                   }}
@@ -713,7 +715,8 @@ const AdminPage = () => {
                             google_product_category: product.google_product_category || 'Apparel & Accessories > Clothing',
                             gender: product.gender || 'unisex',
                             age_group: product.age_group || 'adult',
-                            condition: product.condition || 'new'
+                            condition: product.condition || 'new',
+                            sale_price: product.sale_price ? product.sale_price.toString() : ''
                           });
                           setIsModalOpen(true);
                         }}><Edit className="h-4 w-4" /></button>
@@ -906,6 +909,10 @@ const AdminPage = () => {
                       <div>
                         <label className="block text-sm font-medium text-gray-700 mb-1">Precio</label>
                         <input type="number" step="0.01" name="price" value={formData.price} onChange={handleInputChange} required className="w-full rounded-md border-gray-300 shadow-sm border p-3 focus:ring-2 focus:ring-vandora-emerald outline-none" />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">Precio de Oferta (Opcional)</label>
+                        <input type="number" step="0.01" name="sale_price" value={formData.sale_price} onChange={handleInputChange} className="w-full rounded-md border-gray-300 shadow-sm border p-3 focus:ring-2 focus:ring-vandora-emerald outline-none" placeholder="0.00" title="Precio que aparecerá en Google Shopping como oferta" />
                       </div>
                       <div>
                         <label className="block text-sm font-medium text-gray-700 mb-1">Stock Inicial</label>
