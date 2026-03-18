@@ -346,6 +346,9 @@ const ProductDetailPage = () => {
           <div className="flex flex-col">
             <div className="mb-6">
               <h1 className="text-3xl sm:text-4xl font-serif text-gray-900 mb-2">{product.name}</h1>
+              {product.sku && (
+                <p className="text-xs text-gray-400 font-mono mb-4 uppercase tracking-widest">SKU: {product.sku}</p>
+              )}
 
               <div className="flex items-center justify-between mb-4">
                 <div className="flex items-center">

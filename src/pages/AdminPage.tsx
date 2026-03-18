@@ -63,7 +63,15 @@ const AdminPage = () => {
     variants: [] as { size: string; color: string; stock: number }[],
     upsell_product_id: '',
     downsell_product_id: '',
-    order_bump_product_id: ''
+    order_bump_product_id: '',
+    sku: '',
+    gtin: '',
+    mpn: '',
+    brand: 'Vandora',
+    google_product_category: 'Apparel & Accessories > Clothing',
+    gender: 'unisex',
+    age_group: 'adult',
+    condition: 'new'
   });
 
   const STANDARD_SIZES = ['XS', 'S', 'M', 'L', 'XL', 'XXL'];
@@ -254,7 +262,15 @@ const AdminPage = () => {
         slug,
         upsell_product_id: formData.upsell_product_id || null,
         downsell_product_id: formData.downsell_product_id || null,
-        order_bump_product_id: formData.order_bump_product_id || null
+        order_bump_product_id: formData.order_bump_product_id || null,
+        sku: formData.sku || null,
+        gtin: formData.gtin || null,
+        mpn: formData.mpn || null,
+        brand: formData.brand || 'Vandora',
+        google_product_category: formData.google_product_category || 'Apparel & Accessories > Clothing',
+        gender: formData.gender || 'unisex',
+        age_group: formData.age_group || 'adult',
+        condition: formData.condition || 'new'
       };
 
       if (editingProduct) {
@@ -603,7 +619,12 @@ const AdminPage = () => {
                 <button
                   onClick={() => {
                     setEditingProduct(null);
-                    setFormData({ name: '', price: '', category: '', stock: '', description: '', details: '', materials: '', care: '', images: [], videos: [], sizes: [], colors: [], variants: [], upsell_product_id: '', downsell_product_id: '', order_bump_product_id: '' });
+                    setFormData({ 
+                      name: '', price: '', category: '', stock: '', description: '', details: '', materials: '', care: '', images: [], videos: [], sizes: [], colors: [], variants: [], 
+                      upsell_product_id: '', downsell_product_id: '', order_bump_product_id: '',
+                      sku: '', gtin: '', mpn: '', brand: 'Vandora', google_product_category: 'Apparel & Accessories > Clothing', 
+                      gender: 'unisex', age_group: 'adult', condition: 'new' 
+                    });
                     setIsModalOpen(true);
                   }}
                   className="bg-vandora-emerald text-white px-4 py-2 rounded-md flex items-center transition-colors hover:bg-emerald-800 shadow-md"
@@ -684,7 +705,15 @@ const AdminPage = () => {
                                 return typeof parsed === 'object' && parsed !== null ? parsed : { name: String(c), code: '#CCCCCC' };
                               }) : [],
                             sizes: Array.isArray(product.sizes) ? product.sizes : [],
-                            variants: Array.isArray(product.variants) ? product.variants : []
+                            variants: Array.isArray(product.variants) ? product.variants : [],
+                            sku: product.sku || '',
+                            gtin: product.gtin || '',
+                            mpn: product.mpn || '',
+                            brand: product.brand || 'Vandora',
+                            google_product_category: product.google_product_category || 'Apparel & Accessories > Clothing',
+                            gender: product.gender || 'unisex',
+                            age_group: product.age_group || 'adult',
+                            condition: product.condition || 'new'
                           });
                           setIsModalOpen(true);
                         }}><Edit className="h-4 w-4" /></button>
@@ -1018,6 +1047,64 @@ const AdminPage = () => {
                         <input type="text" name="downsell_product_id" value={formData.downsell_product_id} onChange={handleInputChange} className="w-full rounded-md border-gray-300 shadow-sm border p-2 text-sm outline-none" placeholder="Downsell Product ID" />
                         <input type="text" name="order_bump_product_id" value={formData.order_bump_product_id} onChange={handleInputChange} className="w-full rounded-md border-gray-300 shadow-sm border p-2 text-sm outline-none" placeholder="Order Bump Product ID" />
                       </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Google & Meta Catalog Section */}
+                <div className="space-y-6 bg-blue-50/50 p-6 rounded-xl border border-blue-100">
+                  <h3 className="text-lg font-medium text-gray-900 border-b border-blue-100 pb-2 flex items-center">
+                    <Megaphone className="w-5 h-5 mr-2 text-blue-600" /> Catálogos (Google Shopping / Meta Ads)
+                  </h3>
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                    <div>
+                      <label className="block text-xs font-semibold text-gray-600 uppercase mb-1">SKU</label>
+                      <input type="text" name="sku" value={formData.sku || ''} onChange={handleInputChange} className="w-full rounded-md border-gray-300 shadow-sm border p-2 text-sm outline-none focus:ring-2 focus:ring-blue-500" placeholder="SKU Único" />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-semibold text-gray-600 uppercase mb-1">GTIN / EAN / UPC</label>
+                      <input type="text" name="gtin" value={formData.gtin || ''} onChange={handleInputChange} className="w-full rounded-md border-gray-300 shadow-sm border p-2 text-sm outline-none focus:ring-2 focus:ring-blue-500" placeholder="Código de Barras" />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-semibold text-gray-600 uppercase mb-1">MPN</label>
+                      <input type="text" name="mpn" value={formData.mpn || ''} onChange={handleInputChange} className="w-full rounded-md border-gray-300 shadow-sm border p-2 text-sm outline-none focus:ring-2 focus:ring-blue-500" placeholder="Part Number" />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-semibold text-gray-600 uppercase mb-1">Marca</label>
+                      <input type="text" name="brand" value={formData.brand || ''} onChange={handleInputChange} className="w-full rounded-md border-gray-300 shadow-sm border p-2 text-sm outline-none focus:ring-2 focus:ring-blue-500" placeholder="Vandora" />
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                    <div>
+                      <label className="block text-xs font-semibold text-gray-600 uppercase mb-1">Género</label>
+                      <select name="gender" value={formData.gender || ''} onChange={handleInputChange} className="w-full rounded-md border-gray-300 shadow-sm border p-2 text-sm outline-none focus:ring-2 focus:ring-blue-500 bg-white">
+                        <option value="female">Femenino</option>
+                        <option value="male">Masculino</option>
+                        <option value="unisex">Unisex</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label className="block text-xs font-semibold text-gray-600 uppercase mb-1">Grupo de Edad</label>
+                      <select name="age_group" value={formData.age_group || ''} onChange={handleInputChange} className="w-full rounded-md border-gray-300 shadow-sm border p-2 text-sm outline-none focus:ring-2 focus:ring-blue-500 bg-white">
+                        <option value="adult">Adulto</option>
+                        <option value="all ages">Todas las edades</option>
+                        <option value="teen">Adolescente</option>
+                        <option value="kids">Niños</option>
+                        <option value="toddler">Infante</option>
+                        <option value="infant">Bebé</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label className="block text-xs font-semibold text-gray-600 uppercase mb-1">Estado / Condición</label>
+                      <select name="condition" value={formData.condition || ''} onChange={handleInputChange} className="w-full rounded-md border-gray-300 shadow-sm border p-2 text-sm outline-none focus:ring-2 focus:ring-blue-500 bg-white">
+                        <option value="new">Nuevo</option>
+                        <option value="refurbished">Reacondicionado</option>
+                        <option value="used">Usado</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label className="block text-xs font-semibold text-gray-600 uppercase mb-1">Categoría Google (Taxonomy)</label>
+                      <input type="text" name="google_product_category" value={formData.google_product_category || ''} onChange={handleInputChange} className="w-full rounded-md border-gray-300 shadow-sm border p-2 text-sm outline-none focus:ring-2 focus:ring-blue-500" placeholder="Apparel & Accessories > Clothing" />
                     </div>
                   </div>
                 </div>
