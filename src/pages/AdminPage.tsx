@@ -385,6 +385,20 @@ const AdminPage = () => {
     setCategories(categories.filter(c => c.id !== id));
   };
 
+  const handleDeleteProduct = async (id: string, name: string) => {
+    if (!confirm(`¿Estás seguro de eliminar el producto "${name}"? Esta acción no se puede deshacer.`)) return;
+
+    try {
+      const { error } = await supabase.from('products').delete().eq('id', id);
+      if (error) throw error;
+      setProducts(products.filter(p => p.id !== id));
+      alert('Producto eliminado correctamente.');
+    } catch (error: any) {
+      console.error('Error deleting product:', error);
+      alert('Error al eliminar producto: ' + error.message);
+    }
+  };
+
   const handleImproveWithAI = async (field: 'description' | 'details') => {
     const text = formData[field as keyof typeof formData];
     if (typeof text !== 'string' || !text.trim()) {
@@ -720,6 +734,13 @@ const AdminPage = () => {
                           });
                           setIsModalOpen(true);
                         }}><Edit className="h-4 w-4" /></button>
+                        <button 
+                          className="text-red-400 hover:text-red-600 transition-colors" 
+                          onClick={() => handleDeleteProduct(product.id, product.name)}
+                          title="Eliminar Producto"
+                        >
+                          <Trash className="h-4 w-4" />
+                        </button>
                       </td>
                     </tr>
                   ))}
