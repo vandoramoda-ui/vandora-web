@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
-import { Plus, Edit, Trash, Package, ShoppingBag, Users, Layout as LayoutIcon, Sparkles, Settings, X, Image as ImageIcon, Menu, Ruler, Copy, Megaphone, Loader2, History } from 'lucide-react';
+import { Plus, Edit, Trash, Package, ShoppingBag, Users, Layout as LayoutIcon, Sparkles, Settings, X, Image as ImageIcon, Menu, Ruler, Copy, Megaphone, Loader2, History, Star, Play } from 'lucide-react';
 import { formatPrice } from '../lib/utils';
 import MediaManager from '../components/MediaManager';
 import SiteEditor from '../components/SiteEditor';
@@ -46,6 +46,9 @@ const AdminPage = () => {
   const [isUserModalOpen, setIsUserModalOpen] = useState(false);
   const [isCategoryModalOpen, setIsCategoryModalOpen] = useState(false);
   const [analyticsLogs, setAnalyticsLogs] = useState<any[]>([]);
+  const [productTestimonials, setProductTestimonials] = useState<any[]>([]);
+  const [isTestimonialModalOpen, setIsTestimonialModalOpen] = useState(false);
+  const [editingTestimonial, setEditingTestimonial] = useState<any>(null);
 
   const [formData, setFormData] = useState({
     name: '',
@@ -189,6 +192,53 @@ const AdminPage = () => {
     setLoading(false);
   };
 
+  const fetchProductTestimonials = async (productId: string) => {
+    const { data, error } = await supabase
+      .from('product_testimonials')
+      .select('*')
+      .eq('product_id', productId)
+      .order('created_at', { ascending: false });
+    
+    if (!error && data) {
+      setProductTestimonials(data);
+    }
+  };
+
+  const handleSaveTestimonial = async (testimonialData: any) => {
+    try {
+      if (editingTestimonial) {
+        const { error } = await supabase
+          .from('product_testimonials')
+          .update(testimonialData)
+          .eq('id', editingTestimonial.id);
+        if (error) throw error;
+        setProductTestimonials(productTestimonials.map(t => t.id === editingTestimonial.id ? { ...t, ...testimonialData } : t));
+      } else {
+        const { data, error } = await supabase
+          .from('product_testimonials')
+          .insert([{ ...testimonialData, product_id: editingProduct.id }])
+          .select();
+        if (error) throw error;
+        if (data) setProductTestimonials([data[0], ...productTestimonials]);
+      }
+      setIsTestimonialModalOpen(false);
+      setEditingTestimonial(null);
+    } catch (error: any) {
+      alert('Error al guardar testimonio: ' + error.message);
+    }
+  };
+
+  const handleDeleteTestimonial = async (id: string) => {
+    if (!confirm('¿Estás seguro de eliminar este testimonio?')) return;
+    try {
+      const { error } = await supabase.from('product_testimonials').delete().eq('id', id);
+      if (error) throw error;
+      setProductTestimonials(productTestimonials.filter(t => t.id !== id));
+    } catch (error: any) {
+      alert('Error al eliminar testimonio: ' + error.message);
+    }
+  };
+
   const handleDuplicateProduct = async (product: any) => {
     if (!confirm(`¿Estás seguro de duplicar el producto "${product.name}"?`)) return;
 
@@ -196,8 +246,21 @@ const AdminPage = () => {
       const { id, created_at, updated_at, slug: oldSlug, ...rest } = product;
       
       // Clean data based on what handleSubmit uses to avoid hidden state issues
+      const slugify = (text: string) => {
+        return text
+          .toString()
+          .normalize('NFD')
+          .replace(/[\u0300-\u036f]/g, '')
+          .toLowerCase()
+          .trim()
+          .replace(/\s+/g, '-')
+          .replace(/[^\w-]+/g, '')
+          .replace(/--+/g, '-')
+          .replace(/(^-|-$)/g, '');
+      };
+
       const newName = `${product.name} (Copia)`;
-      const newSlug = `${oldSlug || newName.toLowerCase().replace(/[^a-z0-9]+/g, '-')}-copy-${Date.now()}`;
+      const newSlug = `${slugify(newName)}-copy-${Date.now()}`;
       
       const duplicatedProduct = {
         ...rest,
@@ -244,7 +307,20 @@ const AdminPage = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      const slug = formData.name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
+      const slugify = (text: string) => {
+        return text
+          .toString()
+          .normalize('NFD')
+          .replace(/[\u0300-\u036f]/g, '')
+          .toLowerCase()
+          .trim()
+          .replace(/\s+/g, '-')
+          .replace(/[^\w-]+/g, '')
+          .replace(/--+/g, '-')
+          .replace(/(^-|-$)/g, '');
+      };
+
+      const slug = slugify(formData.name);
       
       // Explicitly construct product data with type conversions and validation
       const productData = {
@@ -732,6 +808,7 @@ const AdminPage = () => {
                             condition: product.condition || 'new',
                             sale_price: product.sale_price ? product.sale_price.toString() : ''
                           });
+                          fetchProductTestimonials(product.id);
                           setIsModalOpen(true);
                         }}><Edit className="h-4 w-4" /></button>
                         <button 
@@ -1167,6 +1244,79 @@ const AdminPage = () => {
                   </div>
                 </div>
 
+                {/* Testimonials Section (New) */}
+                {editingProduct && (
+                  <div className="space-y-6 bg-emerald-50/30 p-6 rounded-xl border border-emerald-100">
+                    <div className="flex justify-between items-center border-b border-emerald-100 pb-2">
+                      <h3 className="text-lg font-medium text-gray-900 flex items-center">
+                        <Star className="w-5 h-5 mr-2 text-yellow-500 fill-current" /> Testimonios de Clientes
+                      </h3>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setEditingTestimonial(null);
+                          setIsTestimonialModalOpen(true);
+                        }}
+                        className="bg-vandora-emerald text-white px-3 py-1 rounded text-xs font-bold hover:bg-emerald-800 transition-colors flex items-center"
+                      >
+                        <Plus className="w-3 h-3 mr-1" /> Añadir Testimonio
+                      </button>
+                    </div>
+                    
+                    {productTestimonials.length === 0 ? (
+                      <p className="text-sm text-gray-500 italic text-center py-4">No hay testimonios para este producto aún.</p>
+                    ) : (
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        {productTestimonials.map((t) => (
+                          <div key={t.id} className="bg-white p-4 rounded-lg border border-gray-100 shadow-sm relative group">
+                            <div className="flex justify-between items-start mb-2">
+                              <div>
+                                <p className="font-bold text-sm text-gray-900">{t.user_name}</p>
+                                <div className="flex text-yellow-400">
+                                  {[...Array(5)].map((_, i) => (
+                                    <Star key={i} className={`h-3 w-3 ${i < t.rating ? 'fill-current' : 'text-gray-200'}`} />
+                                  ))}
+                                </div>
+                              </div>
+                              <div className="flex gap-2">
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    setEditingTestimonial(t);
+                                    setIsTestimonialModalOpen(true);
+                                  }}
+                                  className="text-gray-400 hover:text-vandora-emerald"
+                                >
+                                  <Edit className="w-4 h-4" />
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => handleDeleteTestimonial(t.id)}
+                                  className="text-gray-400 hover:text-red-500"
+                                >
+                                  <Trash className="w-4 h-4" />
+                                </button>
+                              </div>
+                            </div>
+                            <p className="text-xs text-gray-600 line-clamp-2 mb-2">{t.comment}</p>
+                            {t.size_info && <p className="text-[10px] text-vandora-emerald font-medium italic mb-2">"{t.size_info}"</p>}
+                            <div className="flex gap-1 overflow-x-auto pb-1">
+                              {t.images?.map((img: string, idx: number) => (
+                                <img key={idx} src={img} alt="" className="w-8 h-8 rounded object-cover border" />
+                              ))}
+                              {t.videos?.length > 0 && (
+                                <div className="w-8 h-8 rounded bg-gray-100 flex items-center justify-center border">
+                                  <Play className="w-4 h-4 text-gray-400" />
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                )}
+
                 <div className="flex justify-end space-x-3 p-4 md:p-6 border-t sticky bottom-0 bg-white/80 backdrop-blur-md z-20">
                   <button type="button" onClick={closeModal} className="px-6 py-2 border border-gray-300 rounded-md text-gray-600 hover:bg-gray-50 transition-colors">Cancelar</button>
                   <button type="submit" className="px-6 py-2 bg-vandora-emerald text-white rounded-md hover:bg-emerald-800 transition-colors shadow-md">Guardar Producto</button>
@@ -1395,6 +1545,91 @@ const AdminPage = () => {
                   <button type="button" onClick={() => setIsCategoryModalOpen(false)} className="px-6 py-2 border rounded-md text-gray-600 text-sm">Cerrar</button>
                 </div>
               </div>
+            </div>
+          </div>
+        )}
+        {isTestimonialModalOpen && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-[80] backdrop-blur-sm">
+            <div className="bg-white rounded-xl w-full max-w-2xl p-6 shadow-2xl max-h-[90vh] overflow-y-auto">
+              <div className="flex justify-between items-center mb-6">
+                <h2 className="text-xl font-serif text-gray-900">{editingTestimonial ? 'Editar Testimonio' : 'Nuevo Testimonio'}</h2>
+                <button onClick={() => setIsTestimonialModalOpen(false)} className="text-gray-400 hover:text-gray-600"><X className="h-6 w-6" /></button>
+              </div>
+              
+              <form onSubmit={(e) => {
+                e.preventDefault();
+                const formData = new FormData(e.currentTarget);
+                const data = {
+                  user_name: formData.get('user_name'),
+                  rating: parseInt(formData.get('rating') as string),
+                  comment: formData.get('comment'),
+                  size_info: formData.get('size_info'),
+                  images: editingTestimonial?.images || [],
+                  videos: editingTestimonial?.videos || [],
+                };
+                handleSaveTestimonial(data);
+              }} className="space-y-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Nombre del Cliente</label>
+                    <input 
+                      type="text" 
+                      name="user_name" 
+                      defaultValue={editingTestimonial?.user_name || ''} 
+                      required 
+                      className="w-full rounded-md border-gray-300 shadow-sm border p-2 focus:ring-2 focus:ring-vandora-emerald outline-none" 
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Calificación (1-5)</label>
+                    <select 
+                      name="rating" 
+                      defaultValue={editingTestimonial?.rating || 5} 
+                      className="w-full rounded-md border-gray-300 shadow-sm border p-2 focus:ring-2 focus:ring-vandora-emerald outline-none bg-white"
+                    >
+                      {[5, 4, 3, 2, 1].map(num => <option key={num} value={num}>{num} Estrellas</option>)}
+                    </select>
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Comentario</label>
+                  <textarea 
+                    name="comment" 
+                    defaultValue={editingTestimonial?.comment || ''} 
+                    rows={3} 
+                    className="w-full rounded-md border-gray-300 shadow-sm border p-2 focus:ring-2 focus:ring-vandora-emerald outline-none"
+                  ></textarea>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Información de Talla/Ajuste (Opcional)</label>
+                  <input 
+                    type="text" 
+                    name="size_info" 
+                    defaultValue={editingTestimonial?.size_info || ''} 
+                    placeholder="Ej: Mido 1.65m, pedí S y me queda perfecto" 
+                    className="w-full rounded-md border-gray-300 shadow-sm border p-2 focus:ring-2 focus:ring-vandora-emerald outline-none" 
+                  />
+                </div>
+
+                <div className="bg-gray-50 p-4 rounded-lg">
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Fotos y Videos del Cliente</label>
+                  <MediaManager 
+                    images={editingTestimonial?.images || []}
+                    videos={editingTestimonial?.videos || []}
+                    colors={[]}
+                    onImagesChange={(images) => setEditingTestimonial(prev => ({ ...prev, images }))}
+                    onVideosChange={(videos) => setEditingTestimonial(prev => ({ ...prev, videos }))}
+                  />
+                  <p className="text-[10px] text-gray-500 mt-2 italic">Sube capturas de pantalla de chats o fotos que los clientes te hayan enviado.</p>
+                </div>
+
+                <div className="flex justify-end space-x-3 pt-4 border-t">
+                  <button type="button" onClick={() => setIsTestimonialModalOpen(false)} className="px-6 py-2 border rounded-md text-gray-600">Cancelar</button>
+                  <button type="submit" className="px-6 py-2 bg-vandora-emerald text-white rounded-md hover:bg-emerald-800 transition-colors shadow-md">Guardar Testimonio</button>
+                </div>
+              </form>
             </div>
           </div>
         )}

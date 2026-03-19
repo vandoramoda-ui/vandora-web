@@ -39,6 +39,7 @@ const Breadcrumbs = () => {
         </li>
         {pathnames.map((value: string, index: number) => {
           const isLast = index === pathnames.length - 1;
+          const decodedValue = decodeURIComponent(value);
           
           // Determine the correct URL for the breadcrumb level
           let to = `/${pathnames.slice(0, index + 1).join('/')}`;
@@ -52,14 +53,14 @@ const Breadcrumbs = () => {
           }
           
           // Get readable name from map or format the slug
-          const mappedName = BREADCRUMB_MAP[value];
-          let displayName = mappedName || value.split('-').map((word: string) => 
+          const mappedName = BREADCRUMB_MAP[decodedValue];
+          let displayName = mappedName || decodedValue.split('-').map((word: string) => 
             (word.charAt(0) || '').toUpperCase() + word.slice(1)
           ).join(' ');
 
-          // Truncate long generated names
-          if (!mappedName && displayName.length > 20) {
-            displayName = `${displayName.substring(0, 20)}...`;
+          // Truncate only if it's not the last element and still very long
+          if (!mappedName && displayName.length > 30) {
+            displayName = `${displayName.substring(0, 27)}...`;
           }
 
           return (

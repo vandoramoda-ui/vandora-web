@@ -85,6 +85,7 @@ const ProductDetailPage = () => {
   const [activeImageIndex, setActiveImageIndex] = useState(0);
   const [showVideo, setShowVideo] = useState(false);
   const [isSizeGuideOpen, setIsSizeGuideOpen] = useState(false);
+  const [testimonials, setTestimonials] = useState<any[]>([]);
   const { trackStandardEvent } = useAnalytics();
 
   // CRO States
@@ -107,7 +108,7 @@ const ProductDetailPage = () => {
   }, []);
 
   useEffect(() => {
-    const fetchProduct = async () => {
+    const fetchProductData = async () => {
       const { data, error } = await supabase
         .from('products')
         .select('*')
@@ -125,7 +126,7 @@ const ProductDetailPage = () => {
           }
         };
 
-        // Normalize data to ensure arrays exist and have correct object shape
+        // Normalize data
         const normalizedData = {
           ...data,
           images: Array.isArray(data.images) 
@@ -146,18 +147,26 @@ const ProductDetailPage = () => {
             }) : []
         };
 
-        // Ensure a main image exists if the image column is empty but images array has data
         if (!normalizedData.image && normalizedData.images.length > 0) {
           normalizedData.image = normalizedData.images[0].url;
         }
         setProduct(normalizedData);
         if (normalizedData.sizes.length > 0) setSelectedSize(normalizedData.sizes[0]);
         if (normalizedData.colors.length > 0) setSelectedColor(normalizedData.colors[0].name);
+
+        // Fetch Testimonials
+        const { data: testData } = await supabase
+          .from('product_testimonials')
+          .select('*')
+          .eq('product_id', data.id)
+          .eq('is_approved', true)
+          .order('created_at', { ascending: false });
+        if (testData) setTestimonials(testData);
       } else {
         navigate('/tienda');
       }
     };
-    fetchProduct();
+    fetchProductData();
   }, [slug, navigate]);
 
   // Track ViewContent
@@ -357,7 +366,7 @@ const ProductDetailPage = () => {
                       <Star key={i} className="h-4 w-4 fill-current" />
                     ))}
                   </div>
-                  <span className="ml-2 text-sm text-gray-500 underline cursor-pointer hover:text-vandora-emerald">(24 reseñas)</span>
+                  <span className="ml-2 text-sm text-gray-500 underline cursor-pointer hover:text-vandora-emerald">({testimonials.length} reseñas)</span>
                 </div>
 
                 {/* Social Proof */}
@@ -547,24 +556,52 @@ const ProductDetailPage = () => {
         <div className="mt-16 border-t border-gray-200 pt-10">
           <h2 className="text-2xl font-serif text-gray-900 mb-8 text-center">Reseñas de Clientes</h2>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            {[
-              { id: 1, user: 'Maria G.', rating: 5, date: 'Hace 2 días', comment: 'Me encanta la tela, es súper suave y el corte es perfecto. Definitivamente compraré más.' },
-              { id: 2, user: 'Ana P.', rating: 4, date: 'Hace 1 semana', comment: 'El color es un poco más oscuro que en la foto, pero igual es hermoso y muy elegante.' },
-              { id: 3, user: 'Sofia L.', rating: 5, date: 'Hace 2 semanas', comment: 'Llegó súper rápido y el empaque es divino. Se nota el cariño en cada detalle.' }
-            ].map((review) => (
-              <div key={review.id} className="bg-gray-50 p-6 rounded-lg shadow-sm">
-                <div className="flex items-center mb-3">
-                  <div className="flex text-yellow-400 mr-2">
-                    {[...Array(5)].map((_, i) => (
-                      <Star key={i} className={`h-4 w-4 ${i < review.rating ? 'fill-current' : 'text-gray-300'}`} />
-                    ))}
-                  </div>
-                  <span className="text-xs text-gray-500">{review.date}</span>
-                </div>
-                <h4 className="font-medium text-gray-900 mb-2">{review.user}</h4>
-                <p className="text-gray-600 text-sm italic">"{review.comment}"</p>
+            {testimonials.length === 0 ? (
+              <div className="col-span-full text-center py-12 text-gray-500 italic">
+                Aún no hay reseñas para este producto. ¡Sé la primera en compartir tu experiencia!
               </div>
-            ))}
+            ) : (
+              testimonials.map((review) => (
+                <div key={review.id} className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 flex flex-col h-full">
+                  <div className="flex items-center mb-4">
+                    <div className="flex text-yellow-400 mr-2">
+                      {[...Array(5)].map((_, i) => (
+                        <Star key={i} className={`h-4 w-4 ${i < review.rating ? 'fill-current' : 'text-gray-200'}`} />
+                      ))}
+                    </div>
+                    <span className="text-[10px] text-gray-400 font-medium uppercase tracking-wider">
+                      {new Date(review.created_at).toLocaleDateString('es-EC', { day: 'numeric', month: 'short' })}
+                    </span>
+                  </div>
+                  <h4 className="font-bold text-gray-900 mb-2">{review.user_name}</h4>
+                  <p className="text-gray-600 text-sm italic mb-4 flex-grow">"{review.comment}"</p>
+                  
+                  {review.size_info && (
+                    <div className="mb-4 p-2 bg-emerald-50 rounded-lg border border-emerald-100/50">
+                      <p className="text-[10px] text-emerald-800 font-medium">
+                        <Ruler className="inline h-3 w-3 mr-1 mb-0.5" /> {review.size_info}
+                      </p>
+                    </div>
+                  )}
+
+                  {((review.images && review.images.length > 0) || (review.videos && review.videos.length > 0)) && (
+                    <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide">
+                      {review.images?.map((img: string, idx: number) => (
+                        <div key={idx} className="relative flex-shrink-0 w-16 h-16 rounded-lg overflow-hidden border border-gray-100">
+                          <img src={img} alt="" className="w-full h-full object-cover" />
+                        </div>
+                      ))}
+                      {review.videos?.map((vid: any, idx: number) => (
+                        <div key={idx} className="relative flex-shrink-0 w-16 h-16 rounded-lg overflow-hidden border border-gray-100 bg-gray-50 flex items-center justify-center">
+                          <Play className="h-4 w-4 text-gray-400" />
+                          <div className="absolute inset-0 bg-black/10"></div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              ))
+            )}
           </div>
         </div>
 
