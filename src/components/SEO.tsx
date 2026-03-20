@@ -1,6 +1,7 @@
 import React, { useEffect } from 'react';
 import { Helmet } from 'react-helmet-async';
 import { useLocation } from 'react-router-dom';
+import { supabase } from '../lib/supabase';
 
 interface SEOProps {
   title: string;
@@ -15,9 +16,25 @@ const SEO: React.FC<SEOProps> = ({
   image = 'https://images.unsplash.com/photo-1490481651871-ab68de25d43d?q=80&w=1200&auto=format&fit=crop', 
   type = 'website' 
 }) => {
+  const [branding, setBranding] = React.useState<any>(null);
+
+  useEffect(() => {
+    const fetchBranding = async () => {
+      const { data } = await supabase
+        .from('site_content')
+        .select('content')
+        .eq('section_key', 'branding')
+        .single();
+      if (data?.content) {
+        setBranding(data.content);
+      }
+    };
+    fetchBranding();
+  }, []);
+
   const location = useLocation();
   const url = `${window.location.origin}${location.pathname}`;
-  const siteName = 'Vandora - Moda Ecuatoriana';
+  const siteName = branding?.siteName || 'Vandora - Moda Ecuatoriana';
   const fullTitle = `${title} | ${siteName}`;
 
   return (
@@ -26,6 +43,7 @@ const SEO: React.FC<SEOProps> = ({
       <title>{fullTitle}</title>
       <meta name="description" content={description} />
       <link rel="canonical" href={url} />
+      {branding?.favicon && <link rel="icon" href={branding.favicon} />}
 
       {/* Open Graph / Facebook */}
       <meta property="og:type" content={type} />

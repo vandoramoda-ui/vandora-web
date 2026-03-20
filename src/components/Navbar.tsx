@@ -4,12 +4,28 @@ import { ShoppingBag, Menu, X, Search, User, LogOut, Settings } from 'lucide-rea
 import { useCart } from '../context/CartContext';
 import { useAuth } from '../context/AuthContext';
 import { motion, AnimatePresence } from 'framer-motion';
+import { supabase } from '../lib/supabase';
 
 const Navbar = () => {
   const [isOpen, setIsOpen] = useState(false);
   const { items, setIsOpen: setIsCartOpen } = useCart();
   const { user, profile, isStaff, signOut } = useAuth();
   const navigate = useNavigate();
+  const [branding, setBranding] = React.useState<any>(null);
+
+  React.useEffect(() => {
+    const fetchBranding = async () => {
+      const { data } = await supabase
+        .from('site_content')
+        .select('content')
+        .eq('section_key', 'branding')
+        .single();
+      if (data?.content) {
+        setBranding(data.content);
+      }
+    };
+    fetchBranding();
+  }, []);
 
   const toggleMenu = () => setIsOpen(!isOpen);
 
@@ -37,7 +53,11 @@ const Navbar = () => {
           {/* Center: Logo */}
           <div className="flex-grow flex justify-center">
             <Link to="/" className="font-serif text-2xl tracking-widest text-vandora-black hover:opacity-80 transition-opacity uppercase">
-              VANDORA
+              {branding?.siteLogo ? (
+                <img src={branding.siteLogo} alt={branding?.siteName || 'Vandora'} className="h-10 w-auto object-contain" />
+              ) : (
+                branding?.siteName || 'VANDORA'
+              )}
             </Link>
           </div>
 

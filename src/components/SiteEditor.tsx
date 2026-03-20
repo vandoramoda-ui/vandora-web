@@ -57,6 +57,11 @@ const SiteEditor = () => {
     title: 'Términos y Condiciones',
     sections: [{ title: 'Título de Sección', text: 'Contenido de la sección...' }]
   });
+  const [branding, setBranding] = useState<any>({
+    favicon: '',
+    siteLogo: '',
+    siteName: 'Vandora'
+  });
   const [activeTab, setActiveTab] = useState('home');
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -171,6 +176,14 @@ const SiteEditor = () => {
         .eq('section_key', 'page_terms')
         .single();
       if (termsData) setTermsPage(termsData.content);
+
+      // Fetch Branding
+      const { data: brandingData } = await supabase
+        .from('site_content')
+        .select('*')
+        .eq('section_key', 'branding')
+        .single();
+      if (brandingData) setBranding(brandingData.content);
     } catch (err) {
       console.error("Error fetching site content", err);
     } finally {
@@ -280,6 +293,16 @@ const SiteEditor = () => {
         .upsert({ section_key: 'page_terms', content: termsPage, updated_at: new Date().toISOString() }, { onConflict: 'section_key' });
       if (termsError) throw termsError;
 
+      // Save Branding
+      const { error: brandingError } = await supabase
+        .from('site_content')
+        .upsert({ 
+          section_key: 'branding', 
+          content: branding, 
+          updated_at: new Date().toISOString() 
+        }, { onConflict: 'section_key' });
+      if (brandingError) throw brandingError;
+
       alert('Cambios guardados correctamente');
     } catch (err: any) {
       console.error('Error saving content:', err);
@@ -299,7 +322,7 @@ const SiteEditor = () => {
     <div className="max-w-6xl mx-auto space-y-12 pb-20">
       {/* Tab Navigation */}
       <div className="flex border-b border-gray-200 gap-8 mb-8 overflow-x-auto hide-scrollbar">
-        {['home', 'story', 'faq', 'contact', 'shipping', 'privacy', 'terms'].map((tab) => (
+        {['home', 'branding', 'story', 'faq', 'contact', 'shipping', 'privacy', 'terms'].map((tab) => (
           <button
             key={tab}
             onClick={() => setActiveTab(tab)}
@@ -310,6 +333,7 @@ const SiteEditor = () => {
             }`}
           >
             {tab === 'home' ? 'Página de Inicio' : 
+             tab === 'branding' ? 'Marca / Branding' :
              tab === 'story' ? 'Nuestra Historia' : 
              tab === 'faq' ? 'Preguntas Frecuentes' : 
              tab === 'contact' ? 'Contacto' : 
@@ -318,6 +342,71 @@ const SiteEditor = () => {
           </button>
         ))}
       </div>
+
+      {activeTab === 'branding' && (
+        <section className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden animate-in fade-in transition-all duration-300">
+          <div className="bg-gray-50 border-b px-8 py-4 flex items-center justify-between">
+            <div className="flex items-center">
+              <Sparkles className="w-5 h-5 mr-2 text-vandora-emerald" />
+              <h2 className="text-xl font-serif text-gray-900">Configuración de Marca</h2>
+            </div>
+            <button
+              onClick={handleSave}
+              disabled={saving}
+              className="bg-vandora-emerald text-white px-6 py-2 rounded-md hover:bg-emerald-800 flex items-center shadow-md disabled:opacity-50"
+            >
+              {saving ? <Loader2 className="animate-spin h-4 w-4 mr-2" /> : <Save className="h-4 w-4 mr-2" />}
+              Guardar Marca
+            </button>
+          </div>
+          <div className="p-8">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-12">
+              <div className="space-y-6">
+                <div>
+                   <label className="block text-xs font-bold text-gray-500 uppercase mb-2">Favicon (Icono de pestaña)</label>
+                   <p className="text-xs text-gray-400 mb-4">Se recomienda una imagen cuadrada (.png o .ico) de 32x32px o 64x64px.</p>
+                   <ImageUpload 
+                    label="Subir Favicon"
+                    currentImage={branding.favicon}
+                    onUpload={(url: string) => setBranding({ ...branding, favicon: url })}
+                   />
+                </div>
+                <div>
+                   <label className="block text-xs font-bold text-gray-500 uppercase mb-2">Logo de la Web (Navbar)</label>
+                   <p className="text-xs text-gray-400 mb-4">Aparecerá en la parte superior de todas las páginas. Se recomienda fondo transparente.</p>
+                   <ImageUpload 
+                    label="Subir Logo"
+                    currentImage={branding.siteLogo}
+                    onUpload={(url: string) => setBranding({ ...branding, siteLogo: url })}
+                   />
+                </div>
+              </div>
+              <div className="space-y-6">
+                <div>
+                   <label className="block text-xs font-bold text-gray-500 uppercase mb-2">Nombre del Sitio</label>
+                   <input 
+                    type="text" 
+                    value={branding.siteName}
+                    onChange={(e) => setBranding({...branding, siteName: e.target.value})}
+                    className="w-full border rounded-lg p-3 font-medium focus:ring-2 focus:ring-vandora-emerald outline-none"
+                    placeholder="Ej: Vandora"
+                   />
+                </div>
+                <div className="bg-blue-50 p-6 rounded-xl border border-blue-100">
+                  <h4 className="text-blue-800 font-bold text-sm mb-2 flex items-center">
+                    <Sparkles className="w-4 h-4 mr-2" /> ¿Dónde se aplica esto?
+                  </h4>
+                  <ul className="text-blue-700 text-xs space-y-2">
+                    <li>• El <strong>Favicon</strong> aparecerá en la pestaña del navegador de tus clientes.</li>
+                    <li>• El <strong>Logo</strong> reemplazará el nombre de texto "VANDORA" en la barra de navegación superior.</li>
+                    <li>• El <strong>Nombre del Sitio</strong> se usará para correos electrónicos y títulos de página predeterminados.</li>
+                  </ul>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+      )}
 
       {activeTab === 'home' && (
         <div className="space-y-12 animate-in fade-in transition-all duration-300">

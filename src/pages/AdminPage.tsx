@@ -44,8 +44,10 @@ const AdminPage = () => {
   const [editingUser, setEditingUser] = useState<any>(null);
   const [isOrderModalOpen, setIsOrderModalOpen] = useState(false);
   const [isUserModalOpen, setIsUserModalOpen] = useState(false);
+  const [userOrders, setUserOrders] = useState<any[]>([]);
+  const [fetchingUserOrders, setFetchingUserOrders] = useState(false);
   const [isCategoryModalOpen, setIsCategoryModalOpen] = useState(false);
-  const [analyticsLogs, setAnalyticsLogs] = useState<any[]>([]);
+  const [globalLogs, setGlobalLogs] = useState<any[]>([]);
   const [productTestimonials, setProductTestimonials] = useState<any[]>([]);
   const [isTestimonialModalOpen, setIsTestimonialModalOpen] = useState(false);
   const [editingTestimonial, setEditingTestimonial] = useState<any>(null);
@@ -114,21 +116,33 @@ const AdminPage = () => {
     }
     else if (activeTab === 'orders') fetchOrders();
     else if (activeTab === 'users') fetchUsers();
-    else if (activeTab === 'analytics-logs') fetchAnalyticsLogs();
+    else if (activeTab === 'global-logs') fetchGlobalLogs();
   }, [activeTab]);
 
-  const fetchAnalyticsLogs = async () => {
+  const fetchGlobalLogs = async () => {
     setLoading(true);
-    const { data, error } = await supabase
-      .from('analytics_logs')
+    // Try global_logs first, fallback to analytics_logs
+    let { data, error } = await supabase
+      .from('global_logs')
       .select('*')
       .order('created_at', { ascending: false })
-      .limit(50);
+      .limit(100);
     
     if (error) {
-      console.warn('Could not fetch analytics logs. Table might not exist yet.', error);
+      console.warn('Could not fetch global_logs, trying analytics_logs...', error);
+      const { data: altData, error: altError } = await supabase
+        .from('analytics_logs')
+        .select('*')
+        .order('created_at', { ascending: false })
+        .limit(100);
+      data = altData;
+      error = altError;
     }
-    if (data) setAnalyticsLogs(data);
+
+    if (error) {
+      console.warn('Could not fetch any logs.', error);
+    }
+    if (data) setGlobalLogs(data);
     setLoading(false);
   };
 
@@ -144,6 +158,20 @@ const AdminPage = () => {
       alert('Error al cargar pedidos: ' + error.message);
     }
     if (data) setOrders(data);
+  };
+
+  const fetchUserOrders = async (email: string) => {
+    setFetchingUserOrders(true);
+    const { data, error } = await supabase
+      .from('orders')
+      .select('*')
+      .eq('customer_email', email)
+      .order('created_at', { ascending: false });
+    
+    if (!error && data) {
+      setUserOrders(data);
+    }
+    setFetchingUserOrders(false);
   };
 
   const fetchUsers = async () => {
@@ -651,10 +679,10 @@ const AdminPage = () => {
               </button>
 
               <button
-                onClick={() => { setActiveTab('analytics-logs'); setIsSidebarOpen(false); }}
-                className={`w-full flex items-center px-4 py-3 text-sm rounded-lg transition-colors ${activeTab === 'analytics-logs' ? 'bg-emerald-50 text-vandora-emerald font-medium' : 'text-gray-600 hover:bg-gray-50'}`}
+                onClick={() => { setActiveTab('global-logs'); setIsSidebarOpen(false); }}
+                className={`w-full flex items-center px-4 py-3 text-sm rounded-lg transition-colors ${activeTab === 'global-logs' ? 'bg-emerald-50 text-vandora-emerald font-medium' : 'text-gray-600 hover:bg-gray-50'}`}
               >
-                <History className="h-5 w-5 mr-3" /> Logs de Meta
+                <History className="h-5 w-5 mr-3" /> Logs Globales
               </button>
             </>
           )}
@@ -672,7 +700,7 @@ const AdminPage = () => {
                       activeTab === 'site' ? 'Editor de Sitio' :
                         activeTab === 'quizzes' ? 'Constructor de Quizzes' : 
                           activeTab === 'size-guide' ? 'Guía de Tallas' : 
-                            activeTab === 'analytics-logs' ? 'Registro de Errores Meta CAPI' :
+                            activeTab === 'global-logs' ? 'Registro de Logs Globales' :
                               activeTab === 'popups' ? 'Gestión de Popups' : 'Ajustes'}
           </h1>
           <p className="text-sm text-gray-500">Bienvenido de nuevo, {role}</p>
@@ -919,6 +947,7 @@ const AdminPage = () => {
                       <td className="px-6 py-4 text-right text-sm font-medium">
                         <button className="text-vandora-emerald hover:text-emerald-800" onClick={() => {
                           setEditingUser(userItem);
+                          if (userItem.email) fetchUserOrders(userItem.email);
                           setIsUserModalOpen(true);
                         }}><Edit className="h-4 w-4" /></button>
                       </td>
@@ -936,40 +965,51 @@ const AdminPage = () => {
         {activeTab === 'settings' && <div className="bg-white p-6 rounded-lg shadow-sm space-y-8"><SettingsEditor /><CheckoutSettingsEditor /></div>}
         {activeTab === 'size-guide' && <div className="bg-white p-6 rounded-lg shadow-sm"><SizeGuideEditor /></div>}
 
-        {activeTab === 'analytics-logs' && (
+        {activeTab === 'global-logs' && (
           <div className="space-y-4">
             <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
+               <div className="bg-gray-50 border-b px-6 py-3 flex justify-between items-center">
+                  <h3 className="text-sm font-bold text-gray-700 uppercase">Eventos y Errores del Sitio</h3>
+                  <button onClick={fetchGlobalLogs} className="text-xs text-vandora-emerald hover:underline flex items-center">
+                    <History className="w-3 h-3 mr-1" /> Actualizar
+                  </button>
+               </div>
               <table className="min-w-full divide-y divide-gray-200">
                 <thead className="bg-gray-50">
                   <tr>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Fecha</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Evento</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Evento / Fuente</th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Error</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Mensaje / Error</th>
                   </tr>
                 </thead>
                 <tbody className="bg-white divide-y divide-gray-200">
-                  {analyticsLogs.length === 0 ? (
+                  {globalLogs.length === 0 ? (
                     <tr>
                       <td colSpan={4} className="px-6 py-12 text-center text-gray-500 italic">
-                        No hay logs registrados. Los errores de Meta CAPI aparecerán aquí.
+                        No hay logs registrados en este momento.
                       </td>
                     </tr>
                   ) : (
-                    analyticsLogs.map((log) => (
+                    globalLogs.map((log) => (
                       <tr key={log.id} className="hover:bg-gray-50 transition-colors">
                         <td className="px-6 py-4 text-sm text-gray-500">
                           {new Date(log.created_at).toLocaleString()}
                         </td>
-                        <td className="px-6 py-4 text-sm font-medium text-gray-900">{log.event_name}</td>
-                        <td className="px-6 py-4 text-sm text-gray-500">{log.status_code}</td>
-                        <td className="px-6 py-4 text-sm text-red-500">{log.error_message}</td>
+                        <td className="px-6 py-4 text-sm font-medium text-gray-900">
+                          <span className={`px-2 py-0.5 rounded text-[10px] mr-2 ${log.event_name?.includes('Error') ? 'bg-red-100 text-red-700' : 'bg-blue-100 text-blue-700'}`}>
+                            {log.event_name}
+                          </span>
+                        </td>
+                        <td className="px-6 py-4 text-sm text-gray-500">{log.status_code || 'N/A'}</td>
+                        <td className="px-6 py-4 text-sm text-gray-600 font-mono text-xs">{log.error_message || log.message || 'Sin detalles'}</td>
                       </tr>
                     ))
                   )}
                 </tbody>
               </table>
             </div>
+            <p className="text-xs text-gray-400 italic">Nota: Esta sección muestra eventos de Meta CAPI y otros errores críticos registrados en el sistema.</p>
           </div>
         )}
 
@@ -1148,9 +1188,48 @@ const AdminPage = () => {
                     <div className="space-y-4">
                       <h4 className="text-sm font-medium text-gray-900">Estrategia de Ventas (Funnels)</h4>
                       <div className="grid grid-cols-1 gap-4">
-                        <input type="text" name="upsell_product_id" value={formData.upsell_product_id} onChange={handleInputChange} className="w-full rounded-md border-gray-300 shadow-sm border p-2 text-sm outline-none" placeholder="Upsell Product ID" />
-                        <input type="text" name="downsell_product_id" value={formData.downsell_product_id} onChange={handleInputChange} className="w-full rounded-md border-gray-300 shadow-sm border p-2 text-sm outline-none" placeholder="Downsell Product ID" />
-                        <input type="text" name="order_bump_product_id" value={formData.order_bump_product_id} onChange={handleInputChange} className="w-full rounded-md border-gray-300 shadow-sm border p-2 text-sm outline-none" placeholder="Order Bump Product ID" />
+                        <div className="space-y-1">
+                          <label className="text-[10px] font-bold text-gray-400 uppercase">Upsell</label>
+                          <select 
+                            name="upsell_product_id" 
+                            value={formData.upsell_product_id || ''} 
+                            onChange={handleInputChange} 
+                            className="w-full rounded-md border-gray-300 shadow-sm border p-2 text-sm outline-none bg-white"
+                          >
+                            <option value="">Ninguno (Sin Upsell)</option>
+                            {products.filter(p => !editingProduct || p.id !== editingProduct.id).map(p => (
+                              <option key={p.id} value={p.id}>{p.name}</option>
+                            ))}
+                          </select>
+                        </div>
+                        <div className="space-y-1">
+                          <label className="text-[10px] font-bold text-gray-400 uppercase">Downsell</label>
+                          <select 
+                            name="downsell_product_id" 
+                            value={formData.downsell_product_id || ''} 
+                            onChange={handleInputChange} 
+                            className="w-full rounded-md border-gray-300 shadow-sm border p-2 text-sm outline-none bg-white"
+                          >
+                            <option value="">Ninguno (Sin Downsell)</option>
+                            {products.filter(p => !editingProduct || p.id !== editingProduct.id).map(p => (
+                              <option key={p.id} value={p.id}>{p.name}</option>
+                            ))}
+                          </select>
+                        </div>
+                        <div className="space-y-1">
+                          <label className="text-[10px] font-bold text-gray-400 uppercase">Order Bump</label>
+                          <select 
+                            name="order_bump_product_id" 
+                            value={formData.order_bump_product_id || ''} 
+                            onChange={handleInputChange} 
+                            className="w-full rounded-md border-gray-300 shadow-sm border p-2 text-sm outline-none bg-white"
+                          >
+                            <option value="">Ninguno (Sin Order Bump)</option>
+                            {products.filter(p => !editingProduct || p.id !== editingProduct.id).map(p => (
+                              <option key={p.id} value={p.id}>{p.name}</option>
+                            ))}
+                          </select>
+                        </div>
                       </div>
                     </div>
                   </div>
@@ -1327,8 +1406,8 @@ const AdminPage = () => {
         )}
 
         {isOrderModalOpen && editingOrder && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-[60]">
-            <div className="bg-white rounded-lg w-full max-w-lg p-6 shadow-2xl">
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-2 sm:p-4 z-[60] backdrop-blur-sm">
+            <div className="bg-white rounded-xl w-full sm:max-w-2xl md:max-w-3xl lg:max-w-4xl max-h-[95vh] overflow-y-auto flex flex-col shadow-2xl transition-all duration-300">
               <div className="flex justify-between items-center mb-6">
                 <h2 className="text-xl font-serif text-gray-900">Actualizar Pedido</h2>
                 <button onClick={() => setIsOrderModalOpen(false)} className="text-gray-400 hover:text-gray-600"><X className="h-6 w-6" /></button>
@@ -1432,9 +1511,41 @@ const AdminPage = () => {
               </div>
 
               {editingUser && (
-                <div className="mb-6 p-3 bg-gray-50 rounded text-sm text-gray-600">
-                  <p><strong>Usuario:</strong> {editingUser.name}</p>
-                  <p><strong>Email:</strong> {editingUser.email || 'N/A'}</p>
+                <div className="mb-6 space-y-4">
+                  <div className="p-4 bg-gray-50 rounded-xl text-sm text-gray-600 border border-gray-100">
+                    <p className="mb-1"><span className="font-bold text-gray-900">Usuario:</span> {editingUser.name}</p>
+                    <p className="mb-1"><span className="font-bold text-gray-900">Email:</span> {editingUser.email || 'N/A'}</p>
+                    <p className="mb-1"><span className="font-bold text-gray-900">ID:</span> <span className="text-[10px] font-mono">{editingUser.id}</span></p>
+                  </div>
+
+                  {/* Order History */}
+                  <div className="bg-emerald-50/30 p-4 rounded-xl border border-emerald-100">
+                    <h3 className="text-sm font-bold text-vandora-emerald mb-3 flex items-center">
+                      <History className="w-4 h-4 mr-2" /> Historial de Pedidos
+                    </h3>
+                    {fetchingUserOrders ? (
+                      <div className="flex justify-center py-4">
+                        <Loader2 className="w-6 h-6 animate-spin text-vandora-emerald" />
+                      </div>
+                    ) : userOrders.length === 0 ? (
+                      <p className="text-xs text-gray-500 italic">No tiene pedidos registrados.</p>
+                    ) : (
+                      <div className="space-y-2 max-h-40 overflow-y-auto pr-2">
+                        {userOrders.map((order) => (
+                          <div key={order.id} className="bg-white p-2 rounded border border-emerald-50 flex justify-between items-center text-xs">
+                            <div>
+                               <p className="font-medium">#{order.id.substring(0, 8)}</p>
+                               <p className="text-gray-400">{new Date(order.created_at).toLocaleDateString()}</p>
+                            </div>
+                            <div className="text-right">
+                               <p className="font-bold text-vandora-emerald">{formatPrice(order.total)}</p>
+                               <p className={`capitalize ${order.status === 'completed' ? 'text-green-600' : 'text-yellow-600'}`}>{order.status}</p>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
                 </div>
               )}
 
