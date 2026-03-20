@@ -6,7 +6,7 @@
 
 Tienda en línea de moda ecuatoriana diseñada para empoderar a la mujer. "El Legado del Florecimiento".
 
-## Ejecución Local
+## Ejecución Localr
 
 **Prerrequisitos:** Node.js
 
