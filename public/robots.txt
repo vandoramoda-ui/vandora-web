@@ -1,6 +1,6 @@
 User-agent: *
 Allow: /
-Allow: /tiendaa
+Allow: /tienda
 Allow: /producto/
 Allow: /nuestra-historia
 Allow: /contacto
