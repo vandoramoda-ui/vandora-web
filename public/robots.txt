@@ -1,0 +1,7 @@
+User-agent: *
+Allow: /
+
+# Sitemap
+Sitemap: https://vandora.ec/sitemap.xml
+# Alternate Sitemap (Dynamic)
+# Sitemap: https://[YOUR-PROJECT-ID].supabase.co/functions/v1/sitemap

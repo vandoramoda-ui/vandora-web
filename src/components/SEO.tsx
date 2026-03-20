@@ -8,13 +8,15 @@ interface SEOProps {
   description: string;
   image?: string;
   type?: 'website' | 'article' | 'product';
+  schema?: any;
 }
 
 const SEO: React.FC<SEOProps> = ({ 
   title, 
   description, 
   image = 'https://images.unsplash.com/photo-1490481651871-ab68de25d43d?q=80&w=1200&auto=format&fit=crop', 
-  type = 'website' 
+  type = 'website',
+  schema
 }) => {
   const [branding, setBranding] = React.useState<any>(null);
 
@@ -44,6 +46,13 @@ const SEO: React.FC<SEOProps> = ({
       <meta name="description" content={description} />
       <link rel="canonical" href={url} />
       {branding?.favicon && <link rel="icon" href={branding.favicon} />}
+
+      {/* JSON-LD Structured Data */}
+      {schema && (
+        <script type="application/ld+json">
+          {typeof schema === 'string' ? schema : JSON.stringify(schema)}
+        </script>
+      )}
 
       {/* Open Graph / Facebook */}
       <meta property="og:type" content={type} />

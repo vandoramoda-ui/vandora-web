@@ -180,7 +180,31 @@ const HomePage = () => {
     <div className="bg-vandora-cream">
       <SEO 
         title="Inicio" 
-        description="Vandora - Moda ecuatoriana que empodera. Descubre nuestra colección de vestidos, blusas y pantalones diseñados para la mujer moderna." 
+        description="Vandora - Moda ecuatoriana que empodera. Descubre nuestra colección de vestidos, blusas y pantalones diseñados para la mujer moderna."
+        schema={[
+          {
+            "@context": "https://schema.org",
+            "@type": "Organization",
+            "name": "Vandora",
+            "url": window.location.origin,
+            "logo": `${window.location.origin}/logo.png`,
+            "sameAs": [
+              "https://www.instagram.com/vandora.ec",
+              "https://www.tiktok.com/@vandora.ec"
+            ]
+          },
+          {
+            "@context": "https://schema.org",
+            "@type": "WebSite",
+            "name": "Vandora",
+            "url": window.location.origin,
+            "potentialAction": {
+              "@type": "SearchAction",
+              "target": `${window.location.origin}/tienda?category={search_term_string}`,
+              "query-input": "required name=search_term_string"
+            }
+          }
+        ]}
       />
       
       {/* Hero Slider */}

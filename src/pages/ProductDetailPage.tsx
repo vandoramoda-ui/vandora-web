@@ -243,6 +243,46 @@ const ProductDetailPage = () => {
     setActiveImageIndex((prev) => (prev - 1 + filteredImages.length) % filteredImages.length);
   };
 
+  const productSchema = {
+    "@context": "https://schema.org/",
+    "@type": "Product",
+    "name": product.name,
+    "image": product.image,
+    "description": product.description,
+    "sku": product.sku || product.id,
+    "brand": {
+      "@type": "Brand",
+      "name": product.brand || "Vandora"
+    },
+    "offers": {
+      "@type": "Offer",
+      "url": window.location.href,
+      "priceCurrency": "USD",
+      "price": product.price,
+      "itemCondition": "https://schema.org/NewCondition",
+      "availability": product.stock > 0 ? "https://schema.org/InStock" : "https://schema.org/OutOfStock"
+    },
+    ...(testimonials.length > 0 && {
+      "aggregateRating": {
+        "@type": "AggregateRating",
+        "ratingValue": (testimonials.reduce((acc: number, t: any) => acc + (t.rating || 5), 0) / testimonials.length).toFixed(1),
+        "reviewCount": testimonials.length
+      },
+      "review": testimonials.slice(0, 5).map((t: any) => ({
+        "@type": "Review",
+        "author": {
+          "@type": "Person",
+          "name": t.user_name || "Cliente Satisfecho"
+        },
+        "reviewBody": t.comment,
+        "reviewRating": {
+          "@type": "Rating",
+          "ratingValue": t.rating || 5
+        }
+      }))
+    })
+  };
+
   return (
     <div className="bg-white min-h-screen py-8 sm:py-12 px-4 sm:px-6 lg:px-8">
       <SEO
@@ -250,6 +290,7 @@ const ProductDetailPage = () => {
         description={product.description}
         image={product.image}
         type="product"
+        schema={productSchema}
       />
 
       <SizeGuideModal isOpen={isSizeGuideOpen} onClose={() => setIsSizeGuideOpen(false)} />

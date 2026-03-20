@@ -114,8 +114,28 @@ const ShopPage = () => {
   return (
     <div className="bg-vandora-cream min-h-screen py-12 px-4 sm:px-6 lg:px-8">
       <SEO 
-        title="Tienda" 
-        description="Explora nuestra colección completa de moda ecuatoriana. Vestidos, blusas y pantalones de alta calidad." 
+        title={categoryFilter === 'all' ? 'Tienda' : `Colección ${categoryFilter}`} 
+        description={categoryFilter === 'all' 
+          ? "Explora nuestra colección completa de moda ecuatoriana. Vestidos, blusas y pantalones de alta calidad."
+          : `Descubre nuestra selección exclusiva de ${categoryFilter}. Diseños únicos que realzan tu estilo.`
+        }
+        schema={{
+          "@context": "https://schema.org",
+          "@type": "CollectionPage",
+          "name": categoryFilter === 'all' ? 'Tienda Vandora' : `Colección ${categoryFilter} - Vandora`,
+          "description": categoryFilter === 'all' 
+            ? "Explora nuestra colección completa de moda ecuatoriana."
+            : `Descubre nuestra selección exclusiva de ${categoryFilter}.`,
+          "url": window.location.href,
+          "mainEntity": {
+            "@type": "ItemList",
+            "itemListElement": products.slice(0, 20).map((p, idx) => ({
+              "@type": "ListItem",
+              "position": idx + 1,
+              "url": `${window.location.origin}/producto/${p.category.toLowerCase().replace(/\s+/g, '-')}/${p.slug || p.id}`
+            }))
+          }
+        }}
       />
       <div className="max-w-7xl mx-auto">
         <div className="text-center mb-12">
