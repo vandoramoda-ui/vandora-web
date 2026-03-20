@@ -1,20 +1,24 @@
 <div align="center">
-<img width="1200" height="475" alt="GHBanner" src="https://github.com/user-attachments/assets/0aa67016-6eaf-458a-adb2-6e31a0763ed6" />
+<img width="1200" height="475" alt="Vandora Banner" src="https://github.com/user-attachments/assets/0aa67016-6eaf-458a-adb2-6e31a0763ed6" />
 </div>
 
-# Run and deploy your AI Studio app
+# Vandora - Moda Ecuatoriana
 
-This contains everything you need to run your app locally.
+Tienda en línea de moda ecuatoriana diseñada para empoderar a la mujer. "El Legado del Florecimiento".
 
-View your app in AI Studio: https://ai.studio/apps/b059356f-599a-4d00-a493-a06d6e0bb576
+## Ejecución Local
 
-## Run Locally
+**Prerrequisitos:** Node.js
 
-**Prerequisites:**  Node.js
-
-
-1. Install dependencies:
+1. Instalar dependencias:
    `npm install`
-2. Set the `GEMINI_API_KEY` in [.env.local](.env.local) to your Gemini API key
-3. Run the app:
+2. Ejecutar la aplicación:
    `npm run dev`
+
+## Tecnologías
+
+- React
+- Typescript
+- Tailwind CSS
+- Supabase (Autenticación y Base de Datos)
+- Cloudflare R2 (Almacenamiento de Imágenes)
