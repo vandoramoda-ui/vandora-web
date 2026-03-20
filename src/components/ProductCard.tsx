@@ -32,7 +32,7 @@ const ProductCard: React.FC<ProductCardProps> = ({ id, name, price, image, categ
       <div className="mt-4 flex justify-between">
         <div>
           <h3 className="text-sm text-gray-700 font-medium">
-            <Link to={`/producto/${(category || 'general').toLowerCase()}/${name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '')}`}>
+            <Link to={`/producto/${(category || 'general').toLowerCase()}/${name.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '')}`}>
               <span aria-hidden="true" className="absolute inset-0" />
               {name}
             </Link>

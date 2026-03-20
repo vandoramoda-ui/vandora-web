@@ -54,9 +54,21 @@ const Breadcrumbs = () => {
           
           // Get readable name from map or format the slug
           const mappedName = BREADCRUMB_MAP[decodedValue];
-          let displayName = mappedName || decodedValue.split('-').map((word: string) => 
-            (word.charAt(0) || '').toUpperCase() + word.slice(1)
-          ).join(' ');
+          let displayName = mappedName || decodedValue.split('-').map((word: string) => {
+            if (!word) return '';
+            // If the word reflects a single character mangled to a space (e.g. "o" from "paño" -> "pa-o")
+            // it will stay as "O" after capitalization.
+            return word.charAt(0).toUpperCase() + word.slice(1);
+          }).join(' ');
+
+          // Fallback hack: if it's the last element of a product detail page,
+          // the title usually contains the correct product name.
+          if (isLast && (pathnames.includes('producto') || pathnames.includes('product')) && !mappedName) {
+            const pageTitle = document.title.split(' | ')[0];
+            if (pageTitle && pageTitle !== 'Vandora' && pageTitle !== 'Cargando...') {
+               displayName = pageTitle;
+            }
+          }
 
           // Truncate only if it's not the last element and still very long
           if (!mappedName && displayName.length > 30) {
