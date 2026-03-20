@@ -16,14 +16,16 @@ const s3Client = new S3Client({
 });
 
 export const r2Storage = {
-  uploadFile: async (file: File, path: string = "") => {
+  uploadFile: async (file: File, path: string = "", customName?: string) => {
     try {
       if (!accountId || !accessKeyId || !secretAccessKey || !bucketName) {
         throw new Error("Missing Cloudflare R2 credentials");
       }
 
       const fileExt = file.name.split('.').pop();
-      const fileName = `${Math.random().toString(36).substring(2)}.${fileExt}`;
+      const fileName = customName 
+        ? `${customName}.${fileExt}`
+        : `${Math.random().toString(36).substring(2)}.${fileExt}`;
       const fullPath = path ? `${path}/${fileName}` : fileName;
 
       const buffer = await file.arrayBuffer();

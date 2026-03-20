@@ -1,7 +1,24 @@
 User-agent: *
 Allow: /
+Allow: /tienda
+Allow: /producto/
+Allow: /nuestra-historia
+Allow: /contacto
+Allow: /preguntas-frecuentes
+Allow: /envio
+
+# Exclude non-SEO pages
+Disallow: /administracion
+Disallow: /pagar
+Disallow: /thank-you
+Disallow: /mi-cuenta
+Disallow: /rastrear-pedido
+Disallow: /upsell
+Disallow: /downsell
+Disallow: /iniciar-sesion
+Disallow: /restablecer-contrasena
+Disallow: /politica-de-privacidad
+Disallow: /terminos-y-condiciones
 
 # Sitemap
 Sitemap: https://vandora.ec/sitemap.xml
-# Alternate Sitemap (Dynamic)
-# Sitemap: https://[YOUR-PROJECT-ID].supabase.co/functions/v1/sitemap

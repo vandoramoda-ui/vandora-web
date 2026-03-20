@@ -7,23 +7,74 @@ interface ImageUploadProps {
   onUpload: (url: string) => void;
   currentImage?: string;
   label?: string;
+  customName?: string;
 }
 
-const ImageUpload: React.FC<ImageUploadProps> = ({ onUpload, currentImage, label = "Imagen del Producto" }) => {
+const ImageUpload: React.FC<ImageUploadProps> = ({ onUpload, currentImage, label = "Imagen del Producto", customName }) => {
   const [uploading, setUploading] = useState(false);
   const [preview, setPreview] = useState<string | null>(currentImage || null);
   const [error, setError] = useState<string | null>(null);
 
+  const convertToWebP = (file: File): Promise<File> => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const img = new Image();
+        img.onload = () => {
+          const canvas = document.createElement('canvas');
+          const ctx = canvas.getContext('2d');
+          if (!ctx) return reject('Canvas context not available');
+
+          // Maximum dimensions to keep it reasonable
+          const MAX_WIDTH = 1200;
+          let width = img.width;
+          let height = img.height;
+
+          if (width > MAX_WIDTH) {
+            height *= MAX_WIDTH / width;
+            width = MAX_WIDTH;
+          }
+
+          canvas.width = width;
+          canvas.height = height;
+          ctx.drawImage(img, 0, 0, width, height);
+
+          canvas.toBlob((blob) => {
+            if (!blob) return reject('Blob conversion failed');
+            const webpFile = new File([blob], file.name.replace(/\.[^/.]+$/, ".webp"), {
+              type: 'image/webp',
+              lastModified: Date.now(),
+            });
+            resolve(webpFile);
+          }, 'image/webp', 0.82); // 0.82 quality for good balance
+        };
+        img.onerror = reject;
+        img.src = e.target?.result as string;
+      };
+      reader.onerror = reject;
+      reader.readAsDataURL(file);
+    });
+  };
+
   const onDrop = useCallback(async (acceptedFiles: File[]) => {
-    const file = acceptedFiles[0];
+    let file = acceptedFiles[0];
     if (!file) return;
 
     setUploading(true);
     setError(null);
 
     try {
-      // Upload to R2 Storage
-      const { url, error: uploadError } = await r2Storage.uploadFile(file, 'products');
+      // Convert to WebP for optimization if it's not already or if it's large
+      if (file.type !== 'image/webp' || file.size > 500 * 1024) {
+        try {
+          file = await convertToWebP(file);
+        } catch (webpErr) {
+          console.warn('WebP conversion failed, using original file:', webpErr);
+        }
+      }
+
+      // Upload to R2 Storage with custom name if provided
+      const { url, error: uploadError } = await r2Storage.uploadFile(file, 'products', customName);
 
       if (uploadError) throw uploadError;
 
@@ -37,7 +88,7 @@ const ImageUpload: React.FC<ImageUploadProps> = ({ onUpload, currentImage, label
     } finally {
       setUploading(false);
     }
-  }, [onUpload]);
+  }, [onUpload, customName]);
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
     onDrop,

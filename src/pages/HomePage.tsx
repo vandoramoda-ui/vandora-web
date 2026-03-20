@@ -224,13 +224,13 @@ const HomePage = () => {
                   {/* Desktop Image */}
                   <img 
                     src={heroSlides[currentSlide]?.imageDesktop} 
-                    alt={heroSlides[currentSlide]?.title}
+                    alt={`${heroSlides[currentSlide]?.title} - ${heroSlides[currentSlide]?.subtitle} - Vandora`}
                     className="hidden md:block w-full h-full object-cover opacity-80"
                   />
                   {/* Mobile Image */}
                   <img 
                     src={heroSlides[currentSlide]?.imageMobile} 
-                    alt={heroSlides[currentSlide]?.title}
+                    alt={`${heroSlides[currentSlide]?.title} - ${heroSlides[currentSlide]?.subtitle} - Vandora`}
                     className="block md:hidden w-full h-full object-cover opacity-80"
                   />
                   <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
@@ -343,7 +343,7 @@ const HomePage = () => {
                 <div className="aspect-[3/4] rounded-lg overflow-hidden mb-3 relative shadow-md">
                   <img 
                     src={cat.image} 
-                    alt={cat.name} 
+                    alt={`${cat.name} - Colección Vandora`} 
                     className="w-full h-full object-cover transition-transform duration-700 group-hover/card:scale-110"
                   />
                   <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-80 group-hover/card:opacity-90 transition-opacity" />
@@ -426,7 +426,7 @@ const HomePage = () => {
               <div className="absolute top-4 left-4 w-full h-full border border-vandora-gold/30 rounded-lg z-0" />
               <img 
                 src={founderSection.image} 
-                alt="Fundadora Vandora" 
+                alt={`${founderSection.title} - Vandora Moda Ecuatoriana`} 
                 className="relative z-10 rounded-lg shadow-xl w-full h-[400px] md:h-[500px] object-cover grayscale hover:grayscale-0 transition-all duration-700"
               />
               <div className="absolute -bottom-6 -right-6 w-32 h-32 bg-vandora-emerald rounded-full mix-blend-multiply filter blur-3xl opacity-20" />

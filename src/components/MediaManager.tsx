@@ -14,12 +14,59 @@ interface MediaManagerProps {
   colors: { name: string; code: string }[];
   onImagesChange: (images: MediaItem[]) => void;
   onVideosChange: (videos: MediaItem[]) => void;
+  productName?: string;
 }
 
-const MediaManager: React.FC<MediaManagerProps> = ({ images, videos, colors, onImagesChange, onVideosChange }) => {
+const MediaManager: React.FC<MediaManagerProps> = ({ images, videos, colors, onImagesChange, onVideosChange, productName }) => {
   const [uploading, setUploading] = useState(false);
   const [videoUrl, setVideoUrl] = useState('');
   const [error, setError] = useState<string | null>(null);
+
+  const convertToWebP = (file: File): Promise<File> => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const img = new Image();
+        img.onload = () => {
+          const canvas = document.createElement('canvas');
+          const ctx = canvas.getContext('2d');
+          if (!ctx) return reject('Canvas context not available');
+          const MAX_WIDTH = 1200;
+          let width = img.width;
+          let height = img.height;
+          if (width > MAX_WIDTH) {
+            height *= MAX_WIDTH / width;
+            width = MAX_WIDTH;
+          }
+          canvas.width = width;
+          canvas.height = height;
+          ctx.drawImage(img, 0, 0, width, height);
+          canvas.toBlob((blob) => {
+            if (!blob) return reject('Blob conversion failed');
+            const webpFile = new File([blob], file.name.replace(/\.[^/.]+$/, ".webp"), {
+              type: 'image/webp',
+              lastModified: Date.now(),
+            });
+            resolve(webpFile);
+          }, 'image/webp', 0.82);
+        };
+        img.onerror = reject;
+        img.src = e.target?.result as string;
+      };
+      reader.onerror = reject;
+      reader.readAsDataURL(file);
+    });
+  };
+
+  const slugify = (text: string) => {
+    return text
+      .toString()
+      .toLowerCase()
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/(^-|-$)/g, '');
+  };
 
   const onDrop = useCallback(async (acceptedFiles: File[]) => {
     if (acceptedFiles.length === 0) return;
@@ -29,8 +76,22 @@ const MediaManager: React.FC<MediaManagerProps> = ({ images, videos, colors, onI
     const newImages: MediaItem[] = [];
 
     try {
-      for (const file of acceptedFiles) {
-        const { url, error: uploadError } = await r2Storage.uploadFile(file, 'products');
+      let index = images.length + 1;
+      for (let file of acceptedFiles) {
+        // Optimization: Convert to WebP
+        if (file.type !== 'image/webp' || file.size > 500 * 1024) {
+          try {
+            file = await convertToWebP(file);
+          } catch (webpErr) {
+            console.warn('WebP conversion failed:', webpErr);
+          }
+        }
+
+        // Descriptive Naming
+        const baseName = productName ? slugify(productName) : 'producto';
+        const customName = `${baseName}-${index++}`;
+
+        const { url, error: uploadError } = await r2Storage.uploadFile(file, 'products', customName);
 
         if (uploadError) throw uploadError;
 
@@ -46,7 +107,7 @@ const MediaManager: React.FC<MediaManagerProps> = ({ images, videos, colors, onI
     } finally {
       setUploading(false);
     }
-  }, [images, onImagesChange]);
+  }, [images, onImagesChange, productName]);
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
     onDrop,

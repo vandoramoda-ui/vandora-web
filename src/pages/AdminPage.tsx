@@ -1033,6 +1033,7 @@ const AdminPage = () => {
                     colors={formData.colors}
                     onImagesChange={(images) => setFormData({ ...formData, images })}
                     onVideosChange={(videos) => setFormData({ ...formData, videos })}
+                    productName={formData.name}
                   />
                 </div>
 

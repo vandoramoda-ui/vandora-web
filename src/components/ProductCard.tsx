@@ -24,7 +24,7 @@ const ProductCard: React.FC<ProductCardProps> = ({ id, name, price, image, categ
         </div>
         <img
           src={image}
-          alt={name}
+          alt={`${name} - ${category || 'Moda'} - Vandora`}
           className="h-full w-full object-cover object-center"
           loading="lazy"
         />
