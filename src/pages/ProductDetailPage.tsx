@@ -109,11 +109,52 @@ const ProductDetailPage = () => {
 
   useEffect(() => {
     const fetchProductData = async () => {
-      const { data, error } = await supabase
+      // 1. Try exact match
+      let { data, error } = await supabase
         .from('products')
         .select('*')
         .eq('slug', slug)
         .single();
+
+      // 2. Fallback: Many old slugs mangled characters like 'ñ' into '-' 
+      // while the new logic turns them into 'n'. If not found, try common fallbacks.
+      if ((error || !data) && slug) {
+        // Try replacing 'n' with '-' (covers 'paño' -> 'pa-o' vs 'pano')
+        const fallbackSlug = slug.replace(/n/g, '-').replace(/--+/g, '-');
+        const { data: fallbackData, error: fallbackError } = await supabase
+          .from('products')
+          .select('*')
+          .eq('slug', fallbackSlug)
+          .single();
+        
+        if (!fallbackError && fallbackData) {
+          data = fallbackData;
+          error = null;
+        } else {
+          // 3. Ultimate Fallback: Search all products in this category and find the closest match
+          // by ignoring all non-alphanumeric characters
+          const { data: catProducts } = await supabase
+            .from('products')
+            .select('*')
+            .ilike('category', `%${categoria?.substring(0, 3)}%`);
+
+          if (catProducts && catProducts.length > 0) {
+            const strippedSlug = slug.replace(/[^a-z0-9]/g, '');
+            const match = catProducts.find(p => {
+              const pStripped = (p.slug || '').replace(/[^a-z0-9]/g, '');
+              // Match if one string contains the other or they are very similar
+              return pStripped === strippedSlug || 
+                     pStripped === strippedSlug.replace(/n/g, '') ||
+                     strippedSlug === pStripped.replace(/n/g, '');
+            });
+
+            if (match) {
+              data = match;
+              error = null;
+            }
+          }
+        }
+      }
 
       if (!error && data) {
         const parseJSON = (val: any) => {
