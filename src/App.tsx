@@ -40,6 +40,7 @@ const ScrollToTop = () => {
 import ProtectedRoute from './components/ProtectedRoute';
 import ResetPasswordPage from './pages/ResetPasswordPage';
 import { AnalyticsProvider } from './context/AnalyticsContext';
+import { AffiliateTracker } from './components/AffiliateTracker';
 
 function App() {
   return (
@@ -48,6 +49,7 @@ function App() {
         <Router>
           <AnalyticsProvider>
             <ScrollToTop />
+            <AffiliateTracker />
             <Routes>
             {/* Public Routes with Layout */}
             <Route path="/" element={<Layout><HomePage /></Layout>} />

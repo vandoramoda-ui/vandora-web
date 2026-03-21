@@ -40,15 +40,49 @@ const StoryPage = () => {
     </div>
   );
 
+  const storySchema = {
+    "@context": "https://schema.org",
+    "@type": "Article",
+    "headline": content.title,
+    "description": "Conoce la historia y el propósito de Vandora Moda Ecuatoriana.",
+    "image": content.image,
+    "author": {
+      "@type": "Organization",
+      "name": "Vandora"
+    },
+    "publisher": {
+      "@type": "Organization",
+      "name": "Vandora",
+      "logo": {
+        "@type": "ImageObject",
+        "url": "https://afiliados.vandora.boutique/favicon.png"
+      }
+    },
+    "datePublished": "2024-01-15T08:00:00-05:00",
+    "dateModified": new Date().toISOString()
+  };
+
   return (
     <div className="min-h-screen bg-vandora-cream py-20 px-4">
-      <SEO title={content.title} description="Conoce la inspiración detrás de Vandora y cómo empoderamos a las mujeres a través de la moda." />
+      <SEO 
+        title={content.title} 
+        description="Conoce la inspiración detrás de Vandora y cómo empoderamos a las mujeres a través de la moda." 
+        type="article"
+        schema={storySchema}
+      />
       <div className="max-w-3xl mx-auto text-center">
-        <h1 className="font-serif text-5xl text-vandora-emerald mb-8">{content.title}</h1>
-        <p className="text-xl text-gray-700 leading-relaxed mb-12">
+        <h1 className="font-serif text-5xl text-vandora-emerald mb-4">{content.title}</h1>
+        
+        <div className="flex items-center justify-center gap-4 mb-8 text-[10px] text-gray-400 uppercase tracking-widest font-medium">
+          <span>Publicado: 15 Ene 2024</span>
+          <span className="text-gray-300">|</span>
+          <span>Actualizado: {new Date().toLocaleDateString('es-EC', { day: 'numeric', month: 'short', year: 'numeric' })}</span>
+        </div>
+
+        <p className="text-xl text-gray-700 leading-relaxed mb-12 italic">
           {content.quote}
         </p>
-        <div className="aspect-video bg-gray-300 rounded-lg mb-12 overflow-hidden">
+        <div className="aspect-video bg-gray-300 rounded-lg mb-12 overflow-hidden shadow-xl">
           <img src={content.image} alt="Historia" className="w-full h-full object-cover" />
         </div>
         <div className="prose prose-lg mx-auto text-gray-600 text-left">

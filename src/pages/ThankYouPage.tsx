@@ -21,7 +21,10 @@ const ThankYouPage = () => {
       if (!sessionStorage.getItem(trackedKey)) {
         trackPurchase(order.id, order.total, 'USD', `purchase-${order.id}`, {
           email: order.customer_email,
-          phone: order.customer_phone
+          phone: order.customer_phone,
+          items: order.items,
+          shipping_address: order.shipping_address,
+          billing_address: order.address
         });
         sessionStorage.setItem(trackedKey, 'true');
       }

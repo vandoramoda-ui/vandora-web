@@ -5,6 +5,14 @@ import { useLocation } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { useAuth } from './AuthContext';
 
+// Extend Window interface for Klaviyo
+declare global {
+  interface Window {
+    klaviyo: any;
+    _learnq: any[];
+  }
+}
+
 interface AnalyticsContextType {
   trackEvent: (category: string, action: string, label?: string, value?: number, eventId?: string) => void;
   trackStandardEvent: (eventName: string, params?: any) => void;
@@ -45,6 +53,50 @@ export const AnalyticsProvider: React.FC<{ children: React.ReactNode }> = ({ chi
 
     initAnalytics();
   }, []);
+
+  // Sync Klaviyo Identity
+  useEffect(() => {
+    if (user || profile) {
+      const identifyData: any = {};
+      if (user?.email) identifyData['$email'] = user.email;
+      if (profile?.phone) identifyData['$phone_number'] = profile.phone;
+      if (profile?.full_name) {
+        const names = profile.full_name.split(' ');
+        identifyData['$first_name'] = names[0];
+        if (names.length > 1) identifyData['$last_name'] = names.slice(1).join(' ');
+      }
+
+      if (Object.keys(identifyData).length > 0) {
+        identifyKlaviyoUser(identifyData);
+      }
+    }
+  }, [user, profile]);
+
+  const identifyKlaviyoUser = (userData: any) => {
+    try {
+      if (window.klaviyo) {
+        window.klaviyo.identify(userData);
+      } else {
+        window._learnq = window._learnq || [];
+        window._learnq.push(['identify', userData]);
+      }
+    } catch (e) {
+      console.warn('Klaviyo identify error:', e);
+    }
+  };
+
+  const trackKlaviyoEvent = (eventName: string, properties: any = {}) => {
+    try {
+      if (window.klaviyo) {
+        window.klaviyo.track(eventName, properties);
+      } else {
+        window._learnq = window._learnq || [];
+        window._learnq.push(['track', eventName, properties]);
+      }
+    } catch (e) {
+      console.warn('Klaviyo track error:', e);
+    }
+  };
 
   const getCookie = (name: string) => {
     const value = `; ${document.cookie}`;
@@ -99,6 +151,9 @@ export const AnalyticsProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     // @ts-ignore - Meta Pixel supports 3rd arg for eventID but types may be limited
     ReactPixel.trackCustom(action, { category, label, value }, { eventID: evId });
     trackCAPI(action, evId, { category, label, value });
+    
+    // Simple Klaviyo fallback for custom events
+    trackKlaviyoEvent(action, { category, label, value });
   };
 
   const trackStandardEvent = (eventName: string, params: any = {}, customEventId?: string) => {
@@ -120,6 +175,37 @@ export const AnalyticsProvider: React.FC<{ children: React.ReactNode }> = ({ chi
 
     // Meta CAPI
     trackCAPI(eventName, eventId, params);
+
+    // Klaviyo Mapping
+    if (eventName === 'ViewContent' && params.content_type === 'product') {
+      trackKlaviyoEvent('Viewed Product', {
+        'ProductName': params.content_name,
+        'ProductID': params.content_ids?.[0],
+        'SKU': params.content_ids?.[0],
+        'Categories': [params.content_category],
+        'ImageURL': params.image_url,
+        'URL': window.location.href,
+        'Price': params.value
+      });
+    } else if (eventName === 'AddToCart') {
+      trackKlaviyoEvent('Added to Cart', {
+        'ProductName': params.content_name,
+        'ProductID': params.content_ids?.[0],
+        'SKU': params.content_ids?.[0],
+        'Categories': [params.content_category],
+        'ImageURL': params.image_url,
+        'URL': window.location.href,
+        'Price': params.value,
+        'Quantity': params.num_items || 1
+      });
+    } else if (eventName === 'InitiateCheckout') {
+      trackKlaviyoEvent('Started Checkout', {
+        '$value': params.value,
+        'ItemNames': params.item_names || [],
+        'CheckoutURL': window.location.href,
+        'Items': params.items || []
+      });
+    }
   };
 
   const trackPurchase = (transactionId: string, value: number, currency = 'USD', eventId?: string, extraUserData?: any) => {
@@ -144,6 +230,45 @@ export const AnalyticsProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     // @ts-ignore - Meta Pixel supports 3rd arg for eventID
     ReactPixel.track('Purchase', params, { eventID: evId });
     trackCAPI('Purchase', evId, params, extraUserData);
+
+    // Klaviyo Placed Order & Ordered Product
+    if (extraUserData?.items) {
+      const klaviyoItems = extraUserData.items.map((item: any) => ({
+        'ProductID': item.id,
+        'SKU': item.id || item.sku,
+        'ProductName': item.name,
+        'Quantity': item.quantity,
+        'ItemPrice': item.price,
+        'RowTotal': item.price * item.quantity,
+        'ImageURL': item.image,
+        'ProductURL': `${window.location.origin}/producto/item/${item.id}` // Best guest
+      }));
+
+      trackKlaviyoEvent('Placed Order', {
+        '$event_id': transactionId,
+        '$value': value,
+        'ItemNames': extraUserData.items.map((i: any) => i.name),
+        'Brands': ['Vandora'],
+        'Items': klaviyoItems,
+        'BillingAddress': extraUserData.billing_address || {},
+        'ShippingAddress': extraUserData.shipping_address || {}
+      });
+
+      // Track each product individually
+      klaviyoItems.forEach((kItem: any) => {
+        trackKlaviyoEvent('Ordered Product', {
+          '$event_id': `${transactionId}_${kItem.SKU}`,
+          '$value': kItem.RowTotal,
+          ...kItem
+        });
+      });
+    } else {
+      // Basic fallback if items are missing
+      trackKlaviyoEvent('Placed Order', {
+        '$event_id': transactionId,
+        '$value': value
+      });
+    }
   };
 
   const trackQuizStart = (quizName: string) => {

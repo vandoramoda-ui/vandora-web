@@ -85,6 +85,7 @@ const ShopPage = () => {
           return {
             ...p,
             image: images.length > 0 ? images[0].url : (p.image || 'https://placehold.co/600x800?text=No+Image'),
+            imageAlt: images.length > 0 ? images[0].alt : null,
             sizes: Array.isArray(p.sizes) ? p.sizes : [],
             colors
           };

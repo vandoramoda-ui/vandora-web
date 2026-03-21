@@ -8,11 +8,12 @@ interface ProductCardProps {
   name: string;
   price: number;
   image: string;
+  imageAlt?: string;
   category: string;
   colors?: { name: string; code: string }[];
 }
 
-const ProductCard: React.FC<ProductCardProps> = ({ id, name, price, image, category, colors }) => {
+const ProductCard: React.FC<ProductCardProps> = ({ id, name, price, image, imageAlt, category, colors }) => {
   return (
     <motion.div
       whileHover={{ y: -5 }}
@@ -24,7 +25,7 @@ const ProductCard: React.FC<ProductCardProps> = ({ id, name, price, image, categ
         </div>
         <img
           src={image}
-          alt={`${name} - ${category || 'Moda'} - Vandora`}
+          alt={imageAlt || `${name} - ${category || 'Moda'} - Vandora`}
           className="h-full w-full object-cover object-center"
           loading="lazy"
         />

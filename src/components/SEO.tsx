@@ -37,17 +37,28 @@ const SEO: React.FC<SEOProps> = ({
   }, []);
 
   const location = useLocation();
-  const url = canonical || `${window.location.origin}${location.pathname}`;
+  const rawUrl = canonical || `${window.location.origin}${location.pathname}`;
+  const url = rawUrl.toLowerCase().replace(/\/+$/, '');
   const siteName = branding?.siteName || 'Vandora - Moda Ecuatoriana';
-  const fullTitle = `${title} | ${siteName}`;
+  const fullTitle = title.includes(siteName) ? title : `${title} | ${siteName}`;
+  
+  // Clean and truncate description for high-quality snippets (Google ideal: ~155-160 chars)
+  const cleanDescription = description
+    .replace(/<[^>]*>?/gm, '') // Remove HTML tags
+    .replace(/\s+/g, ' ')      // Normalize whitespace
+    .trim();
+  const metaDescription = cleanDescription.length > 160 
+    ? `${cleanDescription.substring(0, 157)}...` 
+    : cleanDescription;
 
   return (
     <Helmet>
       {/* Standard Metadata */}
       <title>{fullTitle}</title>
-      <meta name="description" content={description} />
+      <meta name="description" content={metaDescription} />
       <link rel="canonical" href={url} />
       {branding?.favicon && <link rel="icon" href={branding.favicon} />}
+      <meta name="robots" content="index, follow" />
 
       {/* JSON-LD Structured Data */}
       {schema && (
@@ -60,16 +71,18 @@ const SEO: React.FC<SEOProps> = ({
       <meta property="og:type" content={type} />
       <meta property="og:url" content={url} />
       <meta property="og:title" content={fullTitle} />
-      <meta property="og:description" content={description} />
+      <meta property="og:description" content={metaDescription} />
       <meta property="og:image" content={image} />
       <meta property="og:site_name" content={siteName} />
+      <meta property="og:locale" content="es_EC" />
 
       {/* Twitter */}
       <meta name="twitter:card" content="summary_large_image" />
       <meta name="twitter:url" content={url} />
       <meta name="twitter:title" content={fullTitle} />
-      <meta name="twitter:description" content={description} />
+      <meta name="twitter:description" content={metaDescription} />
       <meta name="twitter:image" content={image} />
+      <meta name="twitter:site" content="@vandora_ec" />
     </Helmet>
   );
 };

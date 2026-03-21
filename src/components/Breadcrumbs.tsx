@@ -1,6 +1,7 @@
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { ChevronRight, Home } from 'lucide-react';
+import { Helmet } from 'react-helmet-async';
 
 const BREADCRUMB_MAP: Record<string, string> = {
   'tienda': 'Tienda',
@@ -28,8 +29,48 @@ const Breadcrumbs = () => {
     return null;
   }
 
+  const breadcrumbSchema = {
+    "@context": "https://schema.org",
+    "@type": "BreadcrumbList",
+    "itemListElement": [
+      {
+        "@type": "ListItem",
+        "position": 1,
+        "name": "Inicio",
+        "item": window.location.origin
+      },
+      ...pathnames.map((value, index) => {
+        const to = `${window.location.origin}/${pathnames.slice(0, index + 1).join('/')}`;
+        const decodedValue = decodeURIComponent(value);
+        const mappedName = BREADCRUMB_MAP[decodedValue];
+        let name = mappedName || decodedValue.replace(/-/g, ' ');
+        
+        // Handle last item name logic similar to the UI
+        if (index === pathnames.length - 1 && (pathnames.includes('producto') || pathnames.includes('product')) && !mappedName) {
+          const pageTitle = document.title.split(' | ')[0];
+          if (pageTitle && !['Vandora', 'Tienda', 'Inicio'].some(t => pageTitle.includes(t))) {
+            name = pageTitle;
+          }
+        }
+
+        return {
+          "@type": "ListItem",
+          "position": index + 2,
+          "name": name,
+          "item": to.toLowerCase()
+        };
+      })
+    ]
+  };
+
   return (
-    <nav className="w-full py-2 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto text-[10px] md:text-xs text-gray-400 overflow-x-auto whitespace-nowrap" aria-label="Breadcrumb">
+    <>
+      <Helmet>
+        <script type="application/ld+json">
+          {JSON.stringify(breadcrumbSchema)}
+        </script>
+      </Helmet>
+      <nav className="w-full py-2 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto text-[10px] md:text-xs text-gray-400 overflow-x-auto whitespace-nowrap" aria-label="Breadcrumb">
       <ol className="flex items-center space-x-2">
         <li>
           <Link to="/" className="hover:text-vandora-emerald transition-colors flex items-center">
@@ -65,8 +106,12 @@ const Breadcrumbs = () => {
           // use the page title (product name).
           if (isLast && (pathnames.includes('producto') || pathnames.includes('product')) && !mappedName) {
             const pageTitle = document.title.split(' | ')[0];
-            // Only use pageTitle if it's not generic 'Tienda' or branding
-            if (pageTitle && pageTitle !== 'Vandora' && pageTitle !== 'Cargando...' && pageTitle !== 'Tienda' && pageTitle !== 'Inicio') {
+            const genericTitles = ['Vandora', 'Tienda', 'Inicio', 'Cargando', 'Moda Ecuatoriana'];
+            
+            // Only use pageTitle if it's not generic branding or boilerplate
+            const isGeneric = genericTitles.some(t => pageTitle.toLowerCase().includes(t.toLowerCase()));
+            
+            if (pageTitle && !isGeneric) {
                displayName = pageTitle;
             }
           }
@@ -92,7 +137,8 @@ const Breadcrumbs = () => {
           );
         })}
       </ol>
-    </nav>
+      </nav>
+    </>
   );
 };
 

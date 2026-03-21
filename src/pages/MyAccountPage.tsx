@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { supabase } from '../lib/supabase';
-import { Package, User, MapPin, Mail, Phone, Calendar } from 'lucide-react';
+import { Package, User, MapPin, Mail, Phone, Calendar, Megaphone, ExternalLink, Sparkles } from 'lucide-react';
 import SEO from '../components/SEO';
 import { formatPrice } from '../lib/utils';
 import { useNavigate } from 'react-router-dom';
@@ -114,7 +114,9 @@ const MyAccountPage = () => {
 
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
                     {/* Profile Details Sidebar */}
-                    <div className="lg:col-span-1">
+                    {/* Profile & Affiliate Sidebar */}
+                    <div className="lg:col-span-1 space-y-8">
+                        {/* Profile Details */}
                         <div className="bg-white rounded-lg shadow-sm p-6 border border-gray-100">
                             <div className="flex justify-between items-center mb-4 border-b pb-2">
                                 <h2 className="text-lg font-medium text-gray-900 flex items-center">
@@ -217,8 +219,68 @@ const MyAccountPage = () => {
                                 </div>
                             )}
                         </div>
-                    </div>
 
+                        {/* Affiliate Program Card */}
+                        <div className="bg-gradient-to-br from-vandora-emerald to-emerald-900 rounded-lg shadow-md p-6 text-white overflow-hidden relative group">
+                            <div className="absolute top-0 right-0 -m-4 opacity-10 group-hover:opacity-20 transition-opacity">
+                                <Megaphone className="w-32 h-32 rotate-12" />
+                            </div>
+                            
+                            <div className="relative z-10">
+                                <div className="flex items-center gap-2 mb-4">
+                                    <div className="p-2 bg-white/20 rounded-lg backdrop-blur-sm">
+                                        <Sparkles className="w-5 h-5 text-yellow-300" />
+                                    </div>
+                                    <h2 className="text-xl font-serif">Programa de Afiliados</h2>
+                                </div>
+                                
+                                <p className="text-emerald-50 text-sm mb-6 leading-relaxed">
+                                    ¡Comparte tu pasión por Vandora y gana comisiones por cada venta que refieras! 
+                                    Únete a nuestro programa exclusivo.
+                                </p>
+                                
+                                <div className="space-y-4">
+                                    <div className="bg-white/10 p-3 rounded-md backdrop-blur-sm border border-white/10">
+                                        <p className="text-xs uppercase font-bold text-emerald-200 mb-1">Tu Beneficio</p>
+                                        <p className="font-medium">10% de Comisión en efectivo</p>
+                                    </div>
+                                    
+                                    <a 
+                                        href={import.meta.env.VITE_RAIDER_URL || 'https://afiliados.vandora.boutique'} 
+                                        target="_blank" 
+                                        rel="noopener noreferrer"
+                                        className="w-full bg-white text-vandora-emerald py-3 rounded-md hover:bg-emerald-50 transition-all text-center font-bold text-sm flex items-center justify-center gap-2 shadow-lg"
+                                    >
+                                        Ir al Panel de Afiliados
+                                        <ExternalLink className="w-4 h-4" />
+                                    </a>
+                                    
+                                    <p className="text-[10px] text-center text-emerald-100/70">
+                                        Se abrirá en una pestaña nueva
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Info Box */}
+                        <div className="bg-white rounded-lg p-5 border border-dashed border-gray-300">
+                            <h3 className="text-sm font-bold text-gray-700 mb-2 font-serif italic">¿Cómo empezar?</h3>
+                            <ul className="text-xs text-gray-500 space-y-2 list-none p-0">
+                                <li className="flex gap-2">
+                                    <span className="text-vandora-emerald font-bold">1.</span>
+                                    Identifícate en el panel con tu email.
+                                </li>
+                                <li className="flex gap-2">
+                                    <span className="text-vandora-emerald font-bold">2.</span>
+                                    Crea tus enlaces personalizados.
+                                </li>
+                                <li className="flex gap-2">
+                                    <span className="text-vandora-emerald font-bold">3.</span>
+                                    Recibe pagos directos por cada compra.
+                                </li>
+                            </ul>
+                        </div>
+                    </div>
 
                     {/* Orders List */}
                     <div className="lg:col-span-2">

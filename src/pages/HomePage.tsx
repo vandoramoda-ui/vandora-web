@@ -18,6 +18,9 @@ const HomePage = () => {
     buttonText: 'Leer Nuestra Historia',
     buttonLink: '/nuestra-historia'
   });
+  const [branding, setBranding] = useState<any>(null);
+  const [shippingPolicy, setShippingPolicy] = useState<any>(null);
+  const [refundPolicy, setRefundPolicy] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [currentSlide, setCurrentSlide] = useState(0);
 
@@ -25,6 +28,16 @@ const HomePage = () => {
     const fetchData = async () => {
       setLoading(true);
       try {
+        // Fetch Branding
+        const { data: brandingData } = await supabase.from('site_content').select('content').eq('section_key', 'branding').single();
+        if (brandingData) setBranding(brandingData.content);
+
+        // Fetch Shipping and Refund Policies for Organization schema
+        const { data: shippingData } = await supabase.from('site_content').select('content').eq('section_key', 'page_shipping').single();
+        const { data: refundData } = await supabase.from('site_content').select('content').eq('section_key', 'page_refund').single();
+        if (shippingData) setShippingPolicy(shippingData.content);
+        if (refundData) setRefundPolicy(refundData.content);
+
         // Fetch Hero Slides
         const { data: heroData } = await supabase
           .from('site_content')
@@ -99,6 +112,7 @@ const HomePage = () => {
             return {
               ...p,
               image: images.length > 0 ? images[0].url : (p.image || 'https://placehold.co/600x800?text=No+Image'),
+              imageAlt: images.length > 0 ? images[0].alt : null,
               colors
             };
           });
@@ -191,12 +205,45 @@ const HomePage = () => {
             "sameAs": [
               "https://www.instagram.com/vandora.ec",
               "https://www.tiktok.com/@vandora.ec"
-            ]
+            ],
+            "hasMerchantReturnPolicy": {
+              "@type": "MerchantReturnPolicy",
+              "applicableCountry": "EC",
+              "returnPolicyCategory": "https://schema.org/MerchantReturnFiniteReturnPeriod",
+              "merchantReturnDays": refundPolicy?.intro?.includes('15') ? 15 : 30,
+              "merchantReturnLink": `${window.location.origin}/politicas-de-devolucion`,
+              "returnMethod": "https://schema.org/ReturnByMail",
+              "returnFees": "https://schema.org/FreeReturn"
+            },
+            "hasShippingService": {
+              "@type": "ShippingService",
+              "name": "Envío Nacional Estándar",
+              "shippingConditions": {
+                "@type": "ShippingConditions",
+                "applicableCountry": "EC",
+                "shippingRate": {
+                  "@type": "MonetaryAmount",
+                  "value": shippingPolicy?.shipping_line3?.includes('5.00') ? 5.00 : 0.00,
+                  "currency": "USD"
+                },
+                "deliveryTime": {
+                  "@type": "ShippingDeliveryTime",
+                  "handlingTime": { "@type": "QuantitativeValue", "minValue": 1, "maxValue": 2, "unitCode": "DAY" },
+                  "transitTime": { 
+                    "@type": "QuantitativeValue", 
+                    "minValue": 2, 
+                    "maxValue": 5, 
+                    "unitCode": "DAY" 
+                  }
+                }
+              }
+            }
           },
           {
             "@context": "https://schema.org",
             "@type": "WebSite",
             "name": "Vandora",
+            "alternateName": ["Vandora Moda", "Vandora Boutique", "Vandora EC"],
             "url": window.location.origin,
             "potentialAction": {
               "@type": "SearchAction",

@@ -2,7 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { useCart } from '../context/CartContext';
 import { ecuadorLocations } from '../lib/ecuador';
 import { formatPrice } from '../lib/utils';
-import { useNavigate, Link } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { getAffiliateId } from '../components/AffiliateTracker';
 import { CheckCircle, Truck, CreditCard, ShieldCheck, Lock, Clock, AlertCircle } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../context/AuthContext';
@@ -133,7 +134,15 @@ const CheckoutPage = () => {
         content_type: 'product',
         value: total,
         currency: 'USD',
-        num_items: items.reduce((acc, i) => acc + i.quantity, 0)
+        num_items: items.reduce((acc, i) => acc + i.quantity, 0),
+        item_names: items.map(i => i.name),
+        items: items.map(i => ({
+          id: i.id,
+          name: i.name,
+          price: i.price,
+          quantity: i.quantity,
+          image: i.image
+        }))
       }, `initiate-${Date.now()}`);
     }
   }, []); // Only once on mount
@@ -355,7 +364,8 @@ const CheckoutPage = () => {
       status: 'pending',
       notes: '',
       created_at: new Date().toISOString(),
-      user_id: user?.id || null
+      user_id: user?.id || null,
+      affiliate_id: getAffiliateId()
     };
 
     try {

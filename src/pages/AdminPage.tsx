@@ -51,6 +51,26 @@ const AdminPage = () => {
   const [productTestimonials, setProductTestimonials] = useState<any[]>([]);
   const [isTestimonialModalOpen, setIsTestimonialModalOpen] = useState(false);
   const [editingTestimonial, setEditingTestimonial] = useState<any>(null);
+  const [isManualOrderModalOpen, setIsManualOrderModalOpen] = useState(false);
+  const [manualOrderFormData, setManualOrderFormData] = useState({
+    customer_name: '',
+    customer_email: '',
+    customer_phone: '',
+    address: '',
+    total: '0',
+    status: 'pending',
+    payment_method: 'whatsapp',
+    origin: 'whatsapp',
+    notes: '',
+    affiliate_id: '',
+    items: [] as any[]
+  });
+  const [manualOrderItem, setManualOrderItem] = useState({
+    product_id: '',
+    quantity: 1,
+    size: '',
+    color: ''
+  });
 
   const [formData, setFormData] = useState({
     name: '',
@@ -77,7 +97,13 @@ const AdminPage = () => {
     gender: 'unisex',
     age_group: 'adult',
     condition: 'new',
-    sale_price: ''
+    sale_price: '',
+    pattern: '',
+    material_simple: '',
+    shipping_rate: '',
+    shipping_min_days: '',
+    shipping_max_days: '',
+    return_days: ''
   });
 
   const STANDARD_SIZES = ['XS', 'S', 'M', 'L', 'XL', 'XXL'];
@@ -91,7 +117,7 @@ const AdminPage = () => {
   const [improvingField, setImprovingField] = useState<string | null>(null);
 
   useEffect(() => {
-    if (isModalOpen || isUserModalOpen || isOrderModalOpen || isCategoryModalOpen) {
+    if (isModalOpen || isUserModalOpen || isOrderModalOpen || isCategoryModalOpen || isManualOrderModalOpen) {
       document.body.style.overflow = 'hidden';
     } else {
       document.body.style.overflow = 'unset';
@@ -99,7 +125,7 @@ const AdminPage = () => {
     return () => {
       document.body.style.overflow = 'unset';
     };
-  }, [isModalOpen, isUserModalOpen, isOrderModalOpen, isCategoryModalOpen]);
+  }, [isModalOpen, isUserModalOpen, isOrderModalOpen, isCategoryModalOpen, isManualOrderModalOpen]);
 
   useEffect(() => {
     if (activeTab === 'dashboard' && profile) {
@@ -376,7 +402,13 @@ const AdminPage = () => {
         gender: formData.gender || 'unisex',
         age_group: formData.age_group || 'adult',
         condition: formData.condition || 'new',
-        sale_price: parseFloat(formData.sale_price) || null
+        sale_price: parseFloat(formData.sale_price) || null,
+        pattern: formData.pattern || null,
+        material_simple: formData.material_simple || null,
+        shipping_rate: parseFloat(formData.shipping_rate) || null,
+        shipping_min_days: parseInt(formData.shipping_min_days) || null,
+        shipping_max_days: parseInt(formData.shipping_max_days) || null,
+        return_days: parseInt(formData.return_days) || null
       };
 
       if (editingProduct) {
@@ -405,17 +437,82 @@ const AdminPage = () => {
     }
   };
 
+  const reportPaymentToRaider = async (order: any) => {
+    const raiderUrl = import.meta.env.VITE_RAIDER_URL;
+    const trackToken = import.meta.env.VITE_RAIDER_TRACK_TOKEN;
+    const trackingId = order.affiliate_id;
+
+    if (!raiderUrl || !trackToken || !trackingId) {
+      console.log('Raider reporting skipped: Missing config or tracking ID');
+      return;
+    }
+
+    try {
+      const endpoint = `${raiderUrl.replace(/\/$/, '')}/track/payment/${trackingId}/`;
+      const auth = btoa(`:${trackToken}`);
+      
+      const response = await fetch(endpoint, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Basic ${auth}`,
+          'Content-Type': 'application/x-www-form-urlencoded'
+        },
+        body: new URLSearchParams({
+          amount: order.total.toString(),
+          currency: 'USD',
+          trace: `Order ${order.id}`
+        })
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(`Raider API error: ${response.status} ${errorText}`);
+      }
+
+      console.log('Payment successfully reported to Raider');
+    } catch (error) {
+      console.error('Failed to report payment to Raider:', error);
+    }
+  };
+  
+  const handleUpdateOrderStatus = async (orderId: string, newStatus: string) => {
+    const { error } = await supabase
+      .from('orders')
+      .update({ status: newStatus })
+      .eq('id', orderId);
+
+    if (!error) {
+      const updatedOrder = orders.find(o => o.id === orderId);
+      if (updatedOrder) {
+        updatedOrder.status = newStatus;
+        setOrders([...orders]);
+        
+        // Report to Raider if order is completed or paid
+        if (newStatus === 'completed' || newStatus === 'paid') {
+          reportPaymentToRaider(updatedOrder);
+        }
+      }
+    }
+  };
+
   const handleSaveOrder = async (e: React.FormEvent) => {
     e.preventDefault();
     const { error } = await supabase.from('orders').update({
       customer_name: editingOrder.customer_name,
       status: editingOrder.status,
-      notes: editingOrder.notes
+      notes: editingOrder.notes,
+      affiliate_id: editingOrder.affiliate_id
     }).eq('id', editingOrder.id);
 
     if (!error) {
-      setOrders(orders.map(o => o.id === editingOrder.id ? editingOrder : o));
+      const updatedOrder = { ...editingOrder };
+      setOrders(orders.map(o => o.id === editingOrder.id ? updatedOrder : o));
       setIsOrderModalOpen(false);
+      
+      // Report to Raider if order is completed or paid via bulk edit
+      if (updatedOrder.status === 'completed' || updatedOrder.status === 'paid') {
+        reportPaymentToRaider(updatedOrder);
+      }
     }
   };
 
@@ -445,6 +542,46 @@ const AdminPage = () => {
       setNewCategoryName('');
     } else {
       alert('Error creando categoría: ' + (error?.message || 'Ya existe o error de conexión'));
+    }
+  };
+  
+  const handleCreateManualOrder = async (e: React.FormEvent) => {
+    e.preventDefault();
+    try {
+      if (manualOrderFormData.items.length === 0) {
+        alert('Por favor añade al menos un producto al pedido.');
+        return;
+      }
+
+      const orderData = {
+        ...manualOrderFormData,
+        total: parseFloat(manualOrderFormData.total),
+        created_at: new Date().toISOString()
+      };
+
+      const { data, error } = await supabase.from('orders').insert([orderData]).select();
+      if (error) throw error;
+
+      if (data) {
+        setOrders([data[0], ...orders]);
+        setIsManualOrderModalOpen(false);
+        setManualOrderFormData({
+          customer_name: '',
+          customer_email: '',
+          customer_phone: '',
+          address: '',
+          total: '0',
+          status: 'pending',
+          payment_method: 'whatsapp',
+          origin: 'whatsapp',
+          notes: '',
+          items: [] as any[]
+        });
+        alert('Pedido manual creado correctamente.');
+      }
+    } catch (error: any) {
+      console.error('Error creating manual order:', error);
+      alert('Error al crear pedido: ' + error.message);
     }
   };
 
@@ -834,6 +971,12 @@ const AdminPage = () => {
                             gender: product.gender || 'unisex',
                             age_group: product.age_group || 'adult',
                             condition: product.condition || 'new',
+                            pattern: product.pattern || '',
+                            material_simple: product.material_simple || '',
+                            shipping_rate: product.shipping_rate?.toString() || '',
+                            shipping_min_days: product.shipping_min_days?.toString() || '',
+                            shipping_max_days: product.shipping_max_days?.toString() || '',
+                            return_days: product.return_days?.toString() || '',
                             sale_price: product.sale_price ? product.sale_price.toString() : ''
                           });
                           fetchProductTestimonials(product.id);
@@ -857,7 +1000,15 @@ const AdminPage = () => {
 
         {activeTab === 'orders' && canManageOrders && (
           <div>
-            <h3 className="text-lg font-medium text-gray-900 mb-4">Gestión de Pedidos</h3>
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="text-lg font-medium text-gray-900 border-l-4 border-vandora-emerald pl-3">Gestión de Pedidos</h3>
+              <button
+                onClick={() => setIsManualOrderModalOpen(true)}
+                className="bg-vandora-emerald text-white px-4 py-2 rounded-md flex items-center transition-colors hover:bg-emerald-800 shadow-md text-sm"
+              >
+                <Plus className="h-4 w-4 mr-2" /> Nuevo Pedido
+              </button>
+            </div>
             <div className="bg-white rounded-lg shadow overflow-hidden border border-gray-200">
               <table className="min-w-full divide-y divide-gray-200">
                 <thead className="bg-gray-50">
@@ -1280,11 +1431,11 @@ const AdminPage = () => {
                       </select>
                     </div>
                     <div>
-                      <label className="block text-xs font-semibold text-gray-600 uppercase mb-1">Estado / Condición</label>
+                      <label className="block text-xs font-semibold text-gray-600 uppercase mb-1">Estado (Condition)</label>
                       <select name="condition" value={formData.condition || ''} onChange={handleInputChange} className="w-full rounded-md border-gray-300 shadow-sm border p-2 text-sm outline-none focus:ring-2 focus:ring-blue-500 bg-white">
                         <option value="new">Nuevo</option>
-                        <option value="refurbished">Reacondicionado</option>
                         <option value="used">Usado</option>
+                        <option value="refurbished">Reacondicionado</option>
                       </select>
                     </div>
                     <div>
@@ -1323,8 +1474,8 @@ const AdminPage = () => {
                     </div>
                   </div>
                 </div>
-
-                {/* Testimonials Section (New) */}
+        
+        {/* Testimonials Section (New) */}
                 {editingProduct && (
                   <div className="space-y-6 bg-emerald-50/30 p-6 rounded-xl border border-emerald-100">
                     <div className="flex justify-between items-center border-b border-emerald-100 pb-2">
@@ -1467,6 +1618,20 @@ const AdminPage = () => {
                       <span>Total:</span>
                       <span>{formatPrice(editingOrder.total)}</span>
                     </div>
+                  </div>
+                </div>
+
+                <div className="bg-gray-50 p-4 rounded-lg space-y-3 mb-6">
+                  <h3 className="text-sm font-semibold text-gray-900 border-b pb-1">Afiliado (Referencia)</h3>
+                  <div className="text-sm">
+                    <label className="block text-xs font-semibold text-gray-600 uppercase mb-1">ID Afiliado / Tracking Code</label>
+                    <input 
+                      type="text" 
+                      value={editingOrder.affiliate_id || ''}
+                      onChange={(e) => setEditingOrder({...editingOrder, affiliate_id: e.target.value})}
+                      className="w-full rounded-md border-gray-300 shadow-sm border p-2 text-sm outline-none focus:ring-2 focus:ring-blue-500"
+                      placeholder="Sin afiliado"
+                    />
                   </div>
                 </div>
 
@@ -1740,6 +1905,212 @@ const AdminPage = () => {
                 <div className="flex justify-end space-x-3 pt-4 border-t">
                   <button type="button" onClick={() => setIsTestimonialModalOpen(false)} className="px-6 py-2 border rounded-md text-gray-600">Cancelar</button>
                   <button type="submit" className="px-6 py-2 bg-vandora-emerald text-white rounded-md hover:bg-emerald-800 transition-colors shadow-md">Guardar Testimonio</button>
+                </div>
+              </form>
+            </div>
+          </div>
+        )}
+        {isManualOrderModalOpen && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-2 sm:p-4 z-[65] backdrop-blur-sm">
+            <div className="bg-white rounded-xl w-full sm:max-w-2xl md:max-w-3xl lg:max-w-4xl max-h-[95vh] overflow-y-auto flex flex-col shadow-2xl">
+              <div className="flex justify-between items-center p-4 md:p-6 sticky top-0 bg-white z-20 border-b">
+                <h2 className="text-xl font-serif text-gray-900">Crear Nuevo Pedido Manual</h2>
+                <button onClick={() => setIsManualOrderModalOpen(false)} className="text-gray-400 hover:text-gray-600"><X className="h-6 w-6" /></button>
+              </div>
+              
+              <form onSubmit={handleCreateManualOrder} className="p-4 md:p-8 space-y-6 flex-1">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div className="space-y-4">
+                    <h3 className="text-sm font-bold text-gray-400 uppercase tracking-wider">Cliente</h3>
+                    <input 
+                      type="text" 
+                      placeholder="Nombre Completo" 
+                      required 
+                      className="w-full rounded-md border p-3 outline-none focus:ring-2 focus:ring-vandora-emerald"
+                      value={manualOrderFormData.customer_name}
+                      onChange={(e) => setManualOrderFormData({...manualOrderFormData, customer_name: e.target.value})}
+                    />
+                    <input 
+                      type="email" 
+                      placeholder="Email (Opcional)" 
+                      className="w-full rounded-md border p-3 outline-none focus:ring-2 focus:ring-vandora-emerald"
+                      value={manualOrderFormData.customer_email}
+                      onChange={(e) => setManualOrderFormData({...manualOrderFormData, customer_email: e.target.value})}
+                    />
+                    <input 
+                      type="tel" 
+                      placeholder="Teléfono" 
+                      required 
+                      className="w-full rounded-md border p-3 outline-none focus:ring-2 focus:ring-vandora-emerald"
+                      value={manualOrderFormData.customer_phone}
+                      onChange={(e) => setManualOrderFormData({...manualOrderFormData, customer_phone: e.target.value})}
+                    />
+                    <textarea 
+                      placeholder="Dirección de Envío" 
+                      required 
+                      rows={2}
+                      className="w-full rounded-md border p-3 outline-none focus:ring-2 focus:ring-vandora-emerald"
+                      value={manualOrderFormData.address}
+                      onChange={(e) => setManualOrderFormData({...manualOrderFormData, address: e.target.value})}
+                    />
+                  </div>
+
+                  <div className="space-y-4">
+                    <h3 className="text-sm font-bold text-gray-400 uppercase tracking-wider">Detalles de Venta</h3>
+                    <div className="grid grid-cols-1 gap-4">
+                      <div>
+                        <label className="text-xs font-medium text-gray-500 mb-1 block">Origen</label>
+                        <select 
+                          className="w-full rounded-md border p-3 bg-white outline-none focus:ring-2 focus:ring-vandora-emerald"
+                          value={manualOrderFormData.origin}
+                          onChange={(e) => setManualOrderFormData({...manualOrderFormData, origin: e.target.value})}
+                        >
+                          <option value="whatsapp">WhatsApp</option>
+                          <option value="instagram">Instagram</option>
+                          <option value="facebook">Facebook</option>
+                          <option value="tienda_fisica">Tienda Física</option>
+                          <option value="calle">Venta en la Calle</option>
+                          <option value="otro">Otro</option>
+                        </select>
+                      </div>
+                      <div>
+                        <label className="text-xs font-medium text-gray-500 mb-1 block">Estado Inicial</label>
+                        <select 
+                          className="w-full rounded-md border p-3 bg-white outline-none focus:ring-2 focus:ring-vandora-emerald"
+                          value={manualOrderFormData.status}
+                          onChange={(e) => setManualOrderFormData({...manualOrderFormData, status: e.target.value})}
+                        >
+                          <option value="pending">Pendiente</option>
+                          <option value="processing">Procesando</option>
+                          <option value="completed">Completado</option>
+                        </select>
+                      </div>
+                      <div>
+                        <label className="text-xs font-medium text-gray-500 mb-1 block">ID Afiliado (Si aplica)</label>
+                        <input 
+                          type="text" 
+                          placeholder="Tracking ID"
+                          className="w-full rounded-md border p-3 outline-none focus:ring-2 focus:ring-vandora-emerald"
+                          value={manualOrderFormData.affiliate_id}
+                          onChange={(e) => setManualOrderFormData({...manualOrderFormData, affiliate_id: e.target.value})}
+                        />
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="bg-gray-50 p-4 rounded-xl border space-y-4">
+                  <h3 className="text-sm font-bold text-vandora-emerald uppercase flex items-center">
+                    <Package className="w-4 h-4 mr-2" /> Productos en el Pedido
+                  </h3>
+                  
+                  <div className="flex flex-col sm:flex-row gap-3">
+                    <select 
+                      className="flex-1 rounded-md border p-2 bg-white text-sm"
+                      value={manualOrderItem.product_id}
+                      onChange={(e) => {
+                        const prod = products.find(p => p.id === e.target.value);
+                        setManualOrderItem({
+                          ...manualOrderItem, 
+                          product_id: e.target.value,
+                          size: prod?.sizes?.[0] || '',
+                          color: prod?.colors?.[0]?.name || ''
+                        });
+                      }}
+                    >
+                      <option value="">Seleccionar Producto...</option>
+                      {products.map(p => (
+                        <option key={p.id} value={p.id}>{p.name} - {formatPrice(p.price)}</option>
+                      ))}
+                    </select>
+                    <div className="flex gap-2">
+                       <input 
+                        type="number" 
+                        min="1" 
+                        className="w-16 rounded-md border p-2 text-sm"
+                        value={manualOrderItem.quantity}
+                        onChange={(e) => setManualOrderItem({...manualOrderItem, quantity: parseInt(e.target.value)})}
+                       />
+                       <button 
+                        type="button"
+                        onClick={() => {
+                          const prod = products.find(p => p.id === manualOrderItem.product_id);
+                          if (!prod) return;
+                          
+                          const newItem = {
+                            id: prod.id,
+                            name: prod.name,
+                            price: prod.price,
+                            quantity: manualOrderItem.quantity,
+                            size: manualOrderItem.size,
+                            color: manualOrderItem.color,
+                            image: prod.images?.[0]?.url || prod.images?.[0] || ''
+                          };
+                          
+                          const newItems = [...manualOrderFormData.items, newItem];
+                          const newTotal = newItems.reduce((acc, item) => acc + (item.price * item.quantity), 0);
+                          
+                          setManualOrderFormData({
+                            ...manualOrderFormData, 
+                            items: newItems,
+                            total: newTotal.toString()
+                          });
+                          setManualOrderItem({ product_id: '', quantity: 1, size: '', color: '' });
+                        }}
+                        className="bg-vandora-emerald text-white px-4 py-2 rounded-md hover:bg-emerald-800 transition-colors"
+                       >
+                         Añadir
+                       </button>
+                    </div>
+                  </div>
+
+                  {manualOrderFormData.items.length > 0 && (
+                    <div className="space-y-2 pt-2">
+                      {manualOrderFormData.items.map((item, idx) => (
+                        <div key={idx} className="flex justify-between items-center text-sm bg-white p-2 rounded border">
+                          <span>{item.quantity}x {item.name}</span>
+                          <div className="flex items-center gap-4">
+                            <span className="font-bold">{formatPrice(item.price * item.quantity)}</span>
+                            <button 
+                              type="button" 
+                              onClick={() => {
+                                const newItems = manualOrderFormData.items.filter((_, i) => i !== idx);
+                                const newTotal = newItems.reduce((acc, item) => acc + (item.price * item.quantity), 0);
+                                setManualOrderFormData({
+                                  ...manualOrderFormData, 
+                                  items: newItems,
+                                  total: newTotal.toString()
+                                });
+                              }}
+                              className="text-red-500 hover:text-red-700"
+                            >
+                              <X className="w-4 h-4" />
+                            </button>
+                          </div>
+                        </div>
+                      ))}
+                      <div className="flex justify-between items-center pt-2 font-bold text-vandora-emerald text-lg">
+                        <span>TOTAL</span>
+                        <span>{formatPrice(parseFloat(manualOrderFormData.total))}</span>
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                <div className="flex justify-end space-x-3 pt-6 border-t sticky bottom-0 bg-white">
+                  <button 
+                    type="button" 
+                    onClick={() => setIsManualOrderModalOpen(false)} 
+                    className="px-6 py-2 border rounded-md text-gray-600"
+                  >
+                    Cancelar
+                  </button>
+                  <button 
+                    type="submit" 
+                    className="px-6 py-2 bg-vandora-emerald text-white rounded-md hover:bg-emerald-800 transition-colors shadow-md"
+                  >
+                    Crear Pedido
+                  </button>
                 </div>
               </form>
             </div>

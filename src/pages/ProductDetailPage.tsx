@@ -85,6 +85,9 @@ const ProductDetailPage = () => {
   const [activeImageIndex, setActiveImageIndex] = useState(0);
   const [showVideo, setShowVideo] = useState(false);
   const [isSizeGuideOpen, setIsSizeGuideOpen] = useState(false);
+  const [showSizeGuide, setShowSizeGuide] = useState(false);
+  const [shippingPolicy, setShippingPolicy] = useState<any>(null);
+  const [refundPolicy, setRefundPolicy] = useState<any>(null);
   const [testimonials, setTestimonials] = useState<any[]>([]);
   const { trackStandardEvent } = useAnalytics();
 
@@ -191,10 +194,7 @@ const ProductDetailPage = () => {
         if (!normalizedData.image && normalizedData.images.length > 0) {
           normalizedData.image = normalizedData.images[0].url;
         }
-        setProduct(normalizedData);
-        if (normalizedData.sizes.length > 0) setSelectedSize(normalizedData.sizes[0]);
-        if (normalizedData.colors.length > 0) setSelectedColor(normalizedData.colors[0].name);
-
+        
         // Fetch Testimonials
         const { data: testData } = await supabase
           .from('product_testimonials')
@@ -203,6 +203,21 @@ const ProductDetailPage = () => {
           .eq('is_approved', true)
           .order('created_at', { ascending: false });
         if (testData) setTestimonials(testData);
+
+        if (normalizedData) {
+          setProduct(normalizedData);
+          if (normalizedData.sizes.length > 0) setSelectedSize(normalizedData.sizes[0]);
+          if (normalizedData.colors.length > 0) setSelectedColor(normalizedData.colors[0].name);
+
+          // Fetch shipping and refund policies for SEO schema
+          const fetchPolicies = async () => {
+            const { data: shipData } = await supabase.from('site_content').select('*').eq('section_key', 'page_shipping').single();
+            const { data: refundData } = await supabase.from('site_content').select('*').eq('section_key', 'page_refund').single();
+            if (shipData?.content) setShippingPolicy(shipData.content);
+            if (refundData?.content) setRefundPolicy(refundData.content);
+          };
+          fetchPolicies();
+        }
       } else {
         navigate('/tienda');
       }
@@ -218,7 +233,8 @@ const ProductDetailPage = () => {
         content_ids: [product.id],
         content_type: 'product',
         value: product.price,
-        currency: 'USD'
+        currency: 'USD',
+        image_url: product.image
       }, `view-${product.id}-${Date.now()}`);
     }
   }, [product?.id]); // Wait for product
@@ -269,7 +285,8 @@ const ProductDetailPage = () => {
       content_type: 'product',
       value: product.price * quantity,
       currency: 'USD',
-      num_items: quantity
+      num_items: quantity,
+      image_url: product.image
     }, `cart-${product.id}-${Date.now()}`);
   };
 
@@ -284,41 +301,50 @@ const ProductDetailPage = () => {
     setActiveImageIndex((prev) => (prev - 1 + filteredImages.length) % filteredImages.length);
   };
 
-  const productSchema = {
-    "@context": "https://schema.org/",
+  const metaDescription = (product.description || '')
+    .replace(/<[^>]*>?/gm, '')
+    .replace(/\s+/g, ' ')
+    .trim();
+
+  // Logic for Product Variants (ProductGroup)
+  const colors = Array.isArray(product.colors) ? product.colors : [];
+  const sizes = Array.isArray(product.sizes) ? product.sizes : [];
+  
+  const createProductSchema = (colorName?: string, sizeName?: string) => ({
     "@type": "Product",
-    "name": product.name,
-    "image": filteredImages.length > 0 ? filteredImages.map(img => ({
-      "@type": "ImageObject",
-      "contentUrl": img.url,
-      "license": "https://vandora.ec/terminos-y-condiciones",
-      "acquireLicensePage": "https://vandora.ec/contacto",
-      "creditText": "Vandora Moda Ecuatoriana",
-      "creator": {
-        "@type": "Organization",
-        "name": "Vandora"
-      },
-      "copyrightNotice": "Vandora"
-    })) : product.image,
-    "description": product.description,
-    "sku": product.sku || product.id,
-    "brand": {
-      "@type": "Brand",
-      "name": product.brand || "Vandora"
+    "name": `${product.name}${colorName ? ` - ${colorName}` : ''}${sizeName ? ` - ${sizeName}` : ''}`,
+    "image": colorName ? (product.images.find((img: any) => img.color === colorName)?.url || product.image) : product.image,
+    "description": metaDescription,
+    "sku": `${product.sku || product.id}${colorName ? `-${colorName.replace(/\s+/g, '')}` : ''}${sizeName ? `-${sizeName}` : ''}`,
+    "gtin13": product.gtin || undefined,
+    "mpn": product.mpn || undefined,
+    "brand": { "@type": "Brand", "name": product.brand || "Vandora" },
+    "color": colorName || selectedColor || undefined,
+    "size": sizeName || selectedSize || undefined,
+    "material": product.material_simple || product.materials || undefined,
+    "pattern": product.pattern || undefined,
+    "audience": {
+      "@type": "PeopleAudience",
+      "suggestedGender": product.gender === 'female' ? "https://schema.org/Female" : 
+                         product.gender === 'male' ? "https://schema.org/Male" : undefined,
+      "suggestedAgeGroup": product.age_group || 'adult'
     },
+    "category": product.google_product_category || product.category,
     "offers": {
       "@type": "Offer",
       "url": window.location.href,
       "priceCurrency": "USD",
-      "price": product.price,
+      "price": product.sale_price || product.price,
       "priceValidUntil": new Date(new Date().setFullYear(new Date().getFullYear() + 1)).toISOString().split('T')[0],
-      "itemCondition": "https://schema.org/NewCondition",
+      "itemCondition": product.condition === 'used' ? "https://schema.org/UsedCondition" : 
+                       product.condition === 'refurbished' ? "https://schema.org/RefurbishedCondition" : 
+                       "https://schema.org/NewCondition",
       "availability": product.stock > 0 ? "https://schema.org/InStock" : "https://schema.org/OutOfStock",
       "hasMerchantReturnPolicy": {
         "@type": "MerchantReturnPolicy",
         "applicableCountry": "EC",
         "returnPolicyCategory": "https://schema.org/MerchantReturnFiniteReturnPeriod",
-        "merchantReturnDays": 30,
+        "merchantReturnDays": product.return_days || (refundPolicy?.intro?.includes('15') ? 15 : 30),
         "returnMethod": "https://schema.org/ReturnByMail",
         "returnFees": "https://schema.org/FreeReturn"
       },
@@ -326,30 +352,40 @@ const ProductDetailPage = () => {
         "@type": "OfferShippingDetails",
         "shippingRate": {
           "@type": "MonetaryAmount",
-          "value": 0.00,
+          "value": product.shipping_rate || (shippingPolicy?.shipping_line3?.includes('5.00') ? 5.00 : 0.00),
           "currency": "USD"
         },
-        "shippingDestination": {
-          "@type": "DefinedRegion",
-          "addressCountry": "EC"
-        },
+        "shippingDestination": { "@type": "DefinedRegion", "addressCountry": "EC" },
         "deliveryTime": {
           "@type": "ShippingDeliveryTime",
-          "handlingTime": {
-            "@type": "QuantitativeValue",
-            "minValue": 1,
-            "maxValue": 2,
-            "unitCode": "DAY"
-          },
+          "handlingTime": { "@type": "QuantitativeValue", "minValue": 1, "maxValue": 2, "unitCode": "DAY" },
           "transitTime": {
             "@type": "QuantitativeValue",
-            "minValue": 2,
-            "maxValue": 5,
+            "minValue": product.shipping_min_days || (shippingPolicy?.shipping_line2?.includes('2-3') ? 2 : 1),
+            "maxValue": product.shipping_max_days || (shippingPolicy?.shipping_line2?.includes('3-5') ? 5 : 7),
             "unitCode": "DAY"
           }
         }
       }
-    },
+    }
+  });
+
+  const hasVariants = colors.length > 1 || sizes.length > 1;
+  const productSchema: any = hasVariants ? {
+    "@context": "https://schema.org/",
+    "@type": "ProductGroup",
+    "name": product.name,
+    "description": metaDescription,
+    "url": window.location.href,
+    "brand": { "@type": "Brand", "name": product.brand || "Vandora" },
+    "productGroupID": product.id,
+    "variesBy": [
+      ...(colors.length > 1 ? ["https://schema.org/color"] : []),
+      ...(sizes.length > 1 ? ["https://schema.org/size"] : [])
+    ],
+    "hasVariant": (colors.length > 0 ? colors : [{ name: undefined }]).flatMap(c => 
+      (sizes.length > 0 ? sizes : [undefined]).map(s => createProductSchema(c.name, s))
+    ),
     "aggregateRating": {
       "@type": "AggregateRating",
       "ratingValue": testimonials.length > 0 
@@ -357,28 +393,45 @@ const ProductDetailPage = () => {
         : "5.0",
       "reviewCount": testimonials.length > 0 ? testimonials.length : 1
     },
+    "datePublished": product.created_at || new Date().toISOString(),
+    "dateModified": product.updated_at || product.created_at || new Date().toISOString(),
     "review": testimonials.length > 0 ? testimonials.slice(0, 5).map((t: any) => ({
       "@type": "Review",
-      "author": {
-        "@type": "Person",
-        "name": t.user_name || "Cliente Satisfecho"
-      },
+      "author": { "@type": "Person", "name": t.user_name || "Cliente Satisfecho" },
       "reviewBody": t.comment,
-      "reviewRating": {
-        "@type": "Rating",
-        "ratingValue": t.rating || 5
-      }
+      "datePublished": t.created_at || new Date().toISOString(),
+      "reviewRating": { "@type": "Rating", "ratingValue": t.rating || 5 }
     })) : [{
       "@type": "Review",
-      "author": {
-        "@type": "Person",
-        "name": "Cliente Vandora"
-      },
+      "author": { "@type": "Person", "name": "Cliente Vandora" },
       "reviewBody": "Excelente calidad y diseño.",
-      "reviewRating": {
-        "@type": "Rating",
-        "ratingValue": 5
-      }
+      "datePublished": "2024-01-01T08:00:00+00:00",
+      "reviewRating": { "@type": "Rating", "ratingValue": 5 }
+    }]
+  } : {
+    "@context": "https://schema.org/",
+    ...createProductSchema(),
+    "aggregateRating": {
+      "@type": "AggregateRating",
+      "ratingValue": testimonials.length > 0 
+        ? (testimonials.reduce((acc: number, t: any) => acc + (t.rating || 5), 0) / testimonials.length).toFixed(1)
+        : "5.0",
+      "reviewCount": testimonials.length > 0 ? testimonials.length : 1
+    },
+    "datePublished": product.created_at || new Date().toISOString(),
+    "dateModified": product.updated_at || product.created_at || new Date().toISOString(),
+    "review": testimonials.length > 0 ? testimonials.slice(0, 5).map((t: any) => ({
+      "@type": "Review",
+      "author": { "@type": "Person", "name": t.user_name || "Cliente Satisfecho" },
+      "reviewBody": t.comment,
+      "datePublished": t.created_at || new Date().toISOString(),
+      "reviewRating": { "@type": "Rating", "ratingValue": t.rating || 5 }
+    })) : [{
+      "@type": "Review",
+      "author": { "@type": "Person", "name": "Cliente Vandora" },
+      "reviewBody": "Excelente calidad y diseño.",
+      "datePublished": "2024-01-01T08:00:00+00:00",
+      "reviewRating": { "@type": "Rating", "ratingValue": 5 }
     }]
   };
 
@@ -423,14 +476,11 @@ const ProductDetailPage = () => {
                   </div>
                 </div>
               ) : (
-                <motion.img
-                  key={activeImageIndex}
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  transition={{ duration: 0.5 }}
-                  src={filteredImages[activeImageIndex]?.url || product.image}
-                  alt={`${product.name} - ${product.category} - Vandora - Vista ${activeImageIndex + 1}`}
-                  className="h-full w-full object-cover object-center"
+                <img 
+                  src={filteredImages[activeImageIndex]?.url || product.image} 
+                  alt={filteredImages[activeImageIndex]?.alt || `${product.name} - ${product.category} - Vandora - Vista ${activeImageIndex + 1}`} 
+                  className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+                  loading="eager" // Principal image should be eager for LCP
                 />
               )}
 
@@ -497,7 +547,13 @@ const ProductDetailPage = () => {
             <div className="mb-6">
               <h1 className="text-3xl sm:text-4xl font-serif text-gray-900 mb-2">{product.name}</h1>
               {product.sku && (
-                <p className="text-xs text-gray-400 font-mono mb-4 uppercase tracking-widest">SKU: {product.sku}</p>
+                <div className="flex items-center gap-2 mb-4">
+                  <p className="text-xs text-gray-400 font-mono uppercase tracking-widest">SKU: {product.sku}</p>
+                  <span className="text-gray-200">|</span>
+                  <p className="text-[10px] text-gray-400 uppercase tracking-wider">
+                    Publicado: {new Date(product.created_at || Date.now()).toLocaleDateString('es-EC', { day: '2-digit', month: '2-digit', year: 'numeric' })}
+                  </p>
+                </div>
               )}
 
               <div className="flex items-center justify-between mb-4">
