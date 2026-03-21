@@ -29,7 +29,7 @@ serve(async (req) => {
       .select('name');
 
     // 2. Base configuration
-    const baseUrl = "https://vandora.ec"; // Update this to the actual domain
+    const baseUrl = "https://www.vandora.boutique"; // Corrected domain
     const currentDate = new Date().toISOString().split('T')[0];
 
     // 3. Generate XML

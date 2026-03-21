@@ -17,8 +17,7 @@ Disallow: /upsell
 Disallow: /downsell
 Disallow: /iniciar-sesion
 Disallow: /restablecer-contrasena
-Disallow: /politica-de-privacidad
-Disallow: /terminos-y-condiciones
+Disallow: /gracias
 
 # Sitemap
-Sitemap: https://vandora.ec/sitemap.xml
+Sitemap: https://www.vandora.boutique/sitemap.xml

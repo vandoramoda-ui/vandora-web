@@ -61,11 +61,12 @@ const Breadcrumbs = () => {
             return word.charAt(0).toUpperCase() + word.slice(1);
           }).join(' ');
 
-          // Fallback hack: if it's the last element of a product detail page,
-          // the title usually contains the correct product name.
+          // Fallback: if it's the last element of a product detail page,
+          // use the page title (product name).
           if (isLast && (pathnames.includes('producto') || pathnames.includes('product')) && !mappedName) {
             const pageTitle = document.title.split(' | ')[0];
-            if (pageTitle && pageTitle !== 'Vandora' && pageTitle !== 'Cargando...') {
+            // Only use pageTitle if it's not generic 'Tienda' or branding
+            if (pageTitle && pageTitle !== 'Vandora' && pageTitle !== 'Cargando...' && pageTitle !== 'Tienda' && pageTitle !== 'Inicio') {
                displayName = pageTitle;
             }
           }
