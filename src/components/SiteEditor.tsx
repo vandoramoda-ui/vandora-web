@@ -62,6 +62,17 @@ const SiteEditor = () => {
     siteLogo: '',
     siteName: 'Vandora'
   });
+  const [refundPage, setRefundPage] = useState<any>({
+    title: 'Políticas de Reembolso',
+    intro: 'En Vandora, nos esforzamos por garantizar tu satisfacción total. Si por alguna razón no estás satisfecha con tu compra, aquí te explicamos cómo proceder.',
+    conditions: [
+      'Las prendas deben estar en su estado original, con etiquetas y sin señales de uso.',
+      'Tienes un plazo de 15 días calendario desde la recepción para solicitar un reembolso.',
+      'Los artículos en oferta final no son elegibles para reembolso, solo cambios.'
+    ],
+    process: 'Para iniciar un proceso de reembolso, por favor contáctanos vía WhatsApp o correo electrónico adjuntando tu número de pedido y fotos del producto.',
+    footer_text: 'El reembolso se procesará a través del mismo método de pago utilizado o mediante transferencia bancaria en un plazo de 5 a 10 días hábiles.'
+  });
   const [activeTab, setActiveTab] = useState('home');
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -184,6 +195,14 @@ const SiteEditor = () => {
         .eq('section_key', 'branding')
         .single();
       if (brandingData) setBranding(brandingData.content);
+
+      // Fetch Refund Page
+      const { data: refundData } = await supabase
+        .from('site_content')
+        .select('*')
+        .eq('section_key', 'page_refund')
+        .single();
+      if (refundData) setRefundPage(refundData.content);
     } catch (err) {
       console.error("Error fetching site content", err);
     } finally {
@@ -303,6 +322,16 @@ const SiteEditor = () => {
         }, { onConflict: 'section_key' });
       if (brandingError) throw brandingError;
 
+      // Save Refund Page
+      const { error: refundError } = await supabase
+        .from('site_content')
+        .upsert({ 
+          section_key: 'page_refund', 
+          content: refundPage, 
+          updated_at: new Date().toISOString() 
+        }, { onConflict: 'section_key' });
+      if (refundError) throw refundError;
+
       alert('Cambios guardados correctamente');
     } catch (err: any) {
       console.error('Error saving content:', err);
@@ -322,22 +351,23 @@ const SiteEditor = () => {
     <div className="max-w-6xl mx-auto space-y-12 pb-20">
       {/* Tab Navigation */}
       <div className="flex border-b border-gray-200 gap-8 mb-8 overflow-x-auto hide-scrollbar">
-        {['home', 'branding', 'story', 'faq', 'contact', 'shipping', 'privacy', 'terms'].map((tab) => (
+        {['home', 'branding', 'story', 'faq', 'contact', 'shipping', 'refund', 'privacy', 'terms'].map((tab) => (
           <button
             key={tab}
             onClick={() => setActiveTab(tab)}
             className={`pb-4 px-2 text-sm font-medium transition-colors border-b-2 capitalize whitespace-nowrap ${
-              activeTab === tab 
+              tab === tab 
                 ? 'border-vandora-emerald text-vandora-emerald font-bold' 
                 : 'border-transparent text-gray-500 hover:text-gray-700'
             }`}
           >
-            {tab === 'home' ? 'Página de Inicio' : 
-             tab === 'branding' ? 'Marca / Branding' :
-             tab === 'story' ? 'Nuestra Historia' : 
-             tab === 'faq' ? 'Preguntas Frecuentes' : 
+            {tab === 'home' ? 'Home' : 
+             tab === 'branding' ? 'Marca' :
+             tab === 'story' ? 'Historia' : 
+             tab === 'faq' ? 'FAQ' : 
              tab === 'contact' ? 'Contacto' : 
              tab === 'shipping' ? 'Envíos' :
+             tab === 'refund' ? 'Reembolsos' :
              tab === 'privacy' ? 'Privacidad' : 'Términos'}
           </button>
         ))}
@@ -888,6 +918,98 @@ const SiteEditor = () => {
                     <input type="email" value={shippingPage.contact_email} onChange={(e) => setShippingPage({...shippingPage, contact_email: e.target.value})} className="w-full border rounded-lg p-2" />
                  </div>
               </div>
+          </div>
+        </section>
+      )}
+
+      {activeTab === 'refund' && (
+        <section className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden animate-in fade-in transition-all duration-300">
+          <div className="bg-gray-50 border-b px-8 py-4 flex items-center justify-between">
+            <div className="flex items-center">
+              <History className="w-5 h-5 mr-2 text-vandora-emerald" />
+              <h2 className="text-xl font-serif text-gray-900">Página: Políticas de Reembolso</h2>
+            </div>
+            <button
+              onClick={handleSave}
+              disabled={saving}
+              className="bg-vandora-emerald text-white px-6 py-2 rounded-md hover:bg-emerald-800 flex items-center shadow-md disabled:opacity-50"
+            >
+              {saving ? <Loader2 className="animate-spin h-4 w-4 mr-2" /> : <Save className="h-4 w-4 mr-2" />}
+              Guardar Reembolsos
+            </button>
+          </div>
+          <div className="p-8 space-y-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div>
+                <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Título de la Página</label>
+                <input 
+                  type="text" 
+                  value={refundPage.title} 
+                  onChange={(e) => setRefundPage({ ...refundPage, title: e.target.value })} 
+                  className="w-full border rounded-lg p-2" 
+                />
+              </div>
+              <div className="md:col-span-2">
+                <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Introducción</label>
+                <textarea 
+                  rows={3} 
+                  value={refundPage.intro} 
+                  onChange={(e) => setRefundPage({ ...refundPage, intro: e.target.value })} 
+                  className="w-full border rounded-lg p-2" 
+                />
+              </div>
+              <div className="md:col-span-2">
+                <div className="flex justify-between items-center mb-2">
+                  <label className="block text-xs font-bold text-gray-500 uppercase">Condiciones de Reembolso</label>
+                  <button 
+                    onClick={() => setRefundPage({ ...refundPage, conditions: [...refundPage.conditions, ''] })}
+                    className="text-vandora-emerald text-xs font-bold flex items-center"
+                  >
+                    <Plus className="h-3 w-3 mr-1" /> Añadir Condición
+                  </button>
+                </div>
+                <div className="space-y-2">
+                  {refundPage.conditions.map((cond: string, idx: number) => (
+                    <div key={idx} className="flex gap-2">
+                      <input 
+                        type="text" 
+                        value={cond} 
+                        onChange={(e) => {
+                          const newConds = [...refundPage.conditions];
+                          newConds[idx] = e.target.value;
+                          setRefundPage({ ...refundPage, conditions: newConds });
+                        }} 
+                        className="flex-1 border rounded-lg p-2 text-sm" 
+                      />
+                      <button 
+                        onClick={() => setRefundPage({ ...refundPage, conditions: refundPage.conditions.filter((_: any, i: number) => i !== idx) })}
+                        className="text-red-500 p-2"
+                      >
+                        <Trash className="h-4 w-4" />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              </div>
+              <div className="md:col-span-2">
+                <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Proceso de Reembolso</label>
+                <textarea 
+                  rows={3} 
+                  value={refundPage.process} 
+                  onChange={(e) => setRefundPage({ ...refundPage, process: e.target.value })} 
+                  className="w-full border rounded-lg p-2" 
+                />
+              </div>
+              <div className="md:col-span-2">
+                <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Texto de Pie (Métodos de Reembolso)</label>
+                <textarea 
+                  rows={2} 
+                  value={refundPage.footer_text} 
+                  onChange={(e) => setRefundPage({ ...refundPage, footer_text: e.target.value })} 
+                  className="w-full border rounded-lg p-2" 
+                />
+              </div>
+            </div>
           </div>
         </section>
       )}

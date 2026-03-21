@@ -47,6 +47,11 @@ export default async function handler(req, res) {
     <priority>0.5</priority>
   </url>
   <url>
+    <loc>${baseUrl}/politica-de-reembolso</loc>
+    <lastmod>${currentDate}</lastmod>
+    <priority>0.5</priority>
+  </url>
+  <url>
     <loc>${baseUrl}/contacto</loc>
     <lastmod>${currentDate}</lastmod>
     <priority>0.5</priority>
