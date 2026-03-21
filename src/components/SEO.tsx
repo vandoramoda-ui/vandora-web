@@ -9,6 +9,7 @@ interface SEOProps {
   image?: string;
   type?: 'website' | 'article' | 'product';
   schema?: any;
+  canonical?: string;
 }
 
 const SEO: React.FC<SEOProps> = ({ 
@@ -16,7 +17,8 @@ const SEO: React.FC<SEOProps> = ({
   description, 
   image = 'https://images.unsplash.com/photo-1490481651871-ab68de25d43d?q=80&w=1200&auto=format&fit=crop', 
   type = 'website',
-  schema
+  schema,
+  canonical
 }) => {
   const [branding, setBranding] = React.useState<any>(null);
 
@@ -35,7 +37,7 @@ const SEO: React.FC<SEOProps> = ({
   }, []);
 
   const location = useLocation();
-  const url = `${window.location.origin}${location.pathname}`;
+  const url = canonical || `${window.location.origin}${location.pathname}`;
   const siteName = branding?.siteName || 'Vandora - Moda Ecuatoriana';
   const fullTitle = `${title} | ${siteName}`;
 

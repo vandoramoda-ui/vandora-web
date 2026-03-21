@@ -49,7 +49,7 @@ const Breadcrumbs = () => {
             to = '/tienda';
           } else if (index > 0 && (pathnames[index - 1] === 'producto' || pathnames[index - 1] === 'product') && !isLast) {
             // Handle category segments in /producto/:categoria/:slug
-            to = `/tienda?category=${value}`;
+            to = `/tienda/${value}`;
           }
           
           // Get readable name from map or format the slug

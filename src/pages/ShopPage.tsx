@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { supabase } from '../lib/supabase';
 import ProductCard from '../components/ProductCard';
 import { Loader2 } from 'lucide-react';
-import { useSearchParams } from 'react-router-dom';
+import { useSearchParams, useParams, useNavigate } from 'react-router-dom';
 import SEO from '../components/SEO';
 import { useAnalytics } from '../context/AnalyticsContext';
 
@@ -22,11 +22,13 @@ const ShopPage = () => {
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const { categoryName } = useParams();
+  const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const { trackStandardEvent } = useAnalytics();
   
-  // Get category from URL or default to 'all'
-  const categoryFilter = searchParams.get('category') || 'all';
+  // Get category from URL param, then search query, or default to 'all'
+  const categoryFilter = categoryName || searchParams.get('category') || 'all';
 
   useEffect(() => {
     fetchProducts();
@@ -34,11 +36,11 @@ const ShopPage = () => {
 
   const setCategoryFilter = (category: string) => {
     if (category === 'all') {
-      searchParams.delete('category');
+      navigate('/tienda');
     } else {
-      searchParams.set('category', category);
+      const slug = category.toLowerCase().replace(/\s+/g, '-');
+      navigate(`/tienda/${slug}`);
     }
-    setSearchParams(searchParams);
   };
 
   useEffect(() => {
@@ -104,9 +106,11 @@ const ShopPage = () => {
     }
   };
 
+  const slugify = (text: string) => text.toLowerCase().replace(/\s+/g, '-');
+
   const filteredProducts = (categoryFilter === 'all' 
     ? products 
-    : products.filter(p => p.category.toLowerCase() === categoryFilter.toLowerCase()))
+    : products.filter(p => slugify(p.category) === slugify(categoryFilter)))
     .filter(p => p.stock > 0);
 
   const categories: string[] = ['all', ...Array.from<string>(new Set(products.map((p: Product) => p.category.toLowerCase())))];
@@ -119,6 +123,7 @@ const ShopPage = () => {
           ? "Explora nuestra colección completa de moda ecuatoriana. Vestidos, blusas y pantalones de alta calidad."
           : `Descubre nuestra selección exclusiva de ${categoryFilter}. Diseños únicos que realzan tu estilo.`
         }
+        canonical={categoryFilter === 'all' ? `${window.location.origin}/tienda` : `${window.location.origin}/tienda/${slugify(categoryFilter)}`}
         schema={{
           "@context": "https://schema.org",
           "@type": "CollectionPage",

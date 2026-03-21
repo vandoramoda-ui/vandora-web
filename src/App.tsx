@@ -52,6 +52,7 @@ function App() {
             {/* Public Routes with Layout */}
             <Route path="/" element={<Layout><HomePage /></Layout>} />
             <Route path="/tienda" element={<Layout><ShopPage /></Layout>} />
+            <Route path="/tienda/:categoryName" element={<Layout><ShopPage /></Layout>} />
             <Route path="/producto/:categoria/:slug" element={<Layout><ProductDetailPage /></Layout>} />
             <Route path="/pagar" element={<Layout><CheckoutPage /></Layout>} />
             <Route path="/thank-you" element={<Layout><ThankYouPage /></Layout>} />

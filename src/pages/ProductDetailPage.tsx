@@ -390,6 +390,7 @@ const ProductDetailPage = () => {
         image={product.image}
         type="product"
         schema={productSchema}
+        canonical={`${window.location.origin}/producto/${product.category.toLowerCase().replace(/\s+/g, '-')}/${product.slug || product.id}`}
       />
 
       <SizeGuideModal isOpen={isSizeGuideOpen} onClose={() => setIsSizeGuideOpen(false)} />

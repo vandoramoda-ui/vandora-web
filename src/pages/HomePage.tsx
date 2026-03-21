@@ -61,7 +61,7 @@ const HomePage = () => {
           setCategories(catData.map(c => ({
             name: c.name,
             image: c.image_url || 'https://images.unsplash.com/photo-1490481651871-ab68de25d43d?q=80&w=500&auto=format&fit=crop',
-            link: `/tienda?category=${encodeURIComponent(c.name)}`
+            link: `/tienda/${c.name.toLowerCase().replace(/\s+/g, '-')}`
           })));
         }
 

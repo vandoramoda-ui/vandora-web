@@ -80,9 +80,10 @@ const Footer = () => {
             <h4 className="font-serif text-lg mb-4 text-vandora-gold">Explorar</h4>
             <ul className="space-y-2 text-sm text-gray-400">
               <li><Link to="/tienda" className="hover:text-white transition-colors">Nueva Colección</Link></li>
-              <li><Link to="/tienda?category=dresses" className="hover:text-white transition-colors">Vestidos</Link></li>
-              <li><Link to="/tienda?category=blouses" className="hover:text-white transition-colors">Blusas</Link></li>
-              <li><Link to="/tienda?category=pants" className="hover:text-white transition-colors">Pantalones</Link></li>
+              <li><Link to="/tienda" className="hover:text-white transition-colors">Nueva Colección</Link></li>
+              <li><Link to="/tienda/vestidos" className="hover:text-white transition-colors">Vestidos</Link></li>
+              <li><Link to="/tienda/blusas" className="hover:text-white transition-colors">Blusas</Link></li>
+              <li><Link to="/tienda/pantalones" className="hover:text-white transition-colors">Pantalones</Link></li>
             </ul>
           </div>
 
