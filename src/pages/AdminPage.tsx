@@ -11,6 +11,7 @@ import CheckoutSettingsEditor from '../components/CheckoutSettingsEditor';
 import SizeGuideEditor from '../components/SizeGuideEditor';
 import PopupManager from '../components/PopupManager';
 import FunnelEditor from '../components/FunnelEditor';
+import AffiliateManagement from '../components/AffiliateManagement';
 import SEO from '../components/SEO';
 import { useAuth } from '../context/AuthContext';
 
@@ -810,6 +811,13 @@ const AdminPage = () => {
               </button>
 
               <button
+                onClick={() => { setActiveTab('affiliates'); setIsSidebarOpen(false); }}
+                className={`w-full flex items-center px-4 py-3 text-sm rounded-lg transition-colors ${activeTab === 'affiliates' ? 'bg-emerald-50 text-vandora-emerald font-medium' : 'text-gray-600 hover:bg-gray-50'}`}
+              >
+                <Users className="h-5 w-5 mr-3" /> Solicitudes Afiliados
+              </button>
+
+              <button
                 onClick={() => { setActiveTab('settings'); setIsSidebarOpen(false); }}
                 className={`w-full flex items-center px-4 py-3 text-sm rounded-lg transition-colors ${activeTab === 'settings' ? 'bg-emerald-50 text-vandora-emerald font-medium' : 'text-gray-600 hover:bg-gray-50'}`}
               >
@@ -847,13 +855,15 @@ const AdminPage = () => {
                           activeTab === 'size-guide' ? 'Guía de Tallas' : 
                             activeTab === 'global-logs' ? 'Registro de Logs Globales' :
                               activeTab === 'popups' ? 'Gestión de Popups' : 
-                                activeTab === 'funnels' ? 'Gestión de Embudos (Funnel)' : 'Ajustes'}
+                                activeTab === 'funnels' ? 'Gestión de Embudos (Funnel)' : 
+                                  activeTab === 'affiliates' ? 'Solicitudes de Afiliados' : 'Ajustes'}
           </h1>
           <p className="text-sm text-gray-500">Bienvenido de nuevo, {role}</p>
         </header>
 
         {activeTab === 'popups' && <PopupManager />}
         {activeTab === 'funnels' && <FunnelEditor />}
+        {activeTab === 'affiliates' && <AffiliateManagement />}
 
         {activeTab === 'dashboard' && (
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
