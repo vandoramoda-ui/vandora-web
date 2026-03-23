@@ -406,6 +406,41 @@ const CheckoutPage = () => {
         throw new Error('El pedido se creó pero no se pudo recuperar la confirmación. Por favor contacta a soporte.');
       }
 
+      // Affiliate Attribution Logic
+      const affiliateCode = getAffiliateId();
+      if (affiliateCode) {
+        try {
+          // 1. Find the affiliate by code
+          const { data: affiliate } = await supabase
+            .from('affiliates')
+            .select('id, commission_rate')
+            .eq('referral_code', affiliateCode)
+            .eq('status', 'active')
+            .maybeSingle();
+
+          if (affiliate) {
+            // 2. Calculate commission (default 10% if not set)
+            const rate = affiliate.commission_rate || 10;
+            const commissionAmount = (currentTotal * rate) / 100;
+
+            // 3. Create referral record
+            await supabase
+              .from('affiliate_referrals')
+              .insert([{
+                affiliate_id: affiliate.id,
+                order_id: orderResult.id,
+                amount: commissionAmount,
+                status: 'pending'
+              }]);
+            
+            console.log('Affiliate referral created successfully');
+          }
+        } catch (affErr) {
+          console.error('Error in affiliate attribution:', affErr);
+          // Don't fail the whole order if attribution fails
+        }
+      }
+
       // Fix for profiles table - check by id if user is logged in, or don't try to sync if guest
       // Removed email_notifications as it doesn't exist in profiles schema
       try {

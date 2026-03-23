@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { supabase } from '../lib/supabase';
-import { Package, User, MapPin, Mail, Phone, Calendar, Megaphone, ExternalLink, Sparkles } from 'lucide-react';
+import { Package, User, MapPin, Mail, Phone, Calendar, Megaphone, ExternalLink, Sparkles, ArrowUpRight, TrendingUp } from 'lucide-react';
 import SEO from '../components/SEO';
 import { formatPrice } from '../lib/utils';
 import { useNavigate } from 'react-router-dom';
@@ -220,47 +220,8 @@ const MyAccountPage = () => {
                             )}
                         </div>
 
-                        {/* Affiliate Program Card */}
-                        <div className="bg-gradient-to-br from-vandora-emerald to-emerald-900 rounded-lg shadow-md p-6 text-white overflow-hidden relative group">
-                            <div className="absolute top-0 right-0 -m-4 opacity-10 group-hover:opacity-20 transition-opacity">
-                                <Megaphone className="w-32 h-32 rotate-12" />
-                            </div>
-                            
-                            <div className="relative z-10">
-                                <div className="flex items-center gap-2 mb-4">
-                                    <div className="p-2 bg-white/20 rounded-lg backdrop-blur-sm">
-                                        <Sparkles className="w-5 h-5 text-yellow-300" />
-                                    </div>
-                                    <h2 className="text-xl font-serif">Programa de Afiliados</h2>
-                                </div>
-                                
-                                <p className="text-emerald-50 text-sm mb-6 leading-relaxed">
-                                    ¡Comparte tu pasión por Vandora y gana comisiones por cada venta que refieras! 
-                                    Únete a nuestro programa exclusivo.
-                                </p>
-                                
-                                <div className="space-y-4">
-                                    <div className="bg-white/10 p-3 rounded-md backdrop-blur-sm border border-white/10">
-                                        <p className="text-xs uppercase font-bold text-emerald-200 mb-1">Tu Beneficio</p>
-                                        <p className="font-medium">10% de Comisión en efectivo</p>
-                                    </div>
-                                    
-                                    <a 
-                                        href={import.meta.env.VITE_RAIDER_URL || 'https://afiliados.vandora.boutique'} 
-                                        target="_blank" 
-                                        rel="noopener noreferrer"
-                                        className="w-full bg-white text-vandora-emerald py-3 rounded-md hover:bg-emerald-50 transition-all text-center font-bold text-sm flex items-center justify-center gap-2 shadow-lg"
-                                    >
-                                        Ir al Panel de Afiliados
-                                        <ExternalLink className="w-4 h-4" />
-                                    </a>
-                                    
-                                    <p className="text-[10px] text-center text-emerald-100/70">
-                                        Se abrirá en una pestaña nueva
-                                    </p>
-                                </div>
-                            </div>
-                        </div>
+                        {/* Affiliate Program Section */}
+                        <AffiliateSection profile={profile} user={user} />
 
                         {/* Info Box */}
                         <div className="bg-white rounded-lg p-5 border border-dashed border-gray-300">
@@ -268,15 +229,15 @@ const MyAccountPage = () => {
                             <ul className="text-xs text-gray-500 space-y-2 list-none p-0">
                                 <li className="flex gap-2">
                                     <span className="text-vandora-emerald font-bold">1.</span>
-                                    Identifícate en el panel con tu email.
+                                    Comparte tu enlace único en redes sociales.
                                 </li>
                                 <li className="flex gap-2">
                                     <span className="text-vandora-emerald font-bold">2.</span>
-                                    Crea tus enlaces personalizados.
+                                    Tus seguidoras reciben beneficios exclusivos.
                                 </li>
                                 <li className="flex gap-2">
                                     <span className="text-vandora-emerald font-bold">3.</span>
-                                    Recibe pagos directos por cada compra.
+                                    Tú ganas una comisión por cada compra.
                                 </li>
                             </ul>
                         </div>
@@ -345,6 +306,163 @@ const MyAccountPage = () => {
                     </div>
                 </div>
             </div>
+        </div>
+    );
+};
+
+const AffiliateSection = ({ profile, user }: { profile: any, user: any }) => {
+    const [affiliate, setAffiliate] = useState<any>(null);
+    const [referrals, setReferrals] = useState<any[]>([]);
+    const [loading, setLoading] = useState(true);
+    const [copySuccess, setCopySuccess] = useState(false);
+
+    useEffect(() => {
+        if (user) {
+            fetchAffiliateData();
+        }
+    }, [user]);
+
+    const fetchAffiliateData = async () => {
+        try {
+            const { data: aff, error: affError } = await supabase
+                .from('affiliates')
+                .select('*')
+                .eq('user_id', user.id)
+                .maybeSingle();
+
+            if (affError) throw affError;
+            setAffiliate(aff);
+
+            if (aff) {
+                const { data: refs, error: refsError } = await supabase
+                    .from('affiliate_referrals')
+                    .select('*, orders(total, status)')
+                    .eq('affiliate_id', aff.id)
+                    .order('created_at', { ascending: false })
+                    .limit(5);
+
+                if (refsError) throw refsError;
+                setReferrals(refs || []);
+            }
+        } catch (err) {
+            console.error('Error fetching affiliate data:', err);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const copyToClipboard = () => {
+        const link = `${window.location.origin}?t=${affiliate?.referral_code}`;
+        navigator.clipboard.writeText(link);
+        setCopySuccess(true);
+        setTimeout(() => setCopySuccess(false), 2000);
+    };
+
+    if (loading) return <div className="p-4 text-center text-gray-400">Cargando datos de afiliada...</div>;
+
+    if (!affiliate) {
+        return (
+            <div className="bg-gradient-to-br from-vandora-emerald to-emerald-900 rounded-lg shadow-md p-6 text-white overflow-hidden relative group">
+                <div className="absolute top-0 right-0 -m-4 opacity-10 group-hover:opacity-20 transition-opacity">
+                    <Megaphone className="w-32 h-32 rotate-12" />
+                </div>
+                
+                <div className="relative z-10">
+                    <div className="flex items-center gap-2 mb-4">
+                        <div className="p-2 bg-white/20 rounded-lg backdrop-blur-sm">
+                            <Sparkles className="w-5 h-5 text-yellow-300" />
+                        </div>
+                        <h2 className="text-xl font-serif">Programa de Afiliadas</h2>
+                    </div>
+                    
+                    <p className="text-emerald-50 text-sm mb-6 leading-relaxed">
+                        ¡Comparte tu pasión por Vandora y gana comisiones por cada venta que refieras! 
+                        Únete a nuestro programa exclusivo.
+                    </p>
+                    
+                    <div className="space-y-4">
+                        <div className="bg-white/10 p-3 rounded-md backdrop-blur-sm border border-white/10">
+                            <p className="text-xs uppercase font-bold text-emerald-200 mb-1">Tu Beneficio</p>
+                            <p className="font-medium">10% de Comisión en efectivo</p>
+                        </div>
+                        
+                        <button 
+                            onClick={() => window.location.href = '/contacto'}
+                            className="w-full bg-white text-vandora-emerald py-3 rounded-md hover:bg-emerald-50 transition-all text-center font-bold text-sm flex items-center justify-center gap-2 shadow-lg"
+                        >
+                            Quiero Unirme
+                            <ArrowUpRight className="w-4 h-4" />
+                        </button>
+                    </div>
+                </div>
+            </div>
+        );
+    }
+
+    return (
+        <div className="bg-white rounded-lg shadow-sm p-6 border border-emerald-100 flex flex-col gap-6">
+            <div className="flex items-center justify-between">
+                <h2 className="text-lg font-serif text-vandora-emerald flex items-center">
+                    <Sparkles className="w-5 h-5 mr-2" />
+                    Panel de Afiliada
+                </h2>
+                <span className={`px-2 py-1 text-[10px] font-bold rounded-full uppercase ${affiliate.status === 'active' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
+                    {affiliate.status === 'active' ? 'Activa' : 'Inactiva'}
+                </span>
+            </div>
+
+            <div className="bg-emerald-50 rounded-lg p-4 border border-emerald-100">
+                <label className="block text-[10px] uppercase font-bold text-emerald-700 mb-2">Tu Enlace de Referido</label>
+                <div className="flex gap-2">
+                    <div className="flex-1 bg-white border border-emerald-200 rounded px-3 py-2 text-sm font-mono text-gray-600 truncate">
+                        {window.location.origin}?t={affiliate.referral_code}
+                    </div>
+                    <button 
+                        onClick={copyToClipboard}
+                        className="bg-vandora-emerald text-white px-4 py-2 rounded text-sm font-bold hover:bg-emerald-800 transition-colors shrink-0"
+                    >
+                        {copySuccess ? '¡Copiado!' : 'Copiar'}
+                    </button>
+                </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+                <div className="bg-gray-50 p-4 rounded-lg">
+                    <p className="text-[10px] uppercase font-bold text-gray-500 mb-1">Ganado Total</p>
+                    <p className="text-xl font-bold text-gray-900">{formatPrice(affiliate.earnings_total || 0)}</p>
+                </div>
+                <div className="bg-green-50 p-4 rounded-lg">
+                    <p className="text-[10px] uppercase font-bold text-emerald-700 mb-1">Disponible</p>
+                    <p className="text-xl font-bold text-vandora-emerald">{formatPrice(affiliate.balance || 0)}</p>
+                </div>
+            </div>
+
+            {referrals.length > 0 && (
+                <div>
+                    <h3 className="text-xs font-bold text-gray-700 uppercase mb-3 flex items-center">
+                        <TrendingUp className="w-3 h-3 mr-1" />
+                        Ventas Recientes
+                    </h3>
+                    <div className="space-y-3">
+                        {referrals.map((ref) => (
+                            <div key={ref.id} className="flex justify-between items-center text-sm border-b border-gray-50 pb-2">
+                                <div>
+                                    <p className="font-medium text-gray-900">Referido #{ref.order_id.substring(0,6)}</p>
+                                    <p className="text-[10px] text-gray-400 font-mono tracking-tighter">
+                                        {new Date(ref.created_at).toLocaleDateString()}
+                                    </p>
+                                </div>
+                                <div className="text-right">
+                                    <p className="font-bold text-emerald-600">+{formatPrice(ref.amount)}</p>
+                                    <p className={`text-[9px] uppercase font-bold ${ref.status === 'paid' ? 'text-blue-500' : 'text-yellow-500'}`}>
+                                        {ref.status === 'paid' ? 'Pagado' : 'Pendiente'}
+                                    </p>
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            )}
         </div>
     );
 };

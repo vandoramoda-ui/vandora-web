@@ -1,8 +1,10 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
 import { Send, CheckCircle, Loader2 } from 'lucide-react';
+import { useAuth } from '../context/AuthContext';
 
 const AffiliateApplicationForm = () => {
+  const { user, profile } = useAuth();
   const [loading, setLoading] = useState(false);
   const [submitted, setSubmitted] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -12,6 +14,16 @@ const AffiliateApplicationForm = () => {
     instagram: '',
     message: ''
   });
+
+  useEffect(() => {
+    if (profile || user) {
+      setFormData(prev => ({
+        ...prev,
+        name: profile?.full_name || user?.user_metadata?.full_name || prev.name,
+        email: user?.email || prev.email
+      }));
+    }
+  }, [profile, user]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -27,7 +39,8 @@ const AffiliateApplicationForm = () => {
             email: formData.email,
             social_media: formData.instagram,
             message: formData.message,
-            status: 'pending'
+            status: 'pending',
+            user_id: user?.id || null
           }
         ]);
 
@@ -35,8 +48,6 @@ const AffiliateApplicationForm = () => {
       setSubmitted(true);
     } catch (err: any) {
       console.error('Error submitting application:', err);
-      // Fallback if table doesn't exist: save to contact_messages or similar if possible
-      // For now, assume table exists as per plan approval.
       setError('Hubo un error al enviar tu solicitud. Por favor intenta más tarde.');
     } finally {
       setLoading(false);
