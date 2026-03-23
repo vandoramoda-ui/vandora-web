@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
-import { Send, CheckCircle, Loader2 } from 'lucide-react';
+import { Send, CheckCircle, Loader2, LogIn } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
+import { logger } from '../lib/logger';
 
 const AffiliateApplicationForm = () => {
   const { user, profile } = useAuth();
@@ -27,6 +28,11 @@ const AffiliateApplicationForm = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!user) {
+      setError('Debes iniciar sesión para enviar una solicitud.');
+      return;
+    }
+
     setLoading(true);
     setError(null);
 
@@ -40,19 +46,50 @@ const AffiliateApplicationForm = () => {
             social_media: formData.instagram,
             message: formData.message,
             status: 'pending',
-            user_id: user?.id || null
+            user_id: user.id
           }
         ]);
 
       if (submitError) throw submitError;
       setSubmitted(true);
+      logger.info('Solicitud de afiliado enviada correctamente', { 
+        source: 'affiliate_form',
+        metadata: { email: formData.email } 
+      });
     } catch (err: any) {
       console.error('Error submitting application:', err);
       setError('Hubo un error al enviar tu solicitud. Por favor intenta más tarde.');
+      
+      logger.error('Error al enviar solicitud de afiliado', err, {
+        source: 'affiliate_form',
+        metadata: { 
+          email: formData.email,
+          user_id: user?.id,
+          form_data: formData
+        }
+      });
     } finally {
       setLoading(false);
     }
   };
+
+  if (!user) {
+    return (
+      <div className="bg-vandora-cream rounded-lg p-10 text-center border-2 border-dashed border-vandora-emerald/20">
+        <LogIn className="w-12 h-12 text-vandora-emerald mx-auto mb-4 opacity-50" />
+        <h3 className="text-xl font-serif text-gray-900 mb-2">Exclusivo para Miembros</h3>
+        <p className="text-gray-600 mb-6">
+          Para unirte a nuestro programa de recompensas, primero debes tener una cuenta con nosotros.
+        </p>
+        <button 
+          onClick={() => window.location.href = '/iniciar-sesion'}
+          className="bg-vandora-emerald text-white px-8 py-3 rounded-full font-bold hover:bg-emerald-800 transition-all shadow-lg"
+        >
+          Iniciar Sesión para Aplicar
+        </button>
+      </div>
+    );
+  }
 
   if (submitted) {
     return (
@@ -89,6 +126,7 @@ const AffiliateApplicationForm = () => {
             value={formData.email}
             onChange={(e) => setFormData({ ...formData, email: e.target.value })}
             placeholder="tu@email.com"
+            disabled
           />
         </div>
       </div>
