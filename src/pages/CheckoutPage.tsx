@@ -64,6 +64,15 @@ const DEFAULT_SETTINGS: CheckoutSettings = {
   ],
   shippingRules: { freeShippingThreshold: 100, codCities: ['Quito', 'Guayaquil', 'Cuenca'], freeShippingCities: [] },
 };
+const DEFAULT_FUNNEL_CONFIG = {
+  order_bump: {
+    product_id: '',
+    title: '¡OFERTA ÚNICA! 🔥',
+    description: 'Añade este complemento con descuento.',
+    cta_text: 'SÍ, AGREGAR',
+    accent_color: '#EAB308'
+  }
+};
 
 const CheckoutPage = () => {
   const { items, total, clearCart } = useCart();
@@ -71,6 +80,7 @@ const CheckoutPage = () => {
   const { trackStandardEvent } = useAnalytics();
   const navigate = useNavigate();
   const [settings, setSettings] = useState<CheckoutSettings>(DEFAULT_SETTINGS);
+  const [funnelConfig, setFunnelConfig] = useState(DEFAULT_FUNNEL_CONFIG);
   const [loadingSettings, setLoadingSettings] = useState(true);
 
   const [formData, setFormData] = useState({
@@ -101,21 +111,31 @@ const CheckoutPage = () => {
   useEffect(() => {
     const fetchSettings = async () => {
       try {
-        const { data } = await supabase
+        const { data: checkoutData } = await supabase
           .from('app_settings')
           .select('value')
           .eq('key', 'checkout_config')
           .single();
 
-        if (data && data.value) {
-          const merged = {
+        if (checkoutData) {
+          const mergedCheckoutSettings = {
             ...DEFAULT_SETTINGS,
-            ...data.value,
-            fields: { ...DEFAULT_SETTINGS.fields, ...data.value.fields },
-            paymentMethods: { ...DEFAULT_SETTINGS.paymentMethods, ...data.value.paymentMethods },
-            shippingRules: { ...DEFAULT_SETTINGS.shippingRules, ...data.value.shippingRules }
+            ...checkoutData.value,
+            fields: { ...DEFAULT_SETTINGS.fields, ...checkoutData.value.fields },
+            paymentMethods: { ...DEFAULT_SETTINGS.paymentMethods, ...checkoutData.value.paymentMethods },
+            shippingRules: { ...DEFAULT_SETTINGS.shippingRules, ...checkoutData.value.shippingRules }
           };
-          setSettings(merged);
+          setSettings(mergedCheckoutSettings);
+        }
+
+        const { data: funnelData } = await supabase
+          .from('app_settings')
+          .select('value')
+          .eq('key', 'funnel_config')
+          .single();
+
+        if (funnelData) {
+          setFunnelConfig({ ...DEFAULT_FUNNEL_CONFIG, ...funnelData.value });
         }
       } catch (error) {
         console.error('Error loading checkout settings', error);
@@ -198,17 +218,11 @@ const CheckoutPage = () => {
 
   useEffect(() => {
     const fetchBumpProduct = async () => {
-      if (items.length > 0) {
-        const mockBump = {
-          id: 'bump-1',
-          name: 'Cinturón de Cuero Edición Limitada',
-          price: 15.00,
-          image: 'https://images.unsplash.com/photo-1553062407-98eeb64c6a62?q=80&w=200',
-          description: 'Complemento perfecto para tu outfit. Solo por hoy con 50% de descuento.',
-          images: [{ url: 'https://images.unsplash.com/photo-1553062407-98eeb64c6a62?q=80&w=200', color: 'Único' }]
-        };
-
+      if (items.length > 0 && !loadingSettings) {
+        let bumpProductId = '';
+        
         try {
+          // 1. Try product-specific bump
           const { data: mainProduct } = await supabase
             .from('products')
             .select('order_bump_product_id')
@@ -216,28 +230,30 @@ const CheckoutPage = () => {
             .single();
 
           if (mainProduct && mainProduct.order_bump_product_id) {
+            bumpProductId = mainProduct.order_bump_product_id;
+          } else if (funnelConfig.order_bump.product_id) {
+            // 2. Try global bump
+            bumpProductId = funnelConfig.order_bump.product_id;
+          }
+
+          if (bumpProductId && !items.find(i => i.id === bumpProductId)) {
             const { data: bump } = await supabase
               .from('products')
               .select('*')
-              .eq('id', mainProduct.order_bump_product_id)
+              .eq('id', bumpProductId)
               .single();
 
-            if (bump && !items.find(i => i.id === bump.id)) {
+            if (bump) {
               setBumpProduct(bump);
-              return;
             }
           }
         } catch (e) {
-          console.error("Error fetching real bump product", e);
-        }
-
-        if (!items.find(i => i.id === mockBump.id)) {
-          setBumpProduct(mockBump);
+          console.error("Error fetching bump product", e);
         }
       }
     };
     fetchBumpProduct();
-  }, [items]);
+  }, [items, loadingSettings, funnelConfig]);
 
   useEffect(() => {
     if (!loadingSettings) {
@@ -796,21 +812,31 @@ const CheckoutPage = () => {
               )}
 
               {bumpProduct && (
-                <div className="bg-yellow-50 border-2 border-yellow-400 border-dashed rounded-lg p-4 animate-pulse">
-                  <div className="flex items-start">
+                <div 
+                  className="bg-yellow-50 border-2 border-dashed rounded-lg p-4 animate-pulse"
+                  style={{ borderColor: funnelConfig.order_bump.accent_color || '#EAB308' }}
+                >
+                  <label className="flex items-start cursor-pointer">
                     <input
                       type="checkbox"
                       checked={isBumpAccepted}
                       onChange={(e) => setIsBumpAccepted(e.target.checked)}
-                      className="h-5 w-5 text-vandora-emerald border-gray-300 rounded mt-1 focus:ring-vandora-emerald"
+                      className="h-5 w-5 text-vandora-emerald border-gray-300 rounded mt-1 focus:ring-vandora-emerald cursor-pointer"
                     />
                     <div className="ml-3">
-                      <h3 className="text-sm font-bold text-gray-900 uppercase text-red-600">¡OFERTA ÚNICA! 🔥</h3>
+                      <h3 
+                        className="text-sm font-bold uppercase"
+                        style={{ color: funnelConfig.order_bump.accent_color || '#dc2626' }}
+                      >
+                        {funnelConfig.order_bump.title}
+                      </h3>
                       <p className="text-sm font-medium text-gray-900">
-                        Agrega <span className="font-bold">{bumpProduct.name}</span> por <span className="text-green-600 font-bold">{formatPrice(bumpProduct.price)}</span>
+                        {funnelConfig.order_bump.description.replace('{product}', bumpProduct.name)}
+                        {' '}
+                        <span className="font-bold text-green-600">{formatPrice(bumpProduct.price)}</span>
                       </p>
                     </div>
-                  </div>
+                  </label>
                 </div>
               )}
 

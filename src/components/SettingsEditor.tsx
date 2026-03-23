@@ -14,6 +14,7 @@ const SettingsEditor = () => {
     ai_system_prompt: '',
     ai_provider: 'openai',
     ai_model: '',
+    klaviyo_public_key: '',
   });
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -40,6 +41,8 @@ const SettingsEditor = () => {
         if (item.key === 'ai_system_prompt') newSettings.ai_system_prompt = item.value;
         if (item.key === 'ai_provider') newSettings.ai_provider = item.value;
         if (item.key === 'ai_model') newSettings.ai_model = item.value;
+        
+        if (item.key === 'klaviyo_public_key') newSettings.klaviyo_public_key = item.value;
         
         if (item.key === 'ai_available_models' && Array.isArray(item.value)) {
           setAvailableModels(item.value);
@@ -121,7 +124,8 @@ const SettingsEditor = () => {
         { key: 'ai_welcome_message', value: settings.ai_welcome_message },
         { key: 'ai_system_prompt', value: settings.ai_system_prompt },
         { key: 'ai_provider', value: settings.ai_provider },
-        { key: 'ai_model', value: settings.ai_model }
+        { key: 'ai_model', value: settings.ai_model },
+        { key: 'klaviyo_public_key', value: settings.klaviyo_public_key }
       ];
 
       const { error } = await supabase.from('app_settings').upsert(updates, { onConflict: 'key' });
@@ -199,6 +203,18 @@ const SettingsEditor = () => {
               className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-vandora-emerald focus:border-vandora-emerald sm:text-sm"
             />
             <p className="mt-1 text-xs text-gray-500">Úsalo solo para verificar eventos en tiempo real.</p>
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Klaviyo Public API Key</label>
+            <input
+              type="text"
+              name="klaviyo_public_key"
+              value={settings.klaviyo_public_key}
+              onChange={handleChange}
+              placeholder="Ej: AB12CD"
+              className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-vandora-emerald focus:border-vandora-emerald sm:text-sm"
+            />
+            <p className="mt-1 text-xs text-gray-500">Necesaria para el seguimiento de compras y carritos abandonados.</p>
           </div>
         </div>
       </div>

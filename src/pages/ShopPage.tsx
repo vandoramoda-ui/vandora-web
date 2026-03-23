@@ -91,17 +91,10 @@ const ShopPage = () => {
           };
         });
         setProducts(mappedProducts);
-      } else {
-        // Fallback mock data if DB is empty or connection fails gracefully
-        // This ensures the preview is usable
-        console.log('No products found in DB, using mock data for preview.');
-        setProducts(MOCK_PRODUCTS);
       }
     } catch (err: any) {
       console.error('Error fetching products:', err.message);
-      // Fallback to mock data on error so the user sees something
-      setProducts(MOCK_PRODUCTS);
-      setError('Mostrando catálogo de demostración (Conexión a base de datos pendiente).');
+      setError('Error al cargar productos. Por favor, intenta de nuevo más tarde.');
     } finally {
       setLoading(false);
     }
@@ -195,75 +188,5 @@ const ShopPage = () => {
     </div>
   );
 };
-
-// Mock Data for Preview
-const MOCK_PRODUCTS: Product[] = [
-  {
-    id: '1',
-    name: 'Vestido Esmeralda Real',
-    price: 85.00,
-    image: 'https://images.unsplash.com/photo-1595777457583-95e059d581b8?q=80&w=1000&auto=format&fit=crop',
-    category: 'Vestidos',
-    description: 'Un vestido que impone presencia. Corte elegante y tela suave que se adapta a tu figura.',
-    sizes: ['S', 'M', 'L', 'XL'],
-    colors: [{ name: 'Esmeralda', code: '#50C878' }, { name: 'Negro', code: '#000000' }],
-    stock: 10
-  },
-  {
-    id: '2',
-    name: 'Blusa Seda Champagne',
-    price: 45.00,
-    image: 'https://images.unsplash.com/photo-1564257631407-4deb1f99d992?q=80&w=1000&auto=format&fit=crop',
-    category: 'Blusas',
-    description: 'Suavidad y brillo sutil para tus reuniones más importantes.',
-    sizes: ['S', 'M', 'L'],
-    colors: [{ name: 'Champagne', code: '#F7E7CE' }, { name: 'Blanco', code: '#FFFFFF' }],
-    stock: 15
-  },
-  {
-    id: '3',
-    name: 'Pantalón Palazzo Crema',
-    price: 60.00,
-    image: 'https://images.unsplash.com/photo-1584273143981-41c073dfe8f8?q=80&w=1000&auto=format&fit=crop',
-    category: 'Pantalones',
-    description: 'Comodidad y estilo en una sola prenda. Perfecto para la oficina o un evento casual.',
-    sizes: ['M', 'L', 'XL'],
-    colors: [{ name: 'Crema', code: '#FFFDD0' }, { name: 'Negro', code: '#000000' }, { name: 'Azul Marino', code: '#000080' }],
-    stock: 8
-  },
-  {
-    id: '4',
-    name: 'Chaqueta Ejecutiva Rosa',
-    price: 95.00,
-    image: 'https://images.unsplash.com/photo-1591047139829-d91aecb6caea?q=80&w=1000&auto=format&fit=crop',
-    category: 'Chaquetas',
-    description: 'El toque de color que tu outfit profesional necesita.',
-    sizes: ['S', 'M', 'L'],
-    colors: [{ name: 'Rosa Viejo', code: '#D8A1A1' }, { name: 'Gris', code: '#808080' }],
-    stock: 5
-  },
-  {
-    id: '5',
-    name: 'Falda Midi Plisada',
-    price: 55.00,
-    image: 'https://images.unsplash.com/photo-1583496661160-fb5886a0aaaa?q=80&w=1000&auto=format&fit=crop',
-    category: 'Faldas',
-    description: 'Movimiento y elegancia en cada paso.',
-    sizes: ['S', 'M'],
-    colors: [{ name: 'Negro', code: '#000000' }, { name: 'Verde Oliva', code: '#808000' }],
-    stock: 12
-  },
-  {
-    id: '6',
-    name: 'Vestido Noche Estrellada',
-    price: 120.00,
-    image: 'https://images.unsplash.com/photo-1566174053879-31528523f8ae?q=80&w=1000&auto=format&fit=crop',
-    category: 'Vestidos',
-    description: 'Para esas noches donde tú eres la protagonista.',
-    sizes: ['XS', 'S', 'M', 'L'],
-    colors: [{ name: 'Azul Noche', code: '#191970' }, { name: 'Negro', code: '#000000' }],
-    stock: 3
-  }
-];
 
 export default ShopPage;

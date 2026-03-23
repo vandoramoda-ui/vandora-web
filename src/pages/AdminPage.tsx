@@ -10,6 +10,7 @@ import VisualQuizBuilder from '../components/flow/VisualQuizBuilder';
 import CheckoutSettingsEditor from '../components/CheckoutSettingsEditor';
 import SizeGuideEditor from '../components/SizeGuideEditor';
 import PopupManager from '../components/PopupManager';
+import FunnelEditor from '../components/FunnelEditor';
 import SEO from '../components/SEO';
 import { useAuth } from '../context/AuthContext';
 
@@ -802,6 +803,13 @@ const AdminPage = () => {
               </button>
 
               <button
+                onClick={() => { setActiveTab('funnels'); setIsSidebarOpen(false); }}
+                className={`w-full flex items-center px-4 py-3 text-sm rounded-lg transition-colors ${activeTab === 'funnels' ? 'bg-emerald-50 text-vandora-emerald font-medium' : 'text-gray-600 hover:bg-gray-50'}`}
+              >
+                <Zap className="h-5 w-5 mr-3" /> Embudos (Funnel)
+              </button>
+
+              <button
                 onClick={() => { setActiveTab('settings'); setIsSidebarOpen(false); }}
                 className={`w-full flex items-center px-4 py-3 text-sm rounded-lg transition-colors ${activeTab === 'settings' ? 'bg-emerald-50 text-vandora-emerald font-medium' : 'text-gray-600 hover:bg-gray-50'}`}
               >
@@ -838,12 +846,14 @@ const AdminPage = () => {
                         activeTab === 'quizzes' ? 'Constructor de Quizzes' : 
                           activeTab === 'size-guide' ? 'Guía de Tallas' : 
                             activeTab === 'global-logs' ? 'Registro de Logs Globales' :
-                              activeTab === 'popups' ? 'Gestión de Popups' : 'Ajustes'}
+                              activeTab === 'popups' ? 'Gestión de Popups' : 
+                                activeTab === 'funnels' ? 'Gestión de Embudos (Funnel)' : 'Ajustes'}
           </h1>
           <p className="text-sm text-gray-500">Bienvenido de nuevo, {role}</p>
         </header>
 
         {activeTab === 'popups' && <PopupManager />}
+        {activeTab === 'funnels' && <FunnelEditor />}
 
         {activeTab === 'dashboard' && (
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
@@ -1130,8 +1140,7 @@ const AdminPage = () => {
                   <tr>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Fecha</th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Evento / Fuente</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Mensaje / Error</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Metadatos / Error</th>
                   </tr>
                 </thead>
                 <tbody className="bg-white divide-y divide-gray-200">
@@ -1148,12 +1157,25 @@ const AdminPage = () => {
                           {new Date(log.created_at).toLocaleString()}
                         </td>
                         <td className="px-6 py-4 text-sm font-medium text-gray-900">
-                          <span className={`px-2 py-0.5 rounded text-[10px] mr-2 ${log.event_name?.includes('Error') ? 'bg-red-100 text-red-700' : 'bg-blue-100 text-blue-700'}`}>
-                            {log.event_name}
-                          </span>
+                          <div className="flex flex-col">
+                            <span className={`px-2 py-0.5 rounded text-[10px] w-fit mb-1 ${log.event_name?.includes('Error') ? 'bg-red-100 text-red-700' : 'bg-blue-100 text-blue-700'}`}>
+                              {log.event_name}
+                            </span>
+                            <span className="text-[10px] text-gray-400 font-mono">
+                              Status: {log.status_code || 'N/A'}
+                            </span>
+                          </div>
                         </td>
-                        <td className="px-6 py-4 text-sm text-gray-500">{log.status_code || 'N/A'}</td>
-                        <td className="px-6 py-4 text-sm text-gray-600 font-mono text-xs">{log.error_message || log.message || 'Sin detalles'}</td>
+                        <td className="px-6 py-4 text-sm text-gray-600 font-mono text-xs">
+                           <div className="max-w-md truncate hover:whitespace-normal transition-all" title={log.error_message || log.message}>
+                             {log.error_message || log.message || 'Sin detalles'}
+                           </div>
+                           {log.metadata && (
+                             <pre className="mt-2 p-2 bg-gray-50 rounded text-[9px] overflow-x-auto max-w-md">
+                               {typeof log.metadata === 'string' ? log.metadata : JSON.stringify(log.metadata, null, 2)}
+                             </pre>
+                           )}
+                        </td>
                       </tr>
                     ))
                   )}

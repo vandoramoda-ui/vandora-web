@@ -9,75 +9,16 @@ import ProductCard from '../components/ProductCard';
 import SEO from '../components/SEO';
 import SizeGuideModal from '../components/SizeGuideModal';
 import { useAnalytics } from '../context/AnalyticsContext';
+import { logger } from '../lib/logger';
 
-// Reusing MOCK_PRODUCTS for simplicity in this demo if ID matches
-const MOCK_PRODUCTS = [
-  {
-    id: '1',
-    name: 'Vestido Esmeralda Real',
-    price: 85.00,
-    image: 'https://images.unsplash.com/photo-1595777457583-95e059d581b8?q=80&w=1000&auto=format&fit=crop',
-    images: [
-      { url: 'https://images.unsplash.com/photo-1595777457583-95e059d581b8?q=80&w=1000&auto=format&fit=crop', color: 'Esmeralda' },
-      { url: 'https://images.unsplash.com/photo-1566174053879-31528523f8ae?q=80&w=1000&auto=format&fit=crop', color: 'Esmeralda' },
-      { url: 'https://images.unsplash.com/photo-1515372039744-b8f02a3ae446?q=80&w=1000&auto=format&fit=crop' } // Generic
-    ],
-    videos: [],
-    category: 'Vestidos',
-    description: 'Un vestido que impone presencia. Corte elegante y tela suave que se adapta a tu figura. Perfecto para eventos formales o una cena especial.',
-    details: 'Cierre invisible en la espalda. Forro interno suave. Largo midi. Diseñado para realzar la figura femenina con elegancia y comodidad.',
-    materials: '95% Poliéster de alta calidad, 5% Elastano. Tela transpirable con caída perfecta que no se arruga fácilmente.',
-    care: 'Lavar a mano con agua fría o en ciclo delicado. No usar blanqueador. Secar a la sombra. Planchar a temperatura baja si es necesario.',
-    sizes: ['S', 'M', 'L', 'XL'],
-    colors: [{ name: 'Esmeralda', code: '#50C878' }, { name: 'Negro', code: '#000000' }],
-    stock: 10
-  },
-  {
-    id: '2',
-    name: 'Blusa Seda Champagne',
-    price: 45.00,
-    image: 'https://images.unsplash.com/photo-1564257631407-4deb1f99d992?q=80&w=1000&auto=format&fit=crop',
-    images: [
-      { url: 'https://images.unsplash.com/photo-1564257631407-4deb1f99d992?q=80&w=1000&auto=format&fit=crop', color: 'Champagne' },
-      { url: 'https://images.unsplash.com/photo-1551163943-3f6a29e39454?q=80&w=1000&auto=format&fit=crop', color: 'Blanco' }
-    ],
-    videos: [],
-    category: 'Blusas',
-    description: 'Suavidad y brillo sutil para tus reuniones más importantes. Combínala con pantalones de vestir o faldas lápiz.',
-    details: 'Botones de nácar. Cuello clásico. Puños ajustables. Corte regular fit.',
-    materials: '100% Seda Mulberry. Textura suave y lujosa.',
-    care: 'Lavado en seco exclusivamente. Planchar a temperatura baja sin vapor.',
-    sizes: ['S', 'M', 'L'],
-    colors: [{ name: 'Champagne', code: '#F7E7CE' }, { name: 'Blanco', code: '#FFFFFF' }],
-    stock: 15
-  },
-  {
-    id: '3',
-    name: 'Pantalón Palazzo Crema',
-    price: 60.00,
-    image: 'https://images.unsplash.com/photo-1584273143981-41c073dfe8f8?q=80&w=1000&auto=format&fit=crop',
-    images: [
-      { url: 'https://images.unsplash.com/photo-1584273143981-41c073dfe8f8?q=80&w=1000&auto=format&fit=crop', color: 'Crema' },
-      { url: 'https://images.unsplash.com/photo-1594633312681-425c7b97ccd1?q=80&w=1000&auto=format&fit=crop', color: 'Negro' }
-    ],
-    videos: [],
-    category: 'Pantalones',
-    description: 'Comodidad y estilo en una sola prenda. Perfecto para la oficina o un evento casual. Tela transpirable y caída perfecta.',
-    details: 'Cintura alta. Bolsillos laterales funcionales. Cierre frontal con gancho y cremallera.',
-    materials: '70% Viscosa, 30% Lino. Fresco y ligero.',
-    care: 'Lavar a máquina en ciclo suave. No usar secadora. Planchar a temperatura media.',
-    sizes: ['M', 'L', 'XL'],
-    colors: [{ name: 'Crema', code: '#FFFDD0' }, { name: 'Negro', code: '#000000' }, { name: 'Azul Marino', code: '#000080' }],
-    stock: 8
-  },
-  // ... add others if needed or fetch from DB
-];
+
 
 const ProductDetailPage = () => {
   const { categoria, slug } = useParams<{ categoria: string; slug: string }>();
   const navigate = useNavigate();
   const { addItem } = useCart();
   const [product, setProduct] = useState<any>(null);
+  const [products, setProducts] = useState<any[]>([]);
   const [selectedSize, setSelectedSize] = useState<string>('');
   const [selectedColor, setSelectedColor] = useState<string>('');
   const [quantity, setQuantity] = useState(1);
@@ -117,7 +58,7 @@ const ProductDetailPage = () => {
         .from('products')
         .select('*')
         .eq('slug', slug)
-        .single();
+        .maybeSingle();
 
       // 2. Fallback: Many old slugs mangled characters like 'ñ' into '-' 
       // while the new logic turns them into 'n'. If not found, try common fallbacks.
@@ -128,7 +69,7 @@ const ProductDetailPage = () => {
           .from('products')
           .select('*')
           .eq('slug', fallbackSlug)
-          .single();
+          .maybeSingle();
         
         if (!fallbackError && fallbackData) {
           data = fallbackData;
@@ -142,6 +83,7 @@ const ProductDetailPage = () => {
             .ilike('category', `%${categoria?.substring(0, 3)}%`);
 
           if (catProducts && catProducts.length > 0) {
+            setProducts(catProducts);
             const strippedSlug = slug.replace(/[^a-z0-9]/g, '');
             const match = catProducts.find(p => {
               const pStripped = (p.slug || '').replace(/[^a-z0-9]/g, '');
@@ -806,7 +748,7 @@ const ProductDetailPage = () => {
         <div className="mt-16 border-t border-gray-200 pt-10">
           <h2 className="text-2xl font-serif text-gray-900 mb-8 text-center">También te podría gustar</h2>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
-            {MOCK_PRODUCTS.filter(p => p.id !== product.id).slice(0, 4).map((relatedProduct) => (
+            {products.filter(p => p.id !== product.id).slice(0, 4).map((relatedProduct) => (
               <ProductCard key={relatedProduct.id} {...relatedProduct} />
             ))}
           </div>

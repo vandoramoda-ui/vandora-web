@@ -1,7 +1,8 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ChevronRight, Check, RefreshCcw, Sparkles } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import { supabase } from '../lib/supabase';
 
 // Quiz Data Structure
 const QUIZ_DATA = {
@@ -44,6 +45,17 @@ const QuizFunnel = () => {
   const [currentQuestion, setCurrentQuestion] = useState(0);
   const [answers, setAnswers] = useState<Record<number, string>>({});
   const [finished, setFinished] = useState(false);
+  const [products, setProducts] = useState<any[]>([]);
+  const [recommendation, setRecommendation] = useState<any>(null);
+  const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    const fetchProducts = async () => {
+      const { data } = await supabase.from('products').select('*').limit(20);
+      if (data) setProducts(data);
+    };
+    fetchProducts();
+  }, []);
 
   const handleAnswer = (value: string) => {
     setAnswers({ ...answers, [currentQuestion]: value });
@@ -51,8 +63,46 @@ const QuizFunnel = () => {
     if (currentQuestion < QUIZ_DATA.questions.length - 1) {
       setTimeout(() => setCurrentQuestion(currentQuestion + 1), 300);
     } else {
-      setTimeout(() => setFinished(true), 500);
+      setTimeout(() => generateRecommendation(), 500);
     }
+  };
+
+  const generateRecommendation = () => {
+    setLoading(true);
+    const occasion = answers[0];
+    const colorPreference = answers[2];
+
+    let filtered = products;
+
+    // Filter by category based on occasion
+    if (occasion === 'formal') {
+      filtered = products.filter(p => ['blusas', 'pantalones', 'chaquetas'].includes(p.category.toLowerCase()));
+    } else if (occasion === 'party' || occasion === 'elegant') {
+      filtered = products.filter(p => ['vestidos', 'gala', 'faldas'].includes(p.category.toLowerCase()));
+    }
+
+    // Fallback if no category match
+    if (filtered.length === 0) filtered = products;
+
+    // Sort by color preference if possible
+    if (colorPreference === 'vibrant') {
+      // Logic for vibrant colors... simplified
+    }
+
+    const match = filtered[Math.floor(Math.random() * filtered.length)] || products[0];
+
+    if (match) {
+      setRecommendation({
+        title: occasion === 'formal' ? "Look Ejecutiva Imparable" : occasion === 'party' ? "Look Noche Estrellada" : "Look Casual Chic",
+        product: match.name,
+        desc: match.description?.substring(0, 100) + "...",
+        img: match.images?.[0]?.url || match.image,
+        link: `/producto/${match.category.toLowerCase().replace(/\s+/g, '-')}/${match.slug || match.id}`
+      });
+    }
+    
+    setFinished(true);
+    setLoading(false);
   };
 
   const resetQuiz = () => {
@@ -60,36 +110,8 @@ const QuizFunnel = () => {
     setCurrentQuestion(0);
     setAnswers({});
     setFinished(false);
+    setRecommendation(null);
   };
-
-  // Mock recommendation logic
-  const getRecommendation = () => {
-    const occasion = answers[0];
-    // Simple logic for demo purposes
-    if (occasion === 'formal') return {
-      title: "Look Ejecutiva Imparable",
-      product: "Chaqueta Ejecutiva Rosa",
-      desc: "Proyecta autoridad sin perder tu feminidad.",
-      img: "https://images.unsplash.com/photo-1591047139829-d91aecb6caea?q=80&w=1000&auto=format&fit=crop",
-      link: "/product/4"
-    };
-    if (occasion === 'party' || occasion === 'elegant') return {
-      title: "Look Noche Estrellada",
-      product: "Vestido Esmeralda Real",
-      desc: "Serás el centro de todas las miradas con elegancia absoluta.",
-      img: "https://images.unsplash.com/photo-1595777457583-95e059d581b8?q=80&w=1000&auto=format&fit=crop",
-      link: "/product/1"
-    };
-    return {
-      title: "Look Casual Chic",
-      product: "Blusa Seda Champagne",
-      desc: "Comodidad elevada para tu día a día.",
-      img: "https://images.unsplash.com/photo-1564257631407-4deb1f99d992?q=80&w=1000&auto=format&fit=crop",
-      link: "/product/2"
-    };
-  };
-
-  const recommendation = finished ? getRecommendation() : null;
 
   return (
     <div className="bg-white rounded-2xl shadow-xl overflow-hidden max-w-4xl mx-auto my-12 border border-gray-100">

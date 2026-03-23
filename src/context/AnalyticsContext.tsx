@@ -44,6 +44,11 @@ export const AnalyticsProvider: React.FC<{ children: React.ReactNode }> = ({ chi
             ReactPixel.init(pixelId);
           }
 
+          const klaviyoKey = data.find(s => s.key === 'klaviyo_public_key')?.value;
+          if (klaviyoKey) {
+            injectKlaviyoScript(klaviyoKey);
+          }
+
           setInitialized(true);
         }
       } catch (error) {
@@ -71,6 +76,17 @@ export const AnalyticsProvider: React.FC<{ children: React.ReactNode }> = ({ chi
       }
     }
   }, [user, profile]);
+
+  const injectKlaviyoScript = (publicKey: string) => {
+    if (document.getElementById('klaviyo-script')) return;
+    
+    const script = document.createElement('script');
+    script.id = 'klaviyo-script';
+    script.type = 'text/javascript';
+    script.async = true;
+    script.src = `https://static.klaviyo.com/onsite/js/${publicKey}/klaviyo.js`;
+    document.head.appendChild(script);
+  };
 
   const identifyKlaviyoUser = (userData: any) => {
     try {
