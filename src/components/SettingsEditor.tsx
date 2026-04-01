@@ -15,6 +15,7 @@ const SettingsEditor = () => {
     ai_provider: 'openai',
     ai_model: '',
     klaviyo_public_key: '',
+    klaviyo_private_api_key: '',
   });
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -43,6 +44,7 @@ const SettingsEditor = () => {
         if (item.key === 'ai_model') newSettings.ai_model = item.value;
         
         if (item.key === 'klaviyo_public_key') newSettings.klaviyo_public_key = item.value;
+        if (item.key === 'klaviyo_private_api_key') newSettings.klaviyo_private_api_key = item.value;
         
         if (item.key === 'ai_available_models' && Array.isArray(item.value)) {
           setAvailableModels(item.value);
@@ -125,7 +127,8 @@ const SettingsEditor = () => {
         { key: 'ai_system_prompt', value: settings.ai_system_prompt },
         { key: 'ai_provider', value: settings.ai_provider },
         { key: 'ai_model', value: settings.ai_model },
-        { key: 'klaviyo_public_key', value: settings.klaviyo_public_key }
+        { key: 'klaviyo_public_key', value: settings.klaviyo_public_key },
+        { key: 'klaviyo_private_api_key', value: settings.klaviyo_private_api_key }
       ];
 
       const { error } = await supabase.from('app_settings').upsert(updates, { onConflict: 'key' });
@@ -215,6 +218,18 @@ const SettingsEditor = () => {
               className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-vandora-emerald focus:border-vandora-emerald sm:text-sm"
             />
             <p className="mt-1 text-xs text-gray-500">Necesaria para el seguimiento de compras y carritos abandonados.</p>
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Klaviyo Private API Key</label>
+            <input
+              type="password"
+              name="klaviyo_private_api_key"
+              value={settings.klaviyo_private_api_key}
+              onChange={handleChange}
+              placeholder="pk_xxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+              className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-vandora-emerald focus:border-vandora-emerald sm:text-sm"
+            />
+            <p className="mt-1 text-xs text-gray-500">Necesaria para sincronizar el catálogo de productos.</p>
           </div>
         </div>
       </div>

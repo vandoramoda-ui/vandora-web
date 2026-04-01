@@ -41,6 +41,7 @@ import ProtectedRoute from './components/ProtectedRoute';
 import ResetPasswordPage from './pages/ResetPasswordPage';
 import { AnalyticsProvider } from './context/AnalyticsContext';
 import { AffiliateTracker } from './components/AffiliateTracker';
+import NotFoundPage from './pages/NotFoundPage';
 
 function App() {
   return (
@@ -76,6 +77,8 @@ function App() {
                 <AdminPage />
               </ProtectedRoute>
             } />
+            {/* 404 Catch All */}
+            <Route path="*" element={<Layout><NotFoundPage /></Layout>} />
           </Routes>
         </AnalyticsProvider>
         </Router>

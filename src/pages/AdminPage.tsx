@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
-import { Plus, Edit, Trash, Package, ShoppingBag, Users, Layout as LayoutIcon, Sparkles, Settings, X, Image as ImageIcon, Menu, Ruler, Copy, Megaphone, Loader2, History, Star, Play, Zap } from 'lucide-react';
+import { Plus, Edit, Trash, Package, ShoppingBag, Users, Layout as LayoutIcon, Sparkles, Settings, X, Image as ImageIcon, Menu, Ruler, Copy, Megaphone, Loader2, History, Star, Play, Zap, Download } from 'lucide-react';
 import { formatPrice } from '../lib/utils';
 import MediaManager from '../components/MediaManager';
 import SiteEditor from '../components/SiteEditor';
@@ -14,6 +14,8 @@ import FunnelEditor from '../components/FunnelEditor';
 import AffiliateManagement from '../components/AffiliateManagement';
 import SEO from '../components/SEO';
 import { useAuth } from '../context/AuthContext';
+import { syncProductToKlaviyo } from '../lib/klaviyo';
+import { logger } from '../lib/logger';
 
 const AdminPage = () => {
   const { profile, loading: authLoading } = useAuth();
@@ -50,6 +52,8 @@ const AdminPage = () => {
   const [fetchingUserOrders, setFetchingUserOrders] = useState(false);
   const [isCategoryModalOpen, setIsCategoryModalOpen] = useState(false);
   const [globalLogs, setGlobalLogs] = useState<any[]>([]);
+  const [klaviyoPrivateKey, setKlaviyoPrivateKey] = useState('');
+  const [syncingKlaviyo, setSyncingKlaviyo] = useState<string | null>(null);
   const [productTestimonials, setProductTestimonials] = useState<any[]>([]);
   const [isTestimonialModalOpen, setIsTestimonialModalOpen] = useState(false);
   const [editingTestimonial, setEditingTestimonial] = useState<any>(null);
@@ -145,6 +149,14 @@ const AdminPage = () => {
     else if (activeTab === 'orders') fetchOrders();
     else if (activeTab === 'users') fetchUsers();
     else if (activeTab === 'global-logs') fetchGlobalLogs();
+    
+    // Fetch Klaviyo Private Key if not already fetched
+    if (!klaviyoPrivateKey && (activeTab === 'products' || activeTab === 'settings')) {
+      supabase.from('app_settings').select('value').eq('key', 'klaviyo_private_api_key').single()
+        .then(({ data }) => {
+          if (data?.value) setKlaviyoPrivateKey(data.value);
+        });
+    }
   }, [activeTab]);
 
   const fetchGlobalLogs = async () => {
@@ -350,6 +362,17 @@ const AdminPage = () => {
     }
   };
 
+  const handleSyncKlaviyo = async (product: any) => {
+    setSyncingKlaviyo(product.id);
+    const result = await syncProductToKlaviyo(product, klaviyoPrivateKey);
+    if (result.success) {
+      alert(`Producto sincronizado con Klaviyo (${result.action === 'created' ? 'Creado' : 'Actualizado'})`);
+    } else {
+      alert(`Error al sincronizar: ${result.error}`);
+    }
+    setSyncingKlaviyo(null);
+  };
+
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
     setFormData({ ...formData, [name]: value });
@@ -418,6 +441,11 @@ const AdminPage = () => {
         if (error) throw error;
         setProducts(products.map(p => p.id === editingProduct.id ? { ...p, ...productData } : p));
         closeModal();
+        
+        // Automatic Klaviyo Sync on Update
+        if (klaviyoPrivateKey) {
+          syncProductToKlaviyo({ ...productData, id: editingProduct.id }, klaviyoPrivateKey);
+        }
       } else {
         const { data, error } = await supabase.from('products').insert([productData]).select();
         if (error) throw error;
@@ -431,6 +459,11 @@ const AdminPage = () => {
           };
           setProducts([...products, newProduct]);
           closeModal();
+          
+          // Automatic Klaviyo Sync on Create
+          if (klaviyoPrivateKey) {
+            syncProductToKlaviyo(newProduct, klaviyoPrivateKey);
+          }
         }
       }
     } catch (error: any) {
@@ -708,6 +741,67 @@ const AdminPage = () => {
     }
   };
 
+  const handleExportGoogleMerchantCSV = () => {
+    const headers = [
+      'id', 'title', 'description', 'availability', 'availability date', 'expiration date', 
+      'link', 'mobile link', 'image link', 'price', 'sale price', 'sale price effective date', 
+      'identifier exists', 'gtin', 'mpn', 'brand', 'product highlight', 'product detail', 
+      'additional image link', 'condition', 'adult', 'color', 'size', 'size type', 'size system', 
+      'gender', 'material', 'pattern', 'age group', 'multipack', 'is bundle', 'unit pricing measure', 
+      'unit pricing base measure', 'energy efficiency class', 'min energy efficiency class', 
+      'item group id', 'sell on google quantity'
+    ];
+
+    const escapeCSV = (str: any) => {
+      if (str === null || str === undefined) return '';
+      const stringified = String(str);
+      if (stringified.includes('"') || stringified.includes(',') || stringified.includes('\n') || stringified.includes('\r')) {
+        return `"${stringified.replace(/"/g, '""')}"`;
+      }
+      return stringified;
+    };
+
+    const rows = products.map(p => {
+      const id = p.sku || p.id;
+      const title = p.name ? p.name.substring(0, 150) : '';
+      const desc = p.description ? p.description.substring(0, 200).replace(/\n/g, ' ') : '';
+      const availability = p.stock > 0 ? 'in_stock' : 'out_of_stock';
+      const link = `${window.location.origin}/producto/${encodeURIComponent((p.category || 'general').toLowerCase().replace(/\s+/g, '-'))}/${p.slug}`;
+      const imageLink = p.images && p.images.length > 0 ? p.images[0].url : '';
+      const price = `${p.price || 0} USD`;
+      const salePrice = p.sale_price ? `${p.sale_price} USD` : '';
+      const identifierExists = p.gtin || p.mpn ? 'yes' : 'no';
+      const gtin = p.gtin || '';
+      const mpn = p.mpn || p.sku || '';
+      const brand = p.brand || 'Vandora';
+      const additionalImageLink = p.images && p.images.length > 1 ? p.images.slice(1).map((img: any) => img.url).join(',') : '';
+      const condition = p.condition || 'new';
+      const color = p.colors && p.colors.length > 0 ? p.colors.map((c: any) => c.name).join('/') : '';
+      const size = p.sizes && p.sizes.length > 0 ? p.sizes[0] : '';
+      const gender = p.gender || 'female';
+      const material = p.material_simple || (p.materials ? p.materials.substring(0, 50) : '');
+      const pattern = p.pattern || '';
+      const ageGroup = p.age_group || 'adult';
+      
+      return [
+        id, title, desc, availability, '', '', link, '', imageLink, price, salePrice, '',
+        identifierExists, gtin, mpn, brand, '', '', additionalImageLink, condition, 'no',
+        color, size, '', '', gender, material, pattern, ageGroup, '', 'no', '', '', '', '', p.id, p.stock || 0
+      ];
+    });
+
+    const csvContent = [headers, ...rows].map(row => row.map(escapeCSV).join(',')).join('\n');
+    
+    const blob = new Blob(['\uFEFF' + csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.setAttribute('download', `merchant_center_products_${new Date().toISOString().split('T')[0]}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
   return (
     <div className="min-h-screen bg-gray-100 flex flex-col md:flex-row">
       <SEO title="Admin Dashboard" description="Panel de control de Vandora" />
@@ -888,6 +982,13 @@ const AdminPage = () => {
               <h3 className="text-lg font-medium text-gray-900 border-l-4 border-vandora-emerald pl-3">Inventario de Productos</h3>
               <div className="flex gap-2">
                 <button
+                  onClick={handleExportGoogleMerchantCSV}
+                  className="bg-white text-gray-700 px-4 py-2 rounded-md flex items-center border border-gray-300 transition-colors hover:bg-gray-50 shadow-sm"
+                  title="Exportar productos en formato Google Merchant Center"
+                >
+                  <Download className="h-4 w-4 mr-2" /> Exportar CSV Merchant
+                </button>
+                <button
                   onClick={() => setIsCategoryModalOpen(true)}
                   className="bg-white text-gray-700 px-4 py-2 rounded-md flex items-center border border-gray-300 transition-colors hover:bg-gray-50 shadow-sm"
                 >
@@ -1002,6 +1103,14 @@ const AdminPage = () => {
                           fetchProductTestimonials(product.id);
                           setIsModalOpen(true);
                         }}><Edit className="h-4 w-4" /></button>
+                        <button
+                          onClick={() => handleSyncKlaviyo(product)}
+                          disabled={syncingKlaviyo === product.id || !klaviyoPrivateKey}
+                          className={`${syncingKlaviyo === product.id ? 'text-gray-400' : 'text-blue-500 hover:text-blue-700'} transition-colors mr-4 disabled:opacity-50`}
+                          title="Sincronizar con Klaviyo"
+                        >
+                          {syncingKlaviyo === product.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <Zap className="h-4 w-4" />}
+                        </button>
                         <button 
                           className="text-red-400 hover:text-red-600 transition-colors" 
                           onClick={() => handleDeleteProduct(product.id, product.name)}
