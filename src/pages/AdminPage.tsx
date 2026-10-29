@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
-import { Plus, Edit, Trash, Package, ShoppingBag, Users, Layout as LayoutIcon, Sparkles, Settings, X, Image as ImageIcon, Menu, Ruler, Copy, Megaphone, Loader2, History, Star, Play, Zap, Download } from 'lucide-react';
+import { Plus, Edit, Trash, Package, ShoppingBag, Users, Layout as LayoutIcon, Sparkles, Settings, X, Image as ImageIcon, Menu, Ruler, Copy, Megaphone, Loader2, History, Star, Play, Zap, Download, Contact, Boxes, Wand2 } from 'lucide-react';
 import { formatPrice } from '../lib/utils';
 import MediaManager from '../components/MediaManager';
 import SiteEditor from '../components/SiteEditor';
@@ -15,6 +15,14 @@ import AffiliateManagement from '../components/AffiliateManagement';
 import SEO from '../components/SEO';
 import { useAuth } from '../context/AuthContext';
 import { syncProductToKlaviyo } from '../lib/klaviyo';
+import { askAI } from '../lib/ai';
+import { useSalesChannels } from '../lib/salesChannels';
+import CustomersPanel from '../components/admin/CustomersPanel';
+import InventoryPanel from '../components/admin/InventoryPanel';
+import AiStudioPanel from '../components/admin/AiStudioPanel';
+import SalesForecastPanel from '../components/admin/SalesForecastPanel';
+import VariantStockEditor, { StockMatrix, matrixFromVariants, saveVariantStock } from '../components/admin/VariantStockEditor';
+import { Variant, availableFor, useProductVariants } from '../lib/inventory';
 import { logger } from '../lib/logger';
 
 const AdminPage = () => {
@@ -29,6 +37,7 @@ const AdminPage = () => {
   const canManageUsers = ['superadmin', 'admin'].includes(role);
 
   const [activeTab, setActiveTab] = useState(() => {
+    if (canManageOrders) return 'dashboard';
     if (canManageProducts) return 'products';
     if (canManageOrders) return 'orders';
     if (canManageUsers) return 'users';
@@ -71,12 +80,16 @@ const AdminPage = () => {
     affiliate_id: '',
     items: [] as any[]
   });
+  const [matchedCustomer, setMatchedCustomer] = useState<any>(null);
+  const [studioProductId, setStudioProductId] = useState<string | null>(null);
+  const { activeChannels, labelOf: labelOfChannel } = useSalesChannels();
   const [manualOrderItem, setManualOrderItem] = useState({
     product_id: '',
     quantity: 1,
     size: '',
     color: ''
   });
+  const { variants: manualVariants } = useProductVariants(manualOrderItem.product_id || null);
 
   const [formData, setFormData] = useState({
     name: '',
@@ -134,7 +147,8 @@ const AdminPage = () => {
   }, [isModalOpen, isUserModalOpen, isOrderModalOpen, isCategoryModalOpen, isManualOrderModalOpen]);
 
   useEffect(() => {
-    if (activeTab === 'dashboard' && profile) {
+    // Sales staff land on the sales dashboard; everyone else on their first tool
+    if (activeTab === 'dashboard' && profile && !canManageOrders) {
       if (canManageProducts) setActiveTab('products');
       else if (canManageOrders) setActiveTab('orders');
       else if (canManageUsers) setActiveTab('users');
@@ -146,7 +160,12 @@ const AdminPage = () => {
       fetchProducts();
       fetchCategories();
     }
-    else if (activeTab === 'orders') fetchOrders();
+    else if (activeTab === 'orders') {
+      fetchOrders();
+      // The manual order form picks from the product list
+      if (!products.length) fetchProducts();
+    }
+    else if (activeTab === 'studio' && !products.length) fetchProducts();
     else if (activeTab === 'users') fetchUsers();
     else if (activeTab === 'global-logs') fetchGlobalLogs();
     
@@ -364,7 +383,7 @@ const AdminPage = () => {
 
   const handleSyncKlaviyo = async (product: any) => {
     setSyncingKlaviyo(product.id);
-    const result = await syncProductToKlaviyo(product, klaviyoPrivateKey);
+    const result = await syncProductToKlaviyo(product);
     if (result.success) {
       alert(`Producto sincronizado con Klaviyo (${result.action === 'created' ? 'Creado' : 'Actualizado'})`);
     } else {
@@ -382,6 +401,29 @@ const AdminPage = () => {
     setIsModalOpen(false);
     setEditingProduct(null);
   };
+
+  // Stock per color/size for the product form. inventoryReady is false until the inventory
+  // migration is applied, in which case the form keeps the old single stock field.
+  const [stockMatrix, setStockMatrix] = useState<StockMatrix>({});
+  const [inventoryReady, setInventoryReady] = useState(false);
+  const [poolStock, setPoolStock] = useState(0);
+
+  useEffect(() => {
+    if (!isModalOpen) return;
+    setStockMatrix({});
+    setPoolStock(0);
+    let query = supabase.from('product_variants').select('*');
+    query = editingProduct ? query.eq('product_id', editingProduct.id) : query.limit(1);
+    query.then(({ data, error }) => {
+      setInventoryReady(!error);
+      if (error || !editingProduct) return;
+      const variants = (data || []) as Variant[];
+      setStockMatrix(matrixFromVariants(variants));
+      const pool = variants.find(v => v.color === '' && v.size === '');
+      const hasAxes = (editingProduct.colors?.length || 0) > 0 || (editingProduct.sizes?.length || 0) > 0;
+      setPoolStock(hasAxes ? Math.max(pool?.stock || 0, 0) : 0);
+    });
+  }, [isModalOpen, editingProduct?.id]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -406,7 +448,10 @@ const AdminPage = () => {
         name: formData.name,
         price: parseFloat(formData.price) || 0,
         category: formData.category,
-        stock: parseInt(formData.stock) || 0,
+        // With per-variant inventory, products.stock is computed by the database from the variants
+        ...(inventoryReady
+          ? (editingProduct ? {} : { stock: 0 })
+          : { stock: parseInt(formData.stock) || 0 }),
         description: formData.description,
         details: formData.details,
         materials: formData.materials,
@@ -439,12 +484,17 @@ const AdminPage = () => {
       if (editingProduct) {
         const { error } = await supabase.from('products').update(productData).eq('id', editingProduct.id);
         if (error) throw error;
-        setProducts(products.map(p => p.id === editingProduct.id ? { ...p, ...productData } : p));
+        if (inventoryReady) {
+          await saveVariantStock(editingProduct.id, stockMatrix, false);
+          fetchProducts();
+        } else {
+          setProducts(products.map(p => p.id === editingProduct.id ? { ...p, ...productData } : p));
+        }
         closeModal();
         
         // Automatic Klaviyo Sync on Update
         if (klaviyoPrivateKey) {
-          syncProductToKlaviyo({ ...productData, id: editingProduct.id }, klaviyoPrivateKey);
+          syncProductToKlaviyo({ ...productData, id: editingProduct.id });
         }
       } else {
         const { data, error } = await supabase.from('products').insert([productData]).select();
@@ -458,11 +508,15 @@ const AdminPage = () => {
             colors: Array.isArray(data[0].colors) ? data[0].colors.map((c: any) => typeof c === 'string' ? { name: c, code: '#CCCCCC' } : c) : []
           };
           setProducts([...products, newProduct]);
+          if (inventoryReady) {
+            await saveVariantStock(newProduct.id, stockMatrix, true);
+            fetchProducts();
+          }
           closeModal();
           
           // Automatic Klaviyo Sync on Create
           if (klaviyoPrivateKey) {
-            syncProductToKlaviyo(newProduct, klaviyoPrivateKey);
+            syncProductToKlaviyo(newProduct);
           }
         }
       }
@@ -580,6 +634,37 @@ const AdminPage = () => {
     }
   };
   
+  // Prefills the manual sale from the unified customer record (and her last shipping address)
+  const lookupCustomerByPhone = async (rawPhone: string) => {
+    const digits = rawPhone.replace(/\D/g, '').replace(/^(593|0)/, '');
+    if (digits.length < 8) { setMatchedCustomer(null); return; }
+
+    const { data: customer } = await supabase
+      .from('customer_summary')
+      .select('*')
+      .ilike('phone', `%${digits}`)
+      .limit(1)
+      .maybeSingle();
+    setMatchedCustomer(customer || null);
+    if (!customer) return;
+
+    const { data: lastOrder } = await supabase
+      .from('orders')
+      .select('address')
+      .eq('customer_id', customer.id)
+      .not('address', 'is', null)
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
+    setManualOrderFormData(prev => ({
+      ...prev,
+      customer_name: prev.customer_name || customer.full_name || '',
+      customer_email: prev.customer_email || customer.email || '',
+      address: prev.address || lastOrder?.address || ''
+    }));
+  };
+
   const handleCreateManualOrder = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
@@ -588,18 +673,27 @@ const AdminPage = () => {
         return;
       }
 
-      const orderData = {
+      const orderData: any = {
         ...manualOrderFormData,
+        affiliate_id: manualOrderFormData.affiliate_id || null,
         total: parseFloat(manualOrderFormData.total),
+        created_by: profile?.id || null,
+        customer_id: matchedCustomer?.id || null,
         created_at: new Date().toISOString()
       };
 
-      const { data, error } = await supabase.from('orders').insert([orderData]).select();
+      let { data, error } = await supabase.from('orders').insert([orderData]).select();
+      // Before the CRM migration these columns don't exist yet: save the sale anyway
+      if (error && /created_by|customer_id/.test(error.message || '')) {
+        const { created_by, customer_id, ...legacy } = orderData;
+        ({ data, error } = await supabase.from('orders').insert([legacy]).select());
+      }
       if (error) throw error;
 
       if (data) {
         setOrders([data[0], ...orders]);
         setIsManualOrderModalOpen(false);
+        setMatchedCustomer(null);
         setManualOrderFormData({
           customer_name: '',
           customer_email: '',
@@ -610,6 +704,7 @@ const AdminPage = () => {
           payment_method: 'whatsapp',
           origin: 'whatsapp',
           notes: '',
+          affiliate_id: '',
           items: [] as any[]
         });
         alert('Pedido manual creado correctamente.');
@@ -684,51 +779,9 @@ const AdminPage = () => {
 
     setImprovingField(field);
     try {
-      const { data: settingsData } = await supabase.from('app_settings').select('*');
-      if (!settingsData) throw new Error('No se pudo cargar la configuración.');
-      
-      const settings: any = {};
-      settingsData.forEach(item => {
-        settings[item.key] = item.value;
-      });
-
-      const apiKey = settings.openai_api_key;
-      if (!apiKey) throw new Error('Configura la API Key en la sección de Ajustes primero.');
-
-      const provider = settings.ai_provider || 'openai';
-      const model = settings.ai_model || 'gpt-4o-mini';
-
       const prompt = `Mejora la estructura y el copy de esta descripción de producto de moda, haciéndola más atractiva y profesional, pero MANTENIENDO toda la información técnica, tallas y detalles importantes. No inventes información nueva. Estructura el texto con párrafos claros o puntos clave.\n\nTexto original:\n${text}`;
 
-      let apiUrl = 'https://api.openai.com/v1/chat/completions';
-      const headers: any = {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${apiKey}`
-      };
-
-      if (provider === 'openrouter') {
-        apiUrl = 'https://openrouter.ai/api/v1/chat/completions';
-        headers['HTTP-Referer'] = window.location.origin;
-        headers['X-Title'] = 'Vandora Admin';
-      }
-
-      const response = await fetch(apiUrl, {
-        method: 'POST',
-        headers,
-        body: JSON.stringify({
-          model,
-          messages: [{ role: 'user', content: prompt }],
-          temperature: 1,
-        })
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error?.message || 'Error en la comunicación con la IA.');
-      }
-
-      const data = await response.json();
-      const improvedText = data.choices[0]?.message?.content?.trim();
+      const improvedText = await askAI([{ role: 'user', content: prompt }]);
 
       if (improvedText) {
         setFormData(prev => ({ ...prev, [field]: improvedText }));
@@ -837,7 +890,7 @@ const AdminPage = () => {
             onClick={() => { setActiveTab('dashboard'); setIsSidebarOpen(false); }}
             className={`w-full flex items-center px-4 py-3 text-sm rounded-lg transition-colors ${activeTab === 'dashboard' ? 'bg-emerald-50 text-vandora-emerald font-medium' : 'text-gray-600 hover:bg-gray-50'}`}
           >
-            <LayoutIcon className="h-5 w-5 mr-3" /> Dashboard
+            <LayoutIcon className="h-5 w-5 mr-3" /> {canManageOrders ? 'Ventas y previsión' : 'Dashboard'}
           </button>
 
           {canManageProducts && (
@@ -855,6 +908,33 @@ const AdminPage = () => {
               className={`w-full flex items-center px-4 py-3 text-sm rounded-lg transition-colors ${activeTab === 'orders' ? 'bg-emerald-50 text-vandora-emerald font-medium' : 'text-gray-600 hover:bg-gray-50'}`}
             >
               <ShoppingBag className="h-5 w-5 mr-3" /> Pedidos
+            </button>
+          )}
+
+          {(canManageProducts || canManageOrders) && (
+            <button
+              onClick={() => { setActiveTab('inventory'); setIsSidebarOpen(false); }}
+              className={`w-full flex items-center px-4 py-3 text-sm rounded-lg transition-colors ${activeTab === 'inventory' ? 'bg-emerald-50 text-vandora-emerald font-medium' : 'text-gray-600 hover:bg-gray-50'}`}
+            >
+              <Boxes className="h-5 w-5 mr-3" /> Inventario
+            </button>
+          )}
+
+          {canManageProducts && (
+            <button
+              onClick={() => { setActiveTab('studio'); setIsSidebarOpen(false); }}
+              className={`w-full flex items-center px-4 py-3 text-sm rounded-lg transition-colors ${activeTab === 'studio' ? 'bg-emerald-50 text-vandora-emerald font-medium' : 'text-gray-600 hover:bg-gray-50'}`}
+            >
+              <Wand2 className="h-5 w-5 mr-3" /> Estudio IA
+            </button>
+          )}
+
+          {canManageOrders && (
+            <button
+              onClick={() => { setActiveTab('customers'); setIsSidebarOpen(false); }}
+              className={`w-full flex items-center px-4 py-3 text-sm rounded-lg transition-colors ${activeTab === 'customers' ? 'bg-emerald-50 text-vandora-emerald font-medium' : 'text-gray-600 hover:bg-gray-50'}`}
+            >
+              <Contact className="h-5 w-5 mr-3" /> Clientes
             </button>
           )}
 
@@ -939,8 +1019,11 @@ const AdminPage = () => {
       <main className="flex-1 p-4 md:p-8 overflow-y-auto">
         <header className="mb-8">
           <h1 className="text-2xl font-serif text-gray-900">
-            {activeTab === 'dashboard' ? 'Dashboard' :
-              activeTab === 'products' ? 'Inventario' :
+            {activeTab === 'dashboard' ? (canManageOrders ? 'Ventas y previsión' : 'Dashboard') :
+              activeTab === 'products' ? 'Productos' :
+                activeTab === 'inventory' ? 'Inventario' :
+                activeTab === 'customers' ? 'Clientes' :
+                activeTab === 'studio' ? 'Estudio de fotos IA' :
                 activeTab === 'orders' ? 'Pedidos' :
                   activeTab === 'users' ? 'Gestión de Usuarios' :
                     activeTab === 'media' ? 'Multimedia' :
@@ -959,7 +1042,9 @@ const AdminPage = () => {
         {activeTab === 'funnels' && <FunnelEditor />}
         {activeTab === 'affiliates' && <AffiliateManagement />}
 
-        {activeTab === 'dashboard' && (
+        {activeTab === 'dashboard' && canManageOrders && <SalesForecastPanel />}
+
+        {activeTab === 'dashboard' && !canManageOrders && (
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
             <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-100">
               <p className="text-sm text-gray-500 uppercase font-bold mb-1">Total Pedidos</p>
@@ -1144,6 +1229,7 @@ const AdminPage = () => {
                   <tr>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Orden</th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Cliente</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Canal</th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Total</th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Estado</th>
                     <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">Acciones</th>
@@ -1152,7 +1238,7 @@ const AdminPage = () => {
                 <tbody className="divide-y divide-gray-200 bg-white">
                   {orders.length === 0 ? (
                     <tr>
-                      <td colSpan={5} className="px-6 py-12 text-center text-gray-500 italic">
+                      <td colSpan={6} className="px-6 py-12 text-center text-gray-500 italic">
                         No se encontraron pedidos.
                       </td>
                     </tr>
@@ -1161,6 +1247,7 @@ const AdminPage = () => {
                       <tr key={order.id} className="hover:bg-gray-50 transition-colors">
                         <td className="px-6 py-4 text-sm font-medium text-gray-900">#{order.id.substring(0, 8)}</td>
                         <td className="px-6 py-4 text-sm text-gray-500">{order.customer_name}</td>
+                        <td className="px-6 py-4 text-sm text-gray-500">{labelOfChannel(order.origin || 'web')}</td>
                         <td className="px-6 py-4 text-sm text-gray-500">{formatPrice(order.total)}</td>
                         <td className="px-6 py-4 text-sm text-gray-500">
                           <span className={`px-3 py-1 text-xs font-semibold rounded-full ${order.status === 'completed' ? 'bg-green-100 text-green-800' :
@@ -1185,6 +1272,18 @@ const AdminPage = () => {
               </table>
             </div>
           </div>
+        )}
+
+        {activeTab === 'customers' && canManageOrders && <CustomersPanel />}
+
+        {activeTab === 'inventory' && (canManageProducts || canManageOrders) && (
+          <InventoryPanel
+            onGeneratePhotos={canManageProducts ? (id) => { setStudioProductId(id); setActiveTab('studio'); } : undefined}
+          />
+        )}
+
+        {activeTab === 'studio' && canManageProducts && (
+          <AiStudioPanel products={products} initialProductId={studioProductId} onProductsChanged={fetchProducts} />
         )}
 
         {activeTab === 'users' && canManageUsers && (
@@ -1345,11 +1444,22 @@ const AdminPage = () => {
                         <label className="block text-sm font-medium text-gray-700 mb-1">Precio de Oferta (Opcional)</label>
                         <input type="number" step="0.01" name="sale_price" value={formData.sale_price} onChange={handleInputChange} className="w-full rounded-md border-gray-300 shadow-sm border p-3 focus:ring-2 focus:ring-vandora-emerald outline-none" placeholder="0.00" title="Precio que aparecerá en Google Shopping como oferta" />
                       </div>
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">Stock Inicial</label>
-                        <input type="number" name="stock" value={formData.stock} onChange={handleInputChange} required className="w-full rounded-md border-gray-300 shadow-sm border p-3 focus:ring-2 focus:ring-vandora-emerald outline-none" />
-                      </div>
+                      {!inventoryReady && (
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-1">Stock Inicial</label>
+                          <input type="number" name="stock" value={formData.stock} onChange={handleInputChange} required className="w-full rounded-md border-gray-300 shadow-sm border p-3 focus:ring-2 focus:ring-vandora-emerald outline-none" />
+                        </div>
+                      )}
                     </div>
+                    {inventoryReady && (
+                      <VariantStockEditor
+                        colors={formData.colors}
+                        sizes={formData.sizes}
+                        matrix={stockMatrix}
+                        onChange={setStockMatrix}
+                        poolStock={poolStock}
+                      />
+                    )}
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-1">Categoría</label>
                       <div className="flex gap-2">
@@ -2063,32 +2173,38 @@ const AdminPage = () => {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div className="space-y-4">
                     <h3 className="text-sm font-bold text-gray-400 uppercase tracking-wider">Cliente</h3>
-                    <input 
-                      type="text" 
-                      placeholder="Nombre Completo" 
-                      required 
+                    <input
+                      type="tel"
+                      placeholder="Teléfono (busca a la clienta)"
+                      required
+                      className="w-full rounded-md border p-3 outline-none focus:ring-2 focus:ring-vandora-emerald"
+                      value={manualOrderFormData.customer_phone}
+                      onChange={(e) => setManualOrderFormData({...manualOrderFormData, customer_phone: e.target.value})}
+                      onBlur={(e) => lookupCustomerByPhone(e.target.value)}
+                    />
+                    {matchedCustomer && (
+                      <p className="text-xs text-vandora-emerald bg-emerald-50 rounded-md px-3 py-2">
+                        Cliente existente: {matchedCustomer.full_name || 'sin nombre'} · {matchedCustomer.orders_count} pedidos · llegó por {labelOfChannel(matchedCustomer.first_channel)}
+                      </p>
+                    )}
+                    <input
+                      type="text"
+                      placeholder="Nombre Completo"
+                      required
                       className="w-full rounded-md border p-3 outline-none focus:ring-2 focus:ring-vandora-emerald"
                       value={manualOrderFormData.customer_name}
                       onChange={(e) => setManualOrderFormData({...manualOrderFormData, customer_name: e.target.value})}
                     />
-                    <input 
-                      type="email" 
-                      placeholder="Email (Opcional)" 
+                    <input
+                      type="email"
+                      placeholder="Email (Opcional)"
                       className="w-full rounded-md border p-3 outline-none focus:ring-2 focus:ring-vandora-emerald"
                       value={manualOrderFormData.customer_email}
                       onChange={(e) => setManualOrderFormData({...manualOrderFormData, customer_email: e.target.value})}
                     />
-                    <input 
-                      type="tel" 
-                      placeholder="Teléfono" 
-                      required 
-                      className="w-full rounded-md border p-3 outline-none focus:ring-2 focus:ring-vandora-emerald"
-                      value={manualOrderFormData.customer_phone}
-                      onChange={(e) => setManualOrderFormData({...manualOrderFormData, customer_phone: e.target.value})}
-                    />
-                    <textarea 
-                      placeholder="Dirección de Envío" 
-                      required 
+                    <textarea
+                      placeholder={['tienda_fisica', 'calle'].includes(manualOrderFormData.origin) ? 'Dirección (opcional en venta presencial)' : 'Dirección de Envío'}
+                      required={!['tienda_fisica', 'calle'].includes(manualOrderFormData.origin)}
                       rows={2}
                       className="w-full rounded-md border p-3 outline-none focus:ring-2 focus:ring-vandora-emerald"
                       value={manualOrderFormData.address}
@@ -2106,12 +2222,9 @@ const AdminPage = () => {
                           value={manualOrderFormData.origin}
                           onChange={(e) => setManualOrderFormData({...manualOrderFormData, origin: e.target.value})}
                         >
-                          <option value="whatsapp">WhatsApp</option>
-                          <option value="instagram">Instagram</option>
-                          <option value="facebook">Facebook</option>
-                          <option value="tienda_fisica">Tienda Física</option>
-                          <option value="calle">Venta en la Calle</option>
-                          <option value="otro">Otro</option>
+                          {activeChannels.filter(c => c.key !== 'web').map(c => (
+                            <option key={c.key} value={c.key}>{c.label}</option>
+                          ))}
                         </select>
                       </div>
                       <div>
@@ -2164,6 +2277,40 @@ const AdminPage = () => {
                         <option key={p.id} value={p.id}>{p.name} - {formatPrice(p.price)}</option>
                       ))}
                     </select>
+                    {(() => {
+                      const prod = products.find(p => p.id === manualOrderItem.product_id);
+                      if (!prod) return null;
+                      const stockLabel = (color: string, size: string) =>
+                        manualVariants ? ` (${availableFor(manualVariants, color, size)})` : '';
+                      return (
+                        <>
+                          {prod.colors?.length > 0 && (
+                            <select
+                              className="rounded-md border p-2 bg-white text-sm"
+                              value={manualOrderItem.color}
+                              onChange={(e) => setManualOrderItem({ ...manualOrderItem, color: e.target.value })}
+                              aria-label="Color"
+                            >
+                              {prod.colors.map((c: any) => (
+                                <option key={c.name} value={c.name}>{c.name}{prod.sizes?.length ? '' : stockLabel(c.name, '')}</option>
+                              ))}
+                            </select>
+                          )}
+                          {prod.sizes?.length > 0 && (
+                            <select
+                              className="rounded-md border p-2 bg-white text-sm"
+                              value={manualOrderItem.size}
+                              onChange={(e) => setManualOrderItem({ ...manualOrderItem, size: e.target.value })}
+                              aria-label="Talla"
+                            >
+                              {prod.sizes.map((s: string) => (
+                                <option key={s} value={s}>{s}{stockLabel(manualOrderItem.color, s)}</option>
+                              ))}
+                            </select>
+                          )}
+                        </>
+                      );
+                    })()}
                     <div className="flex gap-2">
                        <input 
                         type="number" 
@@ -2177,7 +2324,14 @@ const AdminPage = () => {
                         onClick={() => {
                           const prod = products.find(p => p.id === manualOrderItem.product_id);
                           if (!prod) return;
-                          
+                          if (manualVariants) {
+                            const available = availableFor(manualVariants, manualOrderItem.color, manualOrderItem.size);
+                            if (available < manualOrderItem.quantity &&
+                                !confirm(`Solo hay ${available} en stock de esta variante. ¿Registrar la venta de todas formas? El stock quedará en negativo.`)) {
+                              return;
+                            }
+                          }
+
                           const newItem = {
                             id: prod.id,
                             name: prod.name,
